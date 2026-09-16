@@ -2,6 +2,8 @@
 
 Todos los plugins requeridos ya están **activados** en el sitio de staging: WooCommerce, WPGraphQL, WPGraphQL for WooCommerce (WooGraphQL), WPGraphQL CORS, ACF PRO y el plugin de Gift Cards. Esta guía cubre solo lo que falta: **configurarlos**. No requiere instalar ni descargar nada nuevo.
 
+El desarrollo se conecta **directo al WordPress de staging alojado en cPanel** — sin WordPress Studio ni ningún entorno local de WordPress. La configuración de plugins se hace en el wp-admin del sitio (o vía WP-CLI si cPanel expone Terminal/SSH), y ACF PRO puede configurarse también editando directamente los archivos Local JSON en `wp-content/` si hay acceso SFTP/File Manager.
+
 ## 1. WooCommerce — ajustes base
 
 `WooCommerce → Ajustes → General`

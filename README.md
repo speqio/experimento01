@@ -5,7 +5,7 @@ E-commerce headless de Spa, Masajes y Cuidado Personal. Metodología Spec-Driven
 ## Documentación
 
 - [`docs/schema-spec.md`](docs/schema-spec.md) — contrato de tipos, queries/mutations GraphQL y arquitectura.
-- [`docs/wp-setup-guide.md`](docs/wp-setup-guide.md) — configuración de los plugins de WordPress (staging).
+- [`docs/wp-setup-guide.md`](docs/wp-setup-guide.md) — configuración de los plugins de WordPress (staging, alojado en cPanel).
 - [`docs/webpay-sequence.md`](docs/webpay-sequence.md) — flujo de integración Webpay Plus.
 - [`docs/deployment-guide.md`](docs/deployment-guide.md) — despliegue en Cloudflare Workers + CI/CD + migración de dominio.
 
@@ -18,7 +18,7 @@ npm install
 npm run dev
 ```
 
-Requiere WordPress Studio corriendo localmente en `http://localhost:8888/graphql` (o ajustar `PUBLIC_WPGRAPHQL_URL` en `.env`).
+Se conecta directo al WordPress de staging alojado en cPanel (sin entorno local de WordPress Studio) — ajusta `PUBLIC_WPGRAPHQL_URL` en `.env` con la URL real del sitio de staging.
 
 ## Stack
 
