@@ -1,0 +1,59 @@
+---
+// Formulario de datos de envío/facturación e inicio de Webpay — SSR.
+export const prerender = false;
+
+import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+---
+<ECommerceLayout title="Checkout">
+  <h1 class="text-2xl font-semibold mb-6">Checkout</h1>
+  <form id="checkout-form" class="space-y-4 max-w-lg">
+    <div class="grid grid-cols-2 gap-4">
+      <input name="firstName" required placeholder="Nombre" class="border rounded px-3 py-2" />
+      <input name="lastName" required placeholder="Apellido" class="border rounded px-3 py-2" />
+    </div>
+    <input name="email" type="email" required placeholder="Email" class="w-full border rounded px-3 py-2" />
+    <input name="phone" required placeholder="Teléfono" class="w-full border rounded px-3 py-2" />
+    <input name="address1" required placeholder="Dirección" class="w-full border rounded px-3 py-2" />
+    <input name="city" required placeholder="Ciudad" class="w-full border rounded px-3 py-2" />
+    <button type="submit" class="bg-gray-900 text-white rounded px-6 py-3">Pagar con Webpay</button>
+  </form>
+</ECommerceLayout>
+
+<script>
+  import type { CheckoutInput } from '../../types/checkout';
+  import type { WebpayInitResponse } from '../../types/checkout';
+
+  const form = document.getElementById('checkout-form') as HTMLFormElement;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const input: CheckoutInput = {
+      firstName: String(formData.get('firstName')),
+      lastName: String(formData.get('lastName')),
+      email: String(formData.get('email')),
+      phone: String(formData.get('phone')),
+      address1: String(formData.get('address1')),
+      city: String(formData.get('city')),
+      paymentMethod: 'webpay',
+    };
+
+    const res = await fetch('/api/webpay-init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    const { token, url }: WebpayInitResponse = await res.json();
+
+    // Redirección automática al formulario de Webpay Plus vía POST.
+    const redirectForm = document.createElement('form');
+    redirectForm.method = 'POST';
+    redirectForm.action = url;
+    const tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden';
+    tokenInput.name = 'token_ws';
+    tokenInput.value = token;
+    redirectForm.appendChild(tokenInput);
+    document.body.appendChild(redirectForm);
+    redirectForm.submit();
+  });
+</script>

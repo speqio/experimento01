@@ -1,0 +1,20 @@
+---
+// Requiere sesión activa del carrito (woocommerce-session) — SSR.
+export const prerender = false;
+
+import ECommerceLayout from '../layouts/ECommerceLayout.astro';
+import CartSummaryPanel from '../components/cart/CartSummaryPanel.tsx';
+---
+<ECommerceLayout title="Carrito">
+  <h1 class="text-2xl font-semibold mb-6">Tu carrito</h1>
+  <div id="cart-items" class="space-y-3 mb-6"></div>
+  <CartSummaryPanel client:load />
+</ECommerceLayout>
+
+<script>
+  import { cartSummary } from '../store/cartStore';
+  cartSummary.subscribe((summary) => {
+    const el = document.getElementById('cart-items');
+    if (el) el.textContent = `${summary.itemCount} ítem(s) en el carrito`;
+  });
+</script>

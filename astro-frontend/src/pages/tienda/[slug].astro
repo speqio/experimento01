@@ -1,0 +1,56 @@
+---
+export const prerender = true;
+
+import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+import CheckoutUpsell from '../../components/upsell/CheckoutUpsell.tsx';
+import { wpQuery } from '../../lib/wp-graphql';
+import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG } from '../../lib/queries/products';
+import type { SimpleProduct } from '../../types/catalog';
+
+export async function getStaticPaths() {
+  try {
+    const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
+      query: GET_PRODUCTS,
+    });
+    return data.products.nodes.map((product) => ({ params: { slug: product.slug } }));
+  } catch {
+    return [];
+  }
+}
+
+const { slug } = Astro.params;
+const data = await wpQuery<{ product: SimpleProduct }>({
+  query: GET_PRODUCT_BY_SLUG,
+  variables: { slug },
+});
+const product = data.product;
+---
+<ECommerceLayout title={product.name} description={product.shortDescription}>
+  <div class="grid md:grid-cols-2 gap-8">
+    <img src={product.image.sourceUrl} alt={product.image.altText ?? product.name} class="w-full rounded-lg" />
+    <div>
+      <h1 class="text-2xl font-semibold">{product.name}</h1>
+      <p class="text-xl mt-2">{product.price}</p>
+      <p class="mt-4 text-gray-700" set:html={product.description} />
+      <button
+        type="button"
+        class="mt-6 bg-gray-900 text-white rounded px-6 py-3"
+        data-add-to-cart={product.databaseId}
+      >
+        Agregar al carrito
+      </button>
+    </div>
+  </div>
+
+  <CheckoutUpsell client:load suggestions={product.upsellProducts?.nodes ?? []} />
+</ECommerceLayout>
+
+<script>
+  import { addToCart } from '../../store/cartStore';
+  document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = Number(btn.dataset.addToCart);
+      addToCart(id, 1);
+    });
+  });
+</script>

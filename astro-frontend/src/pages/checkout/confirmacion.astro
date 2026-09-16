@@ -1,0 +1,24 @@
+---
+// Procesa la respuesta final de Webpay (ya confirmada en /api/webpay-commit) — SSR.
+export const prerender = false;
+
+import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+
+const orderId = Astro.url.searchParams.get('order');
+const status = Astro.url.searchParams.get('status') ?? 'unknown';
+---
+<ECommerceLayout title="Confirmación de compra">
+  {status === 'success' ? (
+    <div>
+      <h1 class="text-2xl font-semibold mb-2">¡Gracias por tu compra!</h1>
+      <p class="text-gray-600">Tu pedido {orderId ? `#${orderId}` : ''} fue confirmado.</p>
+    </div>
+  ) : (
+    <div>
+      <h1 class="text-2xl font-semibold mb-2">No pudimos confirmar el pago</h1>
+      <p class="text-gray-600">
+        Intenta nuevamente desde <a href="/checkout" class="underline">el checkout</a> o contáctanos si el problema persiste.
+      </p>
+    </div>
+  )}
+</ECommerceLayout>

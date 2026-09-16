@@ -1,0 +1,16 @@
+---
+import type { SimpleProduct } from '../../types/catalog';
+
+interface Props {
+  product: Pick<SimpleProduct, 'name' | 'slug' | 'price' | 'image'>;
+  href: string;
+}
+const { product, href } = Astro.props;
+---
+<a href={href} class="block border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+  <img src={product.image.sourceUrl} alt={product.image.altText ?? product.name} class="w-full aspect-square object-cover" />
+  <div class="p-4">
+    <h3 class="font-medium">{product.name}</h3>
+    <p class="text-gray-600">{product.price}</p>
+  </div>
+</a>

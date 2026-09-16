@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.astro/
+.env
+.env.local
+.wrangler/
+*.log
+.DS_Store
+
+# Tooling local (skills CLI), no forma parte del código del proyecto
+.claude/
+.agents/
+skills-lock.json

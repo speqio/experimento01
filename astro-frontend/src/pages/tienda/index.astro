@@ -1,0 +1,23 @@
+---
+export const prerender = true;
+
+import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+import ProductGrid from '../../components/catalog/ProductGrid.astro';
+import { wpQuery } from '../../lib/wp-graphql';
+import { GET_PRODUCTS } from '../../lib/queries/products';
+import type { SimpleProduct } from '../../types/catalog';
+
+let products: SimpleProduct[] = [];
+try {
+  const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
+    query: GET_PRODUCTS,
+  });
+  products = data.products.nodes;
+} catch {
+  // WordPress aún no configurado/disponible en build time.
+}
+---
+<ECommerceLayout title="Tienda">
+  <h1 class="text-2xl font-semibold mb-6">Tienda</h1>
+  <ProductGrid products={products} basePath="/tienda" />
+</ECommerceLayout>

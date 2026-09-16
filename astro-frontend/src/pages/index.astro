@@ -1,0 +1,31 @@
+---
+export const prerender = true;
+
+import ECommerceLayout from '../layouts/ECommerceLayout.astro';
+import ProductGrid from '../components/catalog/ProductGrid.astro';
+import { wpQuery } from '../lib/wp-graphql';
+import { GET_PRODUCTS } from '../lib/queries/products';
+import type { SimpleProduct } from '../types/catalog';
+
+let products: SimpleProduct[] = [];
+try {
+  const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
+    query: GET_PRODUCTS,
+    variables: { first: 8 },
+  });
+  products = data.products.nodes;
+} catch {
+  // WordPress aún no configurado/disponible en build time — se deja vacío.
+}
+---
+<ECommerceLayout title="Spa & Cuidado Personal">
+  <section class="mb-12">
+    <h1 class="text-3xl font-semibold mb-2">Bienestar, masajes y cuidado personal</h1>
+    <p class="text-gray-600">Reserva servicios de spa o compra productos de cuidado personal.</p>
+  </section>
+
+  <section>
+    <h2 class="text-xl font-medium mb-4">Destacados</h2>
+    <ProductGrid products={products} basePath="/tienda" />
+  </section>
+</ECommerceLayout>

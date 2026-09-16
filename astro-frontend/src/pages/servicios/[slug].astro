@@ -1,0 +1,73 @@
+---
+// Detalle del masaje/servicio con opción de compra estándar o como gift card.
+export const prerender = true;
+
+import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+import GiftCardForm from '../../components/giftcard/GiftCardForm.tsx';
+import { wpQuery } from '../../lib/wp-graphql';
+import { GET_SERVICES, GET_SERVICE_BY_SLUG } from '../../lib/queries/services';
+import type { SpaService } from '../../types/catalog';
+
+export async function getStaticPaths() {
+  try {
+    const data = await wpQuery<{ spaServices: { nodes: SpaService[] } }>({
+      query: GET_SERVICES,
+    });
+    return data.spaServices.nodes.map((service) => ({ params: { slug: service.slug } }));
+  } catch {
+    return [];
+  }
+}
+
+const { slug } = Astro.params;
+const data = await wpQuery<{ spaService: SpaService }>({
+  query: GET_SERVICE_BY_SLUG,
+  variables: { slug },
+});
+const service = data.spaService;
+---
+<ECommerceLayout title={service.title}>
+  <div class="grid md:grid-cols-2 gap-8">
+    <img src={service.featuredImage.sourceUrl} alt={service.title} class="w-full rounded-lg" />
+    <div>
+      <h1 class="text-2xl font-semibold">{service.title}</h1>
+      <p class="text-gray-600 mt-1">
+        {service.spaFields.durationMinutes} min · {service.spaFields.bodyZone} · {service.spaFields.intensityLevel}
+      </p>
+      <div class="mt-4 text-gray-700" set:html={service.content} />
+
+      {service.spaFields.benefits?.length > 0 && (
+        <ul class="mt-4 list-disc list-inside text-sm text-gray-700">
+          {service.spaFields.benefits.map((benefit) => <li>{benefit}</li>)}
+        </ul>
+      )}
+
+      {service.linkedProduct && (
+        <button
+          type="button"
+          class="mt-6 bg-gray-900 text-white rounded px-6 py-3"
+          data-add-to-cart={service.linkedProduct.databaseId}
+        >
+          Reservar servicio — {service.linkedProduct.price}
+        </button>
+      )}
+
+      {service.spaFields.allowGiftCard && service.linkedProduct && (
+        <div class="mt-8 border-t pt-6">
+          <h2 class="font-medium mb-3">O regálalo como Gift Card</h2>
+          <GiftCardForm client:load productId={service.linkedProduct.databaseId} />
+        </div>
+      )}
+    </div>
+  </div>
+</ECommerceLayout>
+
+<script>
+  import { addToCart } from '../../store/cartStore';
+  document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = Number(btn.dataset.addToCart);
+      addToCart(id, 1);
+    });
+  });
+</script>
