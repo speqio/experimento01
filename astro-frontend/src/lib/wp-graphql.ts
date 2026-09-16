@@ -14,9 +14,12 @@ export async function wpQuery<T>({ query, variables = {} }: WpQueryArgs): Promis
   const sessionToken =
     typeof window !== 'undefined' ? localStorage.getItem(SESSION_STORAGE_KEY) : null;
 
+  // Sin `credentials: 'include'` a propósito: la sesión de WooCommerce viaja
+  // por el header `woocommerce-session` (JWT), no por cookies, y el CORS de
+  // WPGraphQL responde con Access-Control-Allow-Origin: * — combinar eso con
+  // `include` es justamente lo que el navegador bloquea.
   const res = await fetch(import.meta.env.PUBLIC_WPGRAPHQL_URL, {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...(sessionToken ? { 'woocommerce-session': `Session ${sessionToken}` } : {}),

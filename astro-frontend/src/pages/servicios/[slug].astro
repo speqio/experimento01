@@ -5,6 +5,7 @@ export const prerender = true;
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import GiftCardForm from '../../components/giftcard/GiftCardForm.tsx';
 import { wpQuery } from '../../lib/wp-graphql';
+import { parseLineList } from '../../lib/parse';
 import { GET_SERVICES, GET_SERVICE_BY_SLUG } from '../../lib/queries/services';
 import type { SpaService } from '../../types/catalog';
 
@@ -25,6 +26,7 @@ const data = await wpQuery<{ spaService: SpaService }>({
   variables: { slug },
 });
 const service = data.spaService;
+const benefits = parseLineList(service.spaFields.benefits);
 ---
 <ECommerceLayout title={service.title}>
   <div class="grid md:grid-cols-2 gap-8">
@@ -36,9 +38,9 @@ const service = data.spaService;
       </p>
       <div class="mt-4 text-gray-700" set:html={service.content} />
 
-      {service.spaFields.benefits?.length > 0 && (
+      {benefits.length > 0 && (
         <ul class="mt-4 list-disc list-inside text-sm text-gray-700">
-          {service.spaFields.benefits.map((benefit) => <li>{benefit}</li>)}
+          {benefits.map((benefit) => <li>{benefit}</li>)}
         </ul>
       )}
 

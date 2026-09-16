@@ -19,12 +19,15 @@ export interface SimpleProduct {
   crossSellProducts?: { nodes: SimpleProduct[] };
 }
 
+// benefits/contraindications vienen de ACF (versión gratuita, sin Repeater)
+// como textarea de un ítem por línea — ver src/lib/parse.ts y
+// docs/wp-setup-guide.md §4.
 export interface SpaServiceACF {
   durationMinutes: number;
   bodyZone: string;
   intensityLevel: 'Suave' | 'Medio' | 'Intenso';
-  benefits: string[];
-  contraindications?: string[];
+  benefits: string;
+  contraindications?: string;
   allowGiftCard: boolean;
 }
 

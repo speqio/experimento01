@@ -52,12 +52,15 @@ export interface SimpleProduct {
   crossSellProducts?: { nodes: SimpleProduct[] };
 }
 
+// benefits/contraindications: ACF gratuito no tiene Repeater, así que se
+// modelan como textarea (un ítem por línea) y se parsean en el frontend
+// con parseLineList() — ver docs/wp-setup-guide.md §4.
 export interface SpaServiceACF {
   durationMinutes: number;
   bodyZone: string;
   intensityLevel: 'Suave' | 'Medio' | 'Intenso';
-  benefits: string[];
-  contraindications?: string[];
+  benefits: string;
+  contraindications?: string;
   allowGiftCard: boolean;
 }
 

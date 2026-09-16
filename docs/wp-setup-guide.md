@@ -26,16 +26,18 @@ El desarrollo se conecta **directo al WordPress de staging alojado en cPanel** �
 ## 3. WPGraphQL CORS — habilitar el frontend
 
 `GraphQL → CORS Settings` (o `Ajustes → GraphQL CORS`, según versión del plugin)
-- **Allow Credentials**: `true` (imprescindible para mantener el carrito entre peticiones vía `woocommerce-session`).
 - **Allowed Origins**: agrega, uno por línea:
   - `http://localhost:4321` (dev local con Astro)
   - la URL del Worker de Cloudflare (`https://<nombre-worker>.<subdominio>.workers.dev`)
   - el dominio final una vez migrado el DNS a Cloudflare
 - **Allowed Headers**: `Content-Type, woocommerce-session`.
+- **Allow Credentials**: déjalo en `false`/sin marcar. El carrito usa el header `woocommerce-session` (JWT), no cookies, así que no necesitamos `credentials: 'include'` en el cliente — de hecho el navegador **bloquea** esa combinación cuando `Allowed Origins` responde con `*` en vez de un origen específico. Si el plugin permite configurar orígenes explícitos, mejor reemplazar el `*` por defecto por la lista de arriba.
 
 > Cuando migres de dominio (ver `deployment-guide.md`), vuelve a este panel y agrega el nuevo origen — es el único lugar del backend que hay que tocar.
 
-## 4. ACF PRO — campos de Servicios de Spa
+## 4. ACF (versión gratuita) — campos de Servicios de Spa
+
+El servidor tiene instalada **ACF gratuito** (no ACF PRO), que no incluye el campo "Repetidor" (Repeater). Por eso `benefits` y `contraindications` se modelan como **Área de texto simple, un beneficio/contraindicación por línea**, y se separan en un arreglo del lado del frontend (`.split('\n')`) en vez de venir ya como arreglo desde GraphQL.
 
 `Custom Fields → Grupos de Campos → Añadir nuevo`
 
@@ -46,8 +48,8 @@ Crea un grupo **"Campos de Servicio de Spa"** asignado al tipo de contenido que 
 | `duration_minutes` | Número | Duración del masaje/servicio en minutos. |
 | `body_zone` | Texto | Zona corporal tratada. |
 | `intensity_level` | Selección (Suave / Medio / Intenso) | Coincide con `SpaServiceACF.intensityLevel`. |
-| `benefits` | Repetidor de texto o Área de texto (una línea por beneficio) | Se mapea a `benefits: string[]`. |
-| `contraindications` | Repetidor de texto (opcional) | Se mapea a `contraindications?: string[]`. |
+| `benefits` | Área de texto (textarea) — un beneficio por línea | El frontend separa por salto de línea; se mapea a `benefits: string[]`. |
+| `contraindications` | Área de texto (textarea, opcional) — una por línea | Mismo tratamiento que `benefits`; se mapea a `contraindications?: string[]`. |
 | `allow_gift_card` | Verdadero/Falso | Si el servicio puede regalarse como gift card. |
 | `linked_product` | Relación (Producto WooCommerce) | Vincula el servicio con el producto vendible en WooCommerce. |
 
