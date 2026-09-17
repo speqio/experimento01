@@ -130,7 +130,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
           onMouseLeave={() => setActiveGroup(null)}
         >
           <div className="flex items-center justify-between py-2">
-            <nav className="flex items-center gap-7 text-xs tracking-wider uppercase font-medium text-[#4A3E34]">
+            <nav className="flex items-center gap-7 text-xs tracking-wider font-medium text-[#4A3E34]">
               {categoryGroups.map((group) => (
                 <button
                   key={group.label}
