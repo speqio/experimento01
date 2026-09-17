@@ -14,11 +14,11 @@ export interface SimpleProduct {
   databaseId: number;
   name: string;
   slug: string;
-  description: string;
+  description?: string;
   shortDescription: string;
-  price: string;
-  regularPrice: string;
-  stockStatus: 'IN_STOCK' | 'OUT_OF_STOCK';
+  price?: string;
+  regularPrice?: string;
+  stockStatus?: 'IN_STOCK' | 'OUT_OF_STOCK';
   image: ProductImage;
   galleryImages?: { nodes: ProductImage[] };
   upsell?: { nodes: SimpleProduct[] };

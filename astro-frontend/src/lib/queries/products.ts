@@ -1,3 +1,19 @@
+// `image` vive en la interfaz Product (aplica a cualquier tipo), pero
+// `price`/`regularPrice` y `stockStatus` no: el catálogo real tiene tanto
+// SimpleProduct como VariableProduct (productos con variaciones), así que
+// hay que pedirlos con fragmentos inline para ambos tipos o quedan null.
+const PRODUCT_CARD_FIELDS = /* GraphQL */ `
+  id
+  databaseId
+  name
+  slug
+  shortDescription
+  image { sourceUrl altText }
+  ... on InventoriedProduct { stockStatus }
+  ... on SimpleProduct { price regularPrice }
+  ... on VariableProduct { price regularPrice }
+`;
+
 export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
   query GetProductBySlug($slug: ID!) {
     product(id: $slug, idType: SLUG) {
@@ -7,26 +23,24 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       slug
       description
       shortDescription
+      image { sourceUrl altText }
+      ... on InventoriedProduct { stockStatus }
+      ... on SimpleProduct { price regularPrice }
+      ... on VariableProduct { price regularPrice }
       ... on SimpleProduct {
-        price
-        regularPrice
-        stockStatus
-        image { sourceUrl altText }
         upsell {
-          nodes {
-            id
-            name
-            slug
-            ... on SimpleProduct { price image { sourceUrl } }
-          }
+          nodes { ${PRODUCT_CARD_FIELDS} }
         }
         crossSell {
-          nodes {
-            id
-            name
-            slug
-            ... on SimpleProduct { price image { sourceUrl } }
-          }
+          nodes { ${PRODUCT_CARD_FIELDS} }
+        }
+      }
+      ... on VariableProduct {
+        upsell {
+          nodes { ${PRODUCT_CARD_FIELDS} }
+        }
+        crossSell {
+          nodes { ${PRODUCT_CARD_FIELDS} }
         }
       }
     }
@@ -48,19 +62,15 @@ export const GET_PRODUCT_CATEGORIES = /* GraphQL */ `
 export const GET_PRODUCTS = /* GraphQL */ `
   query GetProducts($first: Int = 24, $category: String) {
     products(first: $first, where: { status: "publish", category: $category }) {
-      nodes {
-        id
-        databaseId
-        name
-        slug
-        shortDescription
-        ... on SimpleProduct {
-          price
-          regularPrice
-          stockStatus
-          image { sourceUrl altText }
-        }
-      }
+      nodes { ${PRODUCT_CARD_FIELDS} }
+    }
+  }
+`;
+
+export const GET_PRODUCTS_BY_CATEGORIES = /* GraphQL */ `
+  query GetProductsByCategories($categoryIn: [String], $first: Int = 3) {
+    products(first: $first, where: { status: "publish", categoryIn: $categoryIn }) {
+      nodes { ${PRODUCT_CARD_FIELDS} }
     }
   }
 `;
