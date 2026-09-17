@@ -9,6 +9,11 @@ export interface ProductImage {
   altText?: string;
 }
 
+export interface ProductAttribute {
+  name: string;
+  options: string[];
+}
+
 export interface SimpleProduct {
   id: string;
   databaseId: number;
@@ -21,6 +26,7 @@ export interface SimpleProduct {
   stockStatus?: 'IN_STOCK' | 'OUT_OF_STOCK';
   image: ProductImage;
   galleryImages?: { nodes: ProductImage[] };
+  attributes?: { nodes: ProductAttribute[] };
   upsell?: { nodes: SimpleProduct[] };
   crossSell?: { nodes: SimpleProduct[] };
 }

@@ -12,6 +12,7 @@ const PRODUCT_CARD_FIELDS = /* GraphQL */ `
   ... on InventoriedProduct { stockStatus }
   ... on SimpleProduct { price regularPrice }
   ... on VariableProduct { price regularPrice }
+  ... on ProductWithAttributes { attributes { nodes { name options } } }
 `;
 
 export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
@@ -27,6 +28,7 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       ... on InventoriedProduct { stockStatus }
       ... on SimpleProduct { price regularPrice }
       ... on VariableProduct { price regularPrice }
+      ... on ProductWithAttributes { attributes { nodes { name options } } }
       ... on SimpleProduct {
         upsell {
           nodes { ${PRODUCT_CARD_FIELDS} }
