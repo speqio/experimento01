@@ -1,8 +1,8 @@
 // Información editorial fija del spa (no viene de WooCommerce/WPGraphQL).
 export const SITE_INFO = {
   name: 'Mándala Spa',
-  whatsapp: '56900000000',
-  phone: '+56 9 0000 0000',
+  whatsapp: '56992242180',
+  phone: '+56 9 9224 2180',
   email: 'contacto@spamandala.cl',
   address: 'Las Condes, Santiago, Chile',
   instagram: 'https://instagram.com/spamandala',
