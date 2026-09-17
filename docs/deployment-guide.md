@@ -55,13 +55,14 @@ Si `PUBLIC_WPGRAPHQL_URL` no está configurada como variable de repo, el sitio c
 
 ## 6. Migración del DNS del dominio a Cloudflare
 
-El dominio final del proyecto **todavía no está en Cloudflare**. Pasos:
+El dominio final del proyecto **todavía no está en Cloudflare**. Resumen rápido (para el paso a paso exacto, con la tabla completa de registros DNS a recrear/repuntar, ver **`docs/domain-migration-cloudflare.md`**):
 
 1. Agregar el dominio como sitio nuevo en el dashboard de Cloudflare (`Add a Site`).
-2. Cloudflare entrega dos nameservers — actualizarlos en el registrador del dominio actual.
-3. Esperar la propagación (Cloudflare notifica cuando el dominio queda activo).
-4. En el Worker, ir a `Settings → Domains & Routes → Custom Domains` y enlazar el dominio.
-5. Actualizar `PUBLIC_SITE_URL` (secret del Worker) al nuevo dominio.
+2. Cargar/corregir todos los registros DNS existentes en Cloudflare (no solo lo que el escaneo automático importe) — ver la tabla detallada en `docs/domain-migration-cloudflare.md`.
+3. Cloudflare entrega dos nameservers — actualizarlos en el registrador del dominio actual.
+4. Esperar la propagación (Cloudflare notifica cuando el dominio queda activo).
+5. En el Worker, ir a `Settings → Domains & Routes → Custom Domains` y enlazar el dominio.
+6. Actualizar `PUBLIC_SITE_URL` (secret del Worker) al nuevo dominio.
 
 ## 7. Checklist de migración de dominio (a futuro, ida y vuelta)
 
