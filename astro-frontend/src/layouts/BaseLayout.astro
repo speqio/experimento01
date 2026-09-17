@@ -1,9 +1,15 @@
 ---
+import { SITE_INFO } from '../lib/siteInfo';
+import '../styles/global.css';
+
 interface Props {
   title: string;
   description?: string;
 }
-const { title, description = 'Spa, masajes y cuidado personal' } = Astro.props;
+const {
+  title,
+  description = 'Refugio de bienestar: masajes terapéuticos, tratamientos faciales, experiencias spa y gift cards.',
+} = Astro.props;
 ---
 <!doctype html>
 <html lang="es">
@@ -12,8 +18,92 @@ const { title, description = 'Spa, masajes y cuidado personal' } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
   </head>
-  <body class="min-h-screen bg-white text-gray-900">
-    <slot />
+  <body class="bg-spa-bg text-spa-charcoal font-sans antialiased selection:bg-[#D4C3B3] selection:text-[#1F1B18]">
+    <div id="page-loader" class="fixed inset-0 z-[100] bg-spa-bg flex items-center justify-center transition-opacity duration-700 ease-out">
+      <div class="flex flex-col items-center gap-4">
+        <div class="w-10 h-10 text-spa-taupe animate-[spin_2.4s_linear_infinite]">
+          <svg viewBox="0 0 100 100" class="w-full h-full stroke-current fill-none" stroke-width="2">
+            <circle cx="50" cy="50" r="45" stroke-opacity="0.3" />
+            <circle cx="50" cy="50" r="32" stroke-opacity="0.5" />
+            <circle cx="50" cy="50" r="16" />
+            <circle cx="50" cy="50" r="4" fill="currentColor" stroke="none" />
+          </svg>
+        </div>
+        <span class="font-editorial text-lg tracking-[0.4em] font-medium text-spa-charcoal uppercase">
+          Mándala
+        </span>
+        <span class="text-[9px] tracking-[0.35em] text-spa-taupe font-sans font-semibold uppercase">
+          Spa
+        </span>
+      </div>
+    </div>
+
+    <div class="min-h-screen flex flex-col">
+      <slot />
+
+      <a
+        href={`https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURIComponent('Hola Mándala Spa, quisiera consultar por disponibilidad de horas o comprar una Gift Card.')}`}
+        target="_blank"
+        rel="noreferrer"
+        class="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#20BA5A] text-white p-3.5 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 flex items-center justify-center group"
+        aria-label="Contactar por WhatsApp"
+        title="Chatear con Recepción Mándala Spa"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+        </svg>
+        <span class="max-w-0 overflow-hidden whitespace-nowrap group-hover:max-w-xs group-hover:ml-2 text-xs font-bold transition-all duration-300">
+          WhatsApp Recepción
+        </span>
+      </a>
+    </div>
+
+    <script>
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      function hideLoader() {
+        const loader = document.getElementById('page-loader');
+        if (!loader || loader.dataset.hidden === 'true') return;
+        loader.dataset.hidden = 'true';
+        loader.style.opacity = '0';
+        loader.style.pointerEvents = 'none';
+        setTimeout(() => loader.remove(), 700);
+      }
+      window.addEventListener('load', hideLoader);
+      setTimeout(hideLoader, 2500);
+
+      if (!prefersReducedMotion) {
+        const revealObserver = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                revealObserver.unobserve(entry.target);
+              }
+            }
+          },
+          { threshold: 0.15, rootMargin: '0px 0px -40px 0px' }
+        );
+
+        function observeReveals() {
+          document.querySelectorAll('.reveal:not(.is-visible)').forEach((el) => revealObserver.observe(el));
+        }
+
+        observeReveals();
+        const bodyObserver = new MutationObserver(() => observeReveals());
+        bodyObserver.observe(document.body, { childList: true, subtree: true });
+      }
+    </script>
   </body>
 </html>

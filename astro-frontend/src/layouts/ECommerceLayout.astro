@@ -1,6 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import Header from '../components/common/Header.astro';
+import Header from '../components/common/Header.tsx';
 import Footer from '../components/common/Footer.astro';
 
 interface Props {
@@ -8,10 +8,11 @@ interface Props {
   description?: string;
 }
 const { title, description } = Astro.props;
+const currentPath = Astro.url.pathname;
 ---
 <BaseLayout title={title} description={description}>
-  <Header />
-  <main class="px-6 py-8 max-w-6xl mx-auto">
+  <Header currentPath={currentPath} client:load />
+  <main class="flex-grow">
     <slot />
   </main>
   <Footer />

@@ -27,7 +27,11 @@ const product = data.product;
 ---
 <ECommerceLayout title={product.name} description={product.shortDescription}>
   <div class="grid md:grid-cols-2 gap-8">
-    <img src={product.image.sourceUrl} alt={product.image.altText ?? product.name} class="w-full rounded-lg" />
+    {product.image?.sourceUrl ? (
+      <img src={product.image.sourceUrl} alt={product.image.altText ?? product.name} class="w-full rounded-lg" />
+    ) : (
+      <div class="w-full aspect-square bg-spa-sand rounded-lg" />
+    )}
     <div>
       <h1 class="text-2xl font-semibold">{product.name}</h1>
       <p class="text-xl mt-2">{product.price}</p>
@@ -42,7 +46,7 @@ const product = data.product;
     </div>
   </div>
 
-  <CheckoutUpsell client:load suggestions={product.upsellProducts?.nodes ?? []} />
+  <CheckoutUpsell client:load suggestions={product.upsell?.nodes ?? []} />
 </ECommerceLayout>
 
 <script>

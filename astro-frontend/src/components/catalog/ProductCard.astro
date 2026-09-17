@@ -8,7 +8,11 @@ interface Props {
 const { product, href } = Astro.props;
 ---
 <a href={href} class="block border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-  <img src={product.image.sourceUrl} alt={product.image.altText ?? product.name} class="w-full aspect-square object-cover" />
+  {product.image?.sourceUrl ? (
+    <img src={product.image.sourceUrl} alt={product.image.altText ?? product.name} class="w-full aspect-square object-cover" />
+  ) : (
+    <div class="w-full aspect-square bg-spa-sand" />
+  )}
   <div class="p-4">
     <h3 class="font-medium">{product.name}</h3>
     <p class="text-gray-600">{product.price}</p>

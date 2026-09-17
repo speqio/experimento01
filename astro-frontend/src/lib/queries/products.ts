@@ -12,7 +12,7 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
         regularPrice
         stockStatus
         image { sourceUrl altText }
-        upsellProducts {
+        upsell {
           nodes {
             id
             name
@@ -20,7 +20,7 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
             ... on SimpleProduct { price image { sourceUrl } }
           }
         }
-        crossSellProducts {
+        crossSell {
           nodes {
             id
             name

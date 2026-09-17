@@ -48,8 +48,8 @@ export interface SimpleProduct {
   stockStatus: 'IN_STOCK' | 'OUT_OF_STOCK';
   image: ProductImage;
   galleryImages?: { nodes: ProductImage[] };
-  upsellProducts?: { nodes: SimpleProduct[] };
-  crossSellProducts?: { nodes: SimpleProduct[] };
+  upsell?: { nodes: SimpleProduct[] };
+  crossSell?: { nodes: SimpleProduct[] };
 }
 
 // benefits/contraindications: ACF gratuito no tiene Repeater, así que se
@@ -136,7 +136,7 @@ query GetProductBySlug($slug: ID!) {
       regularPrice
       stockStatus
       image { sourceUrl altText }
-      upsellProducts {
+      upsell {
         nodes {
           id
           name
@@ -144,7 +144,7 @@ query GetProductBySlug($slug: ID!) {
           ... on SimpleProduct { price image { sourceUrl } }
         }
       }
-      crossSellProducts {
+      crossSell {
         nodes {
           id
           name

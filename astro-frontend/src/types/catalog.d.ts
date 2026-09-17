@@ -15,8 +15,8 @@ export interface SimpleProduct {
   stockStatus: 'IN_STOCK' | 'OUT_OF_STOCK';
   image: ProductImage;
   galleryImages?: { nodes: ProductImage[] };
-  upsellProducts?: { nodes: SimpleProduct[] };
-  crossSellProducts?: { nodes: SimpleProduct[] };
+  upsell?: { nodes: SimpleProduct[] };
+  crossSell?: { nodes: SimpleProduct[] };
 }
 
 // benefits/contraindications vienen de ACF (versión gratuita, sin Repeater)
