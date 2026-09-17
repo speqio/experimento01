@@ -24,6 +24,14 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # PUBLIC_* se incrusta en el bundle en tiempo de build (Vite), incluso
+          # para el código que corre en el navegador (islas React del Header,
+          # etc.) — por eso no basta con `wrangler secret put` en el Worker.
+          # Ver docs/deployment-guide.md §5 y §7 (checklist de migración de
+          # dominio: hay que actualizar esta variable de repo, no solo el
+          # secret del Worker, para que un futuro cambio de dominio se refleje).
+          PUBLIC_WPGRAPHQL_URL: ${{ vars.PUBLIC_WPGRAPHQL_URL }}
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3

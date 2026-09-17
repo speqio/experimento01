@@ -19,14 +19,16 @@ cd astro-frontend
 npx wrangler login
 ```
 
-Configurar los secrets (no se committean, no van en `.env` versionado):
+Configurar los secrets de runtime (no se committean, no van en `.env` versionado):
 
 ```bash
-npx wrangler secret put PUBLIC_WPGRAPHQL_URL
 npx wrangler secret put WEBPAY_ENVIRONMENT
 npx wrangler secret put WEBPAY_COMMERCE_CODE
 npx wrangler secret put WEBPAY_API_KEY
+npx wrangler secret put PUBLIC_SITE_URL
 ```
+
+`PUBLIC_WPGRAPHQL_URL` **no** va aquí — es una variable de build (ver §5), se configura como Variable de repo en GitHub Actions, no como secret del Worker.
 
 ## 4. Deploy manual (mientras no hay CI corriendo aún)
 
@@ -44,7 +46,12 @@ npx wrangler deploy
 
 Configurar el secret en GitHub: `Settings → Secrets and variables → Actions → New repository secret` → `CLOUDFLARE_API_TOKEN` (token con permisos de Workers Scripts:Edit, generado en el dashboard de Cloudflare → My Profile → API Tokens).
 
-Los secrets de aplicación (`PUBLIC_WPGRAPHQL_URL`, `WEBPAY_*`) se configuran directamente en el Worker vía `wrangler secret put` (paso 3) — no dependen del CI, persisten entre deploys.
+**Ojo con la diferencia entre variables de build y secrets de runtime** — son dos mecanismos distintos y hay que configurar ambos:
+
+- `PUBLIC_WPGRAPHQL_URL` se usa con `import.meta.env` en `src/lib/wp-graphql.ts`, código que corre tanto en el servidor como en el navegador (islas React como el Header). Vite lo **incrusta en el bundle en tiempo de build** — no sirve configurarlo solo como secret del Worker, porque el código ya quedó compilado sin ese valor. Hay que definirlo como **variable de repositorio de GitHub Actions** (`Settings → Secrets and variables → Actions → pestaña Variables → New repository variable` → `PUBLIC_WPGRAPHQL_URL` = `http://laboratorio.space/graphql`). No es secreto (es una URL pública), por eso va en "Variables" y no en "Secrets". El workflow (`deploy.yml`) ya la pasa al paso de build.
+- `PUBLIC_SITE_URL` y `WEBPAY_*` se leen en runtime desde `env` (Cloudflare bindings) en `src/pages/api/webpay-*.ts`, no desde `import.meta.env` — esos sí se configuran con `wrangler secret put` (paso 3) y no requieren rebuild para cambiarlos.
+
+Si `PUBLIC_WPGRAPHQL_URL` no está configurada como variable de repo, el sitio compila y despliega sin errores pero **todas las páginas muestran el catálogo vacío** (el fetch a WordPress falla silenciosamente y cae al `catch` que ya tiene cada página) — este fue exactamente el bug que dejó el primer deploy sin datos.
 
 ## 6. Migración del DNS del dominio a Cloudflare
 
@@ -60,12 +67,13 @@ El dominio final del proyecto **todavía no está en Cloudflare**. Pasos:
 
 Cuando el proyecto deba moverse a otro dominio (staging → definitivo, o cambio posterior):
 
-- [ ] `PUBLIC_WPGRAPHQL_URL` actualizado (secret del Worker).
-- [ ] `PUBLIC_SITE_URL` actualizado (secret del Worker) — de esto depende la `returnUrl` de Webpay.
+- [ ] `PUBLIC_WPGRAPHQL_URL` actualizado como **Variable de repo en GitHub Actions** (`Settings → Secrets and variables → Actions → Variables`) — no como secret del Worker, se usa en tiempo de build (ver §5).
+- [ ] `PUBLIC_SITE_URL` actualizado (secret del Worker, `wrangler secret put`) — de esto depende la `returnUrl` de Webpay.
 - [ ] `Allowed Origins` en WPGraphQL CORS Settings (ver `docs/wp-setup-guide.md §3`) incluye el nuevo dominio.
 - [ ] Custom Domain del Worker actualizado en Cloudflare.
 - [ ] DNS del nuevo dominio apuntando a Cloudflare.
-- [ ] Redeploy (`git push` a `main` si el CI ya está activo, o `wrangler deploy` manual).
+- [ ] Redeploy (`git push` a `main` si el CI ya está activo, o `wrangler deploy` manual) — **obligatorio** aunque solo haya cambiado la variable de repo, porque `PUBLIC_WPGRAPHQL_URL` queda incrustada en el bundle del build anterior.
+- [ ] Verificar que el catálogo ya no muestre "No hay productos disponibles" (sería señal de que la variable de build no llegó al deploy).
 - [ ] Prueba end-to-end del flujo Webpay con la nueva `returnUrl`.
 
 ## 8. Paso a producción de Webpay (referencia)
