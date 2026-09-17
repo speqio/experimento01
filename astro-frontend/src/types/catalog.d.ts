@@ -1,3 +1,9 @@
+export interface ProductCategory {
+  name: string;
+  slug: string;
+  count: number | null;
+}
+
 export interface ProductImage {
   sourceUrl: string;
   altText?: string;

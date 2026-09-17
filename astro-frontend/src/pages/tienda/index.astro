@@ -1,23 +1,47 @@
 ---
-export const prerender = true;
+// SSR (no prerender): necesita leer ?cat= en tiempo de request para filtrar
+// por categoría real de WooCommerce (ver mega-menú del Header).
+export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import ProductGrid from '../../components/catalog/ProductGrid.astro';
 import { wpQuery } from '../../lib/wp-graphql';
-import { GET_PRODUCTS } from '../../lib/queries/products';
-import type { SimpleProduct } from '../../types/catalog';
+import { GET_PRODUCTS, GET_PRODUCT_CATEGORIES } from '../../lib/queries/products';
+import type { SimpleProduct, ProductCategory } from '../../types/catalog';
+
+const category = Astro.url.searchParams.get('cat');
 
 let products: SimpleProduct[] = [];
+let categoryName: string | null = null;
 try {
   const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
     query: GET_PRODUCTS,
+    variables: { first: 48, category },
   });
   products = data.products.nodes;
+
+  if (category) {
+    const catData = await wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({
+      query: GET_PRODUCT_CATEGORIES,
+    });
+    categoryName = catData.productCategories.nodes.find((c) => c.slug === category)?.name ?? category;
+  }
 } catch {
   // WordPress aún no configurado/disponible en build time.
 }
 ---
-<ECommerceLayout title="Tienda">
-  <h1 class="text-2xl font-semibold mb-6">Tienda</h1>
-  <ProductGrid products={products} basePath="/tienda" />
+<ECommerceLayout title={categoryName ? `Tienda · ${categoryName}` : 'Tienda'}>
+  <div class="mb-6">
+    <h1 class="font-editorial text-3xl text-spa-charcoal">{categoryName ?? 'Tienda'}</h1>
+    {category && (
+      <a href="/tienda" class="text-xs text-spa-taupe hover:text-spa-charcoal transition-colors">
+        &larr; Ver todo el catálogo
+      </a>
+    )}
+  </div>
+  {products.length > 0 ? (
+    <ProductGrid products={products} basePath="/tienda" />
+  ) : (
+    <p class="text-sm text-[#6E5C4E]">No hay productos disponibles en esta categoría por ahora.</p>
+  )}
 </ECommerceLayout>

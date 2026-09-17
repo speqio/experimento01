@@ -33,9 +33,21 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
   }
 `;
 
+export const GET_PRODUCT_CATEGORIES = /* GraphQL */ `
+  query GetProductCategories {
+    productCategories(first: 50, where: { hideEmpty: true }) {
+      nodes {
+        name
+        slug
+        count
+      }
+    }
+  }
+`;
+
 export const GET_PRODUCTS = /* GraphQL */ `
-  query GetProducts($first: Int = 24) {
-    products(first: $first, where: { status: "publish" }) {
+  query GetProducts($first: Int = 24, $category: String) {
+    products(first: $first, where: { status: "publish", category: $category }) {
       nodes {
         id
         databaseId

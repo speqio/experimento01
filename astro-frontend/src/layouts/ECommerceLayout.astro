@@ -2,6 +2,10 @@
 import BaseLayout from './BaseLayout.astro';
 import Header from '../components/common/Header.tsx';
 import Footer from '../components/common/Footer.astro';
+import { wpQuery } from '../lib/wp-graphql';
+import { GET_PRODUCT_CATEGORIES } from '../lib/queries/products';
+import { groupCategories } from '../lib/categoryGroups';
+import type { ProductCategory } from '../types/catalog';
 
 interface Props {
   title: string;
@@ -9,9 +13,19 @@ interface Props {
 }
 const { title, description } = Astro.props;
 const currentPath = Astro.url.pathname;
+
+let categoryGroups: ReturnType<typeof groupCategories> = [];
+try {
+  const data = await wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({
+    query: GET_PRODUCT_CATEGORIES,
+  });
+  categoryGroups = groupCategories(data.productCategories.nodes);
+} catch {
+  // WordPress aún no disponible en build time — el header cae al menú simple.
+}
 ---
 <BaseLayout title={title} description={description}>
-  <Header currentPath={currentPath} client:load />
+  <Header currentPath={currentPath} categoryGroups={categoryGroups} client:load />
   <main class="flex-grow">
     <slot />
   </main>

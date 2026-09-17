@@ -1,24 +1,30 @@
 import { useState } from 'react';
 import { useStore } from '@nanostores/react';
-import { ShoppingBag, Search, Menu, X, Calendar, Phone, Sparkles } from 'lucide-react';
+import { ShoppingBag, Search, Menu, X, Calendar, Phone, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
 import { cartItemCount, cartSummary } from '../../store/cartStore';
 import { SITE_INFO } from '../../lib/siteInfo';
+import type { CategoryGroup } from '../../lib/categoryGroups';
 
 const NAV_LINKS = [
-  { label: 'Servicios', href: '/servicios' },
   { label: 'Tienda', href: '/tienda' },
   { label: 'Gift Cards', href: '/gift-cards' },
 ];
 
-export default function Header({ currentPath }: { currentPath: string }) {
+interface HeaderProps {
+  currentPath: string;
+  categoryGroups: CategoryGroup[];
+}
+
+export default function Header({ currentPath, categoryGroups }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const count = useStore(cartItemCount);
   const summary = useStore(cartSummary);
 
   return (
     <header className="sticky top-0 z-40 bg-[#FAF8F5]/98 backdrop-blur-md border-b border-[#ECE6DC]">
       <div className="bg-[#26211D] text-[#ECE5DC] text-[11px] py-1 px-4 text-center flex items-center justify-between sm:justify-center gap-4">
-        <span className="hidden sm:inline flex items-center gap-1.5">
+        <span className="hidden sm:flex items-center gap-1.5">
           <Sparkles className="w-3 h-3 text-[#C8B8A6] shrink-0" />
           <span>Refugio de bienestar &middot; {SITE_INFO.address}</span>
         </span>
@@ -100,36 +106,99 @@ export default function Header({ currentPath }: { currentPath: string }) {
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center justify-between py-2 border-t border-[#ECE6DC]">
-          <nav className="flex items-center gap-7 text-xs tracking-wider uppercase font-medium text-[#4A3E34]">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className={`py-1 hover:text-spa-charcoal transition-colors ${
-                  currentPath.startsWith(link.href) ? 'text-spa-charcoal font-bold underline underline-offset-8 decoration-spa-taupe' : ''
-                }`}
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
+        <div
+          className="hidden lg:block relative border-t border-[#ECE6DC]"
+          onMouseLeave={() => setActiveGroup(null)}
+        >
+          <div className="flex items-center justify-between py-2">
+            <nav className="flex items-center gap-7 text-xs tracking-wider uppercase font-medium text-[#4A3E34]">
+              {categoryGroups.map((group) => (
+                <button
+                  key={group.label}
+                  onMouseEnter={() => setActiveGroup(group.label)}
+                  className={`flex items-center gap-1 py-1 hover:text-spa-charcoal transition-colors ${
+                    activeGroup === group.label ? 'text-spa-charcoal' : ''
+                  }`}
+                >
+                  <span>{group.label}</span>
+                  <ChevronDown
+                    className={`w-3 h-3 text-spa-taupe transition-transform duration-200 ${
+                      activeGroup === group.label ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              ))}
+              {NAV_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onMouseEnter={() => setActiveGroup(null)}
+                  className={`py-1 hover:text-spa-charcoal transition-colors ${
+                    currentPath.startsWith(link.href) ? 'text-spa-charcoal font-bold underline underline-offset-8 decoration-spa-taupe' : ''
+                  }`}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
 
-          <a
-            href="/servicios"
-            className="bg-spa-charcoal hover:bg-[#4A403A] text-white px-5 py-1.5 rounded-full text-xs font-medium tracking-wide transition-colors shadow-sm flex items-center gap-1.5"
-          >
-            <Calendar className="w-3.5 h-3.5 text-[#D4C3B3]" />
-            Reservar hora
-          </a>
+            <a
+              href="/servicios"
+              className="bg-spa-charcoal hover:bg-[#4A403A] text-white px-5 py-1.5 rounded-full text-xs font-medium tracking-wide transition-colors shadow-sm flex items-center gap-1.5"
+            >
+              <Calendar className="w-3.5 h-3.5 text-[#D4C3B3]" />
+              Reservar hora
+            </a>
+          </div>
+
+          {activeGroup && (() => {
+            const group = categoryGroups.find((g) => g.label === activeGroup);
+            if (!group) return null;
+            return (
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-screen max-w-3xl bg-[#FDFBF7] border border-[#E8E2D7] shadow-2xl z-50 rounded-2xl mt-1 animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="p-8">
+                  <span className="text-[10px] font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-4">
+                    {group.label}
+                  </span>
+                  <ul className="grid grid-cols-2 gap-x-8 gap-y-3 normal-case">
+                    {group.items.map((category) => (
+                      <li key={category.slug}>
+                        <a
+                          href={`/tienda?cat=${category.slug}`}
+                          className="group/link flex items-center justify-between text-sm text-[#54463A] hover:text-spa-charcoal transition-colors"
+                        >
+                          <span>{category.name}</span>
+                          <ChevronRight className="w-3.5 h-3.5 text-spa-taupe opacity-0 group-hover/link:opacity-100 transition-opacity" />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#FAF8F5] border-b border-[#ECE6DC] px-6 py-6 space-y-1 text-sm font-medium text-spa-charcoal animate-in fade-in slide-in-from-top-3 duration-200">
+        <div className="lg:hidden bg-[#FAF8F5] border-b border-[#ECE6DC] px-6 py-6 space-y-4 text-sm font-medium text-spa-charcoal animate-in fade-in slide-in-from-top-3 duration-200 max-h-[70vh] overflow-y-auto">
           <a href="/" className="block py-2.5 border-b border-spa-sand">
             Inicio
           </a>
+          {categoryGroups.map((group) => (
+            <div key={group.label} className="border-b border-spa-sand pb-2">
+              <span className="text-xs uppercase tracking-wider text-spa-taupe block py-1.5">{group.label}</span>
+              {group.items.map((category) => (
+                <a
+                  key={category.slug}
+                  href={`/tienda?cat=${category.slug}`}
+                  className="block pl-3 py-1.5 text-sm text-[#54463A]"
+                >
+                  {category.name}
+                </a>
+              ))}
+            </div>
+          ))}
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href} className="block py-2.5 border-b border-spa-sand">
               {link.label}
