@@ -14,6 +14,18 @@ export interface ProductAttribute {
   options: string[];
 }
 
+// Grupos ACF reales de producción (spamandala.cl), reproducidos por código
+// en wordpress/mu-plugins/acf-field-groups.php — ver docs/wp-setup-guide.md §4.
+export interface GiftCardFields {
+  giftCard: 'SI' | null;
+  codigoGiftcard: string | null;
+}
+
+export interface UpsellerFields {
+  nombreProducto: string | null;
+  productosPrincipalesIds?: { nodes: SimpleProduct[] } | null;
+}
+
 export interface SimpleProduct {
   id: string;
   databaseId: number;
@@ -29,26 +41,6 @@ export interface SimpleProduct {
   attributes?: { nodes: ProductAttribute[] };
   upsell?: { nodes: SimpleProduct[] };
   crossSell?: { nodes: SimpleProduct[] };
-}
-
-// benefits/contraindications vienen de ACF (versión gratuita, sin Repeater)
-// como textarea de un ítem por línea — ver src/lib/parse.ts y
-// docs/wp-setup-guide.md §4.
-export interface SpaServiceACF {
-  durationMinutes: number;
-  bodyZone: string;
-  intensityLevel: 'Suave' | 'Medio' | 'Intenso';
-  benefits: string;
-  contraindications?: string;
-  allowGiftCard: boolean;
-}
-
-export interface SpaService {
-  id: string;
-  title: string;
-  slug: string;
-  content: string;
-  featuredImage: ProductImage;
-  spaFields: SpaServiceACF;
-  linkedProduct?: SimpleProduct;
+  giftCardFields?: GiftCardFields;
+  upsellerFields?: UpsellerFields;
 }

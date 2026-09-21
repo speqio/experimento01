@@ -13,6 +13,13 @@ const PRODUCT_CARD_FIELDS = /* GraphQL */ `
   ... on SimpleProduct { price regularPrice }
   ... on VariableProduct { price regularPrice }
   ... on ProductWithAttributes { attributes { nodes { name options } } }
+  ... on WithAcfGiftCardFields { giftCardFields { giftCard codigoGiftcard } }
+  ... on WithAcfUpsellerFields {
+    upsellerFields {
+      nombreProducto
+      productosPrincipalesIds { nodes { ... on Product { id name slug } } }
+    }
+  }
 `;
 
 export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
@@ -29,6 +36,13 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       ... on SimpleProduct { price regularPrice }
       ... on VariableProduct { price regularPrice }
       ... on ProductWithAttributes { attributes { nodes { name options } } }
+      ... on WithAcfGiftCardFields { giftCardFields { giftCard codigoGiftcard } }
+      ... on WithAcfUpsellerFields {
+        upsellerFields {
+          nombreProducto
+          productosPrincipalesIds { nodes { ... on Product { id name slug } } }
+        }
+      }
       ... on SimpleProduct {
         upsell {
           nodes { ${PRODUCT_CARD_FIELDS} }
