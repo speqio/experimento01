@@ -69,3 +69,12 @@ export function parseProductSections(html: string): ProductSections {
   // legal/clínico, se muestra igual que el resto de la descripción).
   return { intro: rest, benefits: benefits.items, includes: includes.items };
 }
+
+// WooGraphQL devuelve `price`/`regularPrice` como rango ("$X - $Y") para
+// VariableProduct (variantes de duración). Mostrar el rango completo es
+// confuso; se muestra el valor más bajo con el prefijo "Desde".
+export function formatPriceDisplay(price?: string | null): string {
+  if (!price) return '';
+  const [from] = price.split(' - ');
+  return price.includes(' - ') ? `Desde ${from.trim()}` : price;
+}

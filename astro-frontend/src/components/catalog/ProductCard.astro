@@ -1,6 +1,6 @@
 ---
 import type { SimpleProduct } from '../../types/catalog';
-import { getProductDuration, getProductBadge, extractDuration } from '../../lib/parse';
+import { getProductDuration, getProductBadge, extractDuration, formatPriceDisplay } from '../../lib/parse';
 
 interface Props {
   product: Pick<
@@ -46,9 +46,9 @@ const badge = getProductBadge(product.name);
     <div class="mt-auto pt-4 border-t border-spa-cream">
       <div class="flex items-baseline gap-2 mb-4">
         {product.regularPrice && product.regularPrice !== product.price && (
-          <span class="text-sm line-through text-[#A89E95]">{product.regularPrice}</span>
+          <span class="text-sm line-through text-[#A89E95]">{formatPriceDisplay(product.regularPrice)}</span>
         )}
-        <span class="text-lg font-bold text-spa-charcoal">{product.price}</span>
+        <span class="text-lg font-bold text-spa-charcoal">{formatPriceDisplay(product.price)}</span>
       </div>
       <div class="grid grid-cols-2 gap-2">
         <button
