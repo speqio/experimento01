@@ -24,3 +24,38 @@ export function extractDuration(shortDescriptionHtml: string): { description: st
   if (!match) return { description: shortDescriptionHtml, duration: null };
   return { description: shortDescriptionHtml.replace(match[0], ''), duration: match[1].trim() };
 }
+
+// El `description` real de WooCommerce trae secciones editoriales marcadas
+// con un <p>Etiqueta:</p> seguido de un <ul> (ej. "Beneficios:", "Incluye:")
+// — no son campos ACF separados, es texto/HTML cargado en el CSV original.
+// Se extraen para mostrarlas como bloques propios (protocolo/beneficios) en
+// vez de dejarlas perdidas en un párrafo largo de descripción.
+function extractListSection(html: string, label: string): { items: string[]; html: string } {
+  const re = new RegExp(
+    `<p>\\s*(?:<span[^>]*>)?\\s*${label}:?\\s*(?:<\\/span>)?\\s*<\\/p>\\s*<ul>([\\s\\S]*?)<\\/ul>`,
+    'i'
+  );
+  const match = html.match(re);
+  if (!match) return { items: [], html };
+  const items = Array.from(match[1].matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)).map((m) =>
+    m[1].replace(/<[^>]+>/g, '').trim()
+  );
+  return { items, html: html.replace(match[0], '') };
+}
+
+export interface ProductSections {
+  intro: string;
+  benefits: string[];
+  includes: string[];
+}
+
+export function parseProductSections(html: string): ProductSections {
+  let rest = html;
+  const benefits = extractListSection(rest, 'Beneficios');
+  rest = benefits.html;
+  const includes = extractListSection(rest, 'Incluye');
+  rest = includes.html;
+  // "Indicado para"/"Contraindicaciones" quedan en `intro` tal cual (texto
+  // legal/clínico, se muestra igual que el resto de la descripción).
+  return { intro: rest, benefits: benefits.items, includes: includes.items };
+}

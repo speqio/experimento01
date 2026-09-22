@@ -39,6 +39,7 @@ export interface SimpleProduct {
   image: ProductImage;
   galleryImages?: { nodes: ProductImage[] };
   attributes?: { nodes: ProductAttribute[] };
+  productCategories?: { nodes: ProductCategory[] };
   upsell?: { nodes: SimpleProduct[] };
   crossSell?: { nodes: SimpleProduct[] };
   giftCardFields?: GiftCardFields;

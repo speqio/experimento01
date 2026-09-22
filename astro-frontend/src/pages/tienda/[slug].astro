@@ -2,16 +2,20 @@
 export const prerender = true;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
-import CheckoutUpsell from '../../components/upsell/CheckoutUpsell.tsx';
+import ProductGrid from '../../components/catalog/ProductGrid.astro';
 import { wpQuery } from '../../lib/wp-graphql';
-import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG } from '../../lib/queries/products';
-import { getProductDuration, getProductBadge, extractDuration } from '../../lib/parse';
+import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG, GET_PRODUCTS_BY_CATEGORIES } from '../../lib/queries/products';
+import { getProductDuration, getProductBadge, extractDuration, parseProductSections } from '../../lib/parse';
+import { SITE_INFO } from '../../lib/siteInfo';
 import type { SimpleProduct } from '../../types/catalog';
 
 export async function getStaticPaths() {
   try {
+    // Sin `first` explícito, GET_PRODUCTS usa su default (24) y deja fuera
+    // productos del catálogo completo (~100), causando 404 en producción.
     const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
       query: GET_PRODUCTS,
+      variables: { first: 200 },
     });
     return data.products.nodes.map((product) => ({ params: { slug: product.slug } }));
   } catch {
@@ -26,69 +30,153 @@ const data = await wpQuery<{ product: SimpleProduct }>({
 });
 const product = data.product;
 
-const duration = getProductDuration(product.attributes) ?? extractDuration(product.description ?? '').duration;
-const description = getProductDuration(product.attributes)
-  ? product.description
-  : extractDuration(product.description ?? '').description;
+const duration = getProductDuration(product.attributes) ?? extractDuration(product.shortDescription ?? '').duration;
+const categoryName = product.productCategories?.nodes?.[0]?.name ?? 'Tienda';
+const categorySlug = product.productCategories?.nodes?.[0]?.slug;
 const badge = getProductBadge(product.name);
 const hasDiscount = Boolean(product.regularPrice && product.price && product.regularPrice !== product.price);
+const { intro, benefits, includes } = parseProductSections(product.description ?? '');
+
+let related: SimpleProduct[] = [];
+if (categorySlug) {
+  try {
+    const relatedData = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
+      query: GET_PRODUCTS_BY_CATEGORIES,
+      variables: { categoryIn: [categorySlug], first: 4 },
+    });
+    related = relatedData.products.nodes.filter((p) => p.slug !== product.slug).slice(0, 3);
+  } catch {
+    // sin relacionados si falla la consulta
+  }
+}
+
+const whatsappHref = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURIComponent(
+  `Hola, quisiera agendar hora para ${product.name}.`
+)}`;
 ---
 <ECommerceLayout title={product.name} description={product.shortDescription}>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-    <div class="grid md:grid-cols-2 gap-10 lg:gap-16">
-      <div class="relative">
-        {product.image?.sourceUrl ? (
-          <img
-            src={product.image.sourceUrl}
-            alt={product.image.altText ?? product.name}
-            class="w-full aspect-[4/5] object-cover arch-card"
-          />
-        ) : (
-          <div class="w-full aspect-[4/5] bg-spa-sand arch-card" />
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <div class="relative mb-10">
+      {product.image?.sourceUrl ? (
+        <img
+          src={product.image.sourceUrl}
+          alt={product.image.altText ?? product.name}
+          class="w-full aspect-video object-cover arch-card"
+        />
+      ) : (
+        <div class="w-full aspect-video bg-spa-sand arch-card" />
+      )}
+      {badge && (
+        <span class="absolute top-4 right-4 bg-spa-charcoal text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
+          {badge}
+        </span>
+      )}
+    </div>
+
+    <div class="max-w-3xl">
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">
+        {categoryName} &middot; {SITE_INFO.address}
+      </span>
+      <h1 class="font-editorial text-3xl sm:text-4xl font-normal text-spa-charcoal leading-tight mb-4">
+        {product.name}
+      </h1>
+
+      {duration && (
+        <div class="flex items-center gap-2 text-sm text-spa-taupe mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 3" />
+          </svg>
+          <span>{duration}</span>
+        </div>
+      )}
+
+      <div class="text-spa-taupe leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0 [&_ul]:hidden" set:html={intro} />
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-6 mt-10">
+      {includes.length > 0 && (
+        <div class="bg-white rounded-2xl border border-[#E8E2D7] p-6">
+          <h2 class="font-editorial text-lg text-spa-charcoal mb-4">Protocolo incluido</h2>
+          <ul class="space-y-2.5 text-sm text-spa-taupe">
+            {includes.map((item) => (
+              <li class="flex gap-2.5">
+                <span class="text-spa-charcoal shrink-0">—</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {benefits.length > 0 && (
+        <div class="bg-white rounded-2xl border border-[#E8E2D7] p-6">
+          <h2 class="font-editorial text-lg text-spa-charcoal mb-4">Beneficios principales</h2>
+          <ul class="space-y-2.5 text-sm text-spa-taupe">
+            {benefits.map((item) => (
+              <li class="flex gap-2.5">
+                <span class="text-spa-charcoal shrink-0">—</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+
+    <div class="max-w-3xl mt-10 pt-8 border-t border-spa-cream">
+      <div class="flex items-baseline gap-3 mb-6">
+        {hasDiscount && (
+          <span class="text-spa-taupe line-through text-sm">{product.regularPrice}</span>
         )}
-        {badge && (
-          <span class="absolute top-4 right-4 bg-spa-charcoal text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
-            {badge}
-          </span>
-        )}
+        <span class="font-editorial text-3xl text-spa-charcoal font-medium">{product.price}</span>
       </div>
 
-      <div class="flex flex-col justify-center">
-        <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Tienda</span>
-        <h1 class="font-editorial text-3xl sm:text-4xl font-normal text-spa-charcoal leading-tight mb-4">
-          {product.name}
-        </h1>
-
-        {duration && (
-          <div class="flex items-center gap-2 text-sm text-spa-taupe mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 3" />
-            </svg>
-            <span>{duration}</span>
-          </div>
-        )}
-
-        <div class="text-spa-taupe leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0" set:html={description} />
-
-        <div class="flex items-baseline gap-3 mt-6 mb-6">
-          {hasDiscount && (
-            <span class="text-spa-taupe line-through text-sm">{product.regularPrice}</span>
-          )}
-          <span class="font-editorial text-2xl text-spa-charcoal font-medium">{product.price}</span>
-        </div>
-
+      <div class="flex flex-wrap gap-3">
         <button
           type="button"
-          class="bg-spa-charcoal hover:bg-[#433B36] text-white py-3.5 px-8 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md w-full sm:w-auto"
+          class="bg-spa-charcoal hover:bg-[#433B36] text-white py-3.5 px-8 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md"
           data-add-to-cart={product.databaseId}
         >
           Agregar al carrito
         </button>
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noopener"
+          class="bg-transparent hover:bg-spa-sand text-spa-charcoal border border-[#DDD5CA] py-3.5 px-8 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300"
+        >
+          Agendar hora
+        </a>
+        <a
+          href="/gift-cards"
+          class="bg-transparent hover:bg-spa-sand text-spa-charcoal border border-[#DDD5CA] py-3.5 px-8 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300"
+        >
+          Regalar gift card
+        </a>
       </div>
     </div>
 
-    <CheckoutUpsell client:load suggestions={product.upsell?.nodes ?? []} />
+    <div class="grid sm:grid-cols-3 gap-6 mt-14 pt-10 border-t border-spa-cream text-center">
+      <div>
+        <p class="font-editorial text-xl text-spa-charcoal mb-1">Cabinas privadas</p>
+        <p class="text-sm text-spa-taupe">Espacios íntimos y acústicamente aislados.</p>
+      </div>
+      <div>
+        <p class="font-editorial text-xl text-spa-charcoal mb-1">Terapeutas certificadas</p>
+        <p class="text-sm text-spa-taupe">Formación y certificación profesional.</p>
+      </div>
+      <div>
+        <p class="font-editorial text-xl text-spa-charcoal mb-1">Productos premium</p>
+        <p class="text-sm text-spa-taupe">Activos e insumos de calidad superior.</p>
+      </div>
+    </div>
+
+    {related.length > 0 && (
+      <div class="mt-14 pt-10 border-t border-spa-cream">
+        <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-4">También te puede interesar</span>
+        <ProductGrid products={related} basePath="/tienda" />
+      </div>
+    )}
   </div>
 </ECommerceLayout>
 

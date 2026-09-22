@@ -32,6 +32,7 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       description
       shortDescription
       image { sourceUrl altText }
+      productCategories { nodes { name slug } }
       ... on InventoriedProduct { stockStatus }
       ... on SimpleProduct { price regularPrice }
       ... on VariableProduct { price regularPrice }
