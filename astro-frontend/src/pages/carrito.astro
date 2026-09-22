@@ -6,15 +6,9 @@ import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import CartSummaryPanel from '../components/cart/CartSummaryPanel.tsx';
 ---
 <ECommerceLayout title="Carrito">
-  <h1 class="text-2xl font-semibold mb-6">Tu carrito</h1>
-  <div id="cart-items" class="space-y-3 mb-6"></div>
-  <CartSummaryPanel client:load />
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Tu selección</span>
+    <h1 class="font-editorial text-3xl sm:text-4xl font-light text-spa-charcoal mb-8">Carrito</h1>
+    <CartSummaryPanel client:load />
+  </div>
 </ECommerceLayout>
-
-<script>
-  import { cartSummary } from '../store/cartStore';
-  cartSummary.subscribe((summary) => {
-    const el = document.getElementById('cart-items');
-    if (el) el.textContent = `${summary.itemCount} ítem(s) en el carrito`;
-  });
-</script>

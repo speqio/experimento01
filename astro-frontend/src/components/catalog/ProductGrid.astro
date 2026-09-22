@@ -3,13 +3,26 @@ import ProductCard from './ProductCard.astro';
 import type { SimpleProduct } from '../../types/catalog';
 
 interface Props {
-  products: Pick<SimpleProduct, 'name' | 'slug' | 'price' | 'image'>[];
+  products: Pick<
+    SimpleProduct,
+    'databaseId' | 'name' | 'slug' | 'price' | 'regularPrice' | 'image' | 'shortDescription' | 'attributes'
+  >[];
   basePath: string;
 }
 const { products, basePath } = Astro.props;
 ---
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
   {products.map((product) => (
     <ProductCard product={product} href={`${basePath}/${product.slug}`} />
   ))}
 </div>
+
+<script>
+  import { addToCart } from '../../store/cartStore';
+  document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = Number(btn.dataset.addToCart);
+      addToCart(id, 1);
+    });
+  });
+</script>

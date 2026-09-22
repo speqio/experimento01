@@ -1,11 +1,39 @@
+const CART_FIELDS = /* GraphQL */ `
+  total
+  subtotal
+  needsPayment
+  appliedCoupons { code discountAmount }
+  contents {
+    itemCount
+    nodes {
+      key
+      quantity
+      total
+      product {
+        node {
+          ... on Product {
+            id
+            databaseId
+            name
+            slug
+            image { sourceUrl altText }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const GET_CART = /* GraphQL */ `
+  query GetCart {
+    cart { ${CART_FIELDS} }
+  }
+`;
+
 export const ADD_TO_CART = /* GraphQL */ `
   mutation AddToCart($productId: Int!, $quantity: Int = 1) {
     addToCart(input: { productId: $productId, quantity: $quantity }) {
-      cart {
-        total
-        subtotal
-        contents { itemCount }
-      }
+      cart { ${CART_FIELDS} }
     }
   }
 `;
@@ -15,11 +43,7 @@ export const ADD_GIFTCARD_TO_CART = /* GraphQL */ `
     addToCart(
       input: { productId: $productId, quantity: 1, extraData: $extraData }
     ) {
-      cart {
-        total
-        subtotal
-        contents { itemCount }
-      }
+      cart { ${CART_FIELDS} }
     }
   }
 `;
@@ -27,11 +51,7 @@ export const ADD_GIFTCARD_TO_CART = /* GraphQL */ `
 export const UPDATE_ITEM_QUANTITIES = /* GraphQL */ `
   mutation UpdateItemQuantities($key: ID!, $quantity: Int!) {
     updateItemQuantities(input: { items: [{ key: $key, quantity: $quantity }] }) {
-      cart {
-        total
-        subtotal
-        contents { itemCount nodes { key quantity } }
-      }
+      cart { ${CART_FIELDS} }
     }
   }
 `;
@@ -39,11 +59,7 @@ export const UPDATE_ITEM_QUANTITIES = /* GraphQL */ `
 export const REMOVE_ITEMS_FROM_CART = /* GraphQL */ `
   mutation RemoveItemsFromCart($keys: [ID]!) {
     removeItemsFromCart(input: { keys: $keys }) {
-      cart {
-        total
-        subtotal
-        contents { itemCount }
-      }
+      cart { ${CART_FIELDS} }
     }
   }
 `;
@@ -53,12 +69,7 @@ export const REMOVE_ITEMS_FROM_CART = /* GraphQL */ `
 export const APPLY_GIFTCARD_BALANCE = /* GraphQL */ `
   mutation ApplyGiftCardBalance($code: String!) {
     applyCoupon(input: { code: $code }) {
-      cart {
-        total
-        subtotal
-        appliedCoupons { code discountAmount }
-        needsPayment
-      }
+      cart { ${CART_FIELDS} }
     }
   }
 `;

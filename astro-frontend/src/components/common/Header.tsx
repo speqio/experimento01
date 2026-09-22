@@ -169,7 +169,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
 
             <div className="flex items-center gap-3">
               <a
-                href="/tienda?cat=promociones"
+                href="/promociones"
                 className="bg-spa-charcoal hover:bg-[#4A403A] text-white px-5 py-1.5 rounded-full text-xs font-medium tracking-wide transition-colors shadow-sm"
               >
                 Promociones

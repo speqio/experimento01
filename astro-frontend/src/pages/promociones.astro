@@ -1,0 +1,43 @@
+---
+// Promociones = productos con precio rebajado (regularPrice ≠ price en
+// WooCommerce). No hay categoría/campo dedicado "promoción" en producción.
+export const prerender = false;
+
+import ECommerceLayout from '../layouts/ECommerceLayout.astro';
+import ProductGrid from '../components/catalog/ProductGrid.astro';
+import { wpQuery } from '../lib/wp-graphql';
+import { GET_PRODUCTS } from '../lib/queries/products';
+import type { SimpleProduct } from '../types/catalog';
+
+let onSale: SimpleProduct[] = [];
+try {
+  const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
+    query: GET_PRODUCTS,
+    variables: { first: 48 },
+  });
+  onSale = data.products.nodes.filter(
+    (p) => p.regularPrice && p.price && p.regularPrice !== p.price
+  );
+} catch {
+  // WordPress aún no configurado/disponible en build time.
+}
+---
+<ECommerceLayout title="Promociones">
+  <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto text-center">
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Tarifas preferenciales</span>
+      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal">Promociones especiales</h1>
+      <p class="mt-4 text-spa-taupe leading-relaxed">
+        Tratamientos con descuento por tiempo limitado en Las Condes, Santiago de Chile.
+      </p>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    {onSale.length > 0 ? (
+      <ProductGrid products={onSale} basePath="/tienda" />
+    ) : (
+      <p class="text-sm text-spa-taupe text-center">No hay promociones activas por el momento.</p>
+    )}
+  </div>
+</ECommerceLayout>

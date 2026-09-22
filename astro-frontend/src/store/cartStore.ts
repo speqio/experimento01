@@ -2,6 +2,7 @@ import { persistentAtom } from '@nanostores/persistent';
 import { atom } from 'nanostores';
 import { wpQuery } from '../lib/wp-graphql';
 import {
+  GET_CART,
   ADD_TO_CART,
   ADD_GIFTCARD_TO_CART,
   UPDATE_ITEM_QUANTITIES,
@@ -14,13 +15,15 @@ import type { GiftCardInput } from '../types/giftcard';
 export interface CartItem {
   key: string;
   quantity: number;
-  product: Pick<SimpleProduct, 'id' | 'databaseId' | 'name' | 'slug' | 'price' | 'image'>;
+  total: string;
+  product: Pick<SimpleProduct, 'id' | 'databaseId' | 'name' | 'slug' | 'image'>;
 }
 
 export interface CartSummary {
   total: string;
   subtotal: string;
   itemCount: number;
+  items: CartItem[];
   appliedCoupons: { code: string; discountAmount: string }[];
   needsPayment: boolean;
 }
@@ -29,6 +32,7 @@ const emptySummary: CartSummary = {
   total: '0',
   subtotal: '0',
   itemCount: 0,
+  items: [],
   appliedCoupons: [],
   needsPayment: false,
 };
@@ -44,17 +48,40 @@ export const cartItemCount = persistentAtom<number>('cart-item-count', 0, {
 export const cartSummary = atom<CartSummary>(emptySummary);
 export const isCartLoading = atom<boolean>(false);
 
-function applySummary(cart: { total: string; subtotal: string; contents?: { itemCount: number }; appliedCoupons?: any[]; needsPayment?: boolean }) {
+function applySummary(cart: {
+  total: string;
+  subtotal: string;
+  contents?: { itemCount: number; nodes?: any[] };
+  appliedCoupons?: any[];
+  needsPayment?: boolean;
+}) {
   const summary: CartSummary = {
     total: cart.total,
     subtotal: cart.subtotal,
     itemCount: cart.contents?.itemCount ?? cartItemCount.get(),
+    items:
+      cart.contents?.nodes?.map((node) => ({
+        key: node.key,
+        quantity: node.quantity,
+        total: node.total,
+        product: node.product?.node,
+      })) ?? cartSummary.get().items,
     appliedCoupons: cart.appliedCoupons ?? [],
     needsPayment: cart.needsPayment ?? true,
   };
   cartSummary.set(summary);
   cartItemCount.set(summary.itemCount);
   return summary;
+}
+
+export async function fetchCart() {
+  isCartLoading.set(true);
+  try {
+    const data = await wpQuery<{ cart: any }>({ query: GET_CART });
+    return applySummary(data.cart);
+  } finally {
+    isCartLoading.set(false);
+  }
 }
 
 export async function addToCart(productId: number, quantity = 1) {

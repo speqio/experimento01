@@ -1,0 +1,101 @@
+---
+export const prerender = true;
+
+import ECommerceLayout from '../layouts/ECommerceLayout.astro';
+import { SITE_INFO } from '../lib/siteInfo';
+
+// Contenido editorial de la marca — no viene de WooCommerce/WPGraphQL.
+// TODO: reemplazar equipo/estadísticas por datos reales entregados por el cliente.
+const team = [
+  { name: 'Valentina Silva', role: 'Kinesióloga', services: ['Masajes descontracturantes', 'Drenaje linfático', 'Terapias corporales'] },
+  { name: 'Camila Soto', role: 'Cosmiatra', services: ['Limpiezas faciales', 'Tratamientos anti-edad', 'Hidratación profunda'] },
+  { name: 'Andrea Morales', role: 'Masoterapeuta', services: ['Masajes relajantes', 'Piedras calientes', 'Aromaterapia'] },
+  { name: 'Asignación automática', role: 'Según disponibilidad', services: ['Cualquier tratamiento del catálogo'] },
+];
+---
+<ECommerceLayout title="Sobre Nosotras" description="Conoce la filosofía y el equipo de Mándala Spa">
+  <div class="bg-spa-sand py-16 sm:py-20 px-4 sm:px-6 lg:px-8 text-center">
+    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Nuestra esencia &amp; filosofía</span>
+    <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal max-w-3xl mx-auto leading-tight">
+      Un santuario de calma en el corazón de Las Condes
+    </h1>
+  </div>
+
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 text-center">
+    <p class="font-editorial text-xl sm:text-2xl text-spa-charcoal leading-relaxed">
+      Creemos que el bienestar no es un lujo ocasional, sino una necesidad vital.
+    </p>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 grid md:grid-cols-2 gap-10 items-center">
+    <div>
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Nuestro espacio</span>
+      <h2 class="font-editorial text-2xl sm:text-3xl text-spa-charcoal font-normal mb-4">Diseñado para desconectar</h2>
+      <ul class="space-y-3 text-spa-taupe">
+        <li class="flex gap-3"><span class="text-spa-charcoal">—</span> Aislación acústica de estándar médico</li>
+        <li class="flex gap-3"><span class="text-spa-charcoal">—</span> Aromaterapia orgánica en cada sala</li>
+        <li class="flex gap-3"><span class="text-spa-charcoal">—</span> Productos y protocolos premium</li>
+      </ul>
+      <div class="flex gap-10 mt-8">
+        <div>
+          <p class="font-editorial text-4xl text-spa-charcoal">8+</p>
+          <p class="text-xs text-spa-taupe uppercase tracking-wide mt-1">Años</p>
+        </div>
+        <div>
+          <p class="font-editorial text-4xl text-spa-charcoal">15.000+</p>
+          <p class="text-xs text-spa-taupe uppercase tracking-wide mt-1">Experiencias</p>
+        </div>
+      </div>
+    </div>
+    <div class="aspect-[4/5] bg-spa-sand arch-card"></div>
+  </div>
+
+  <div class="bg-spa-cream py-12 px-4 sm:px-6 lg:px-8 text-center">
+    <p class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase mb-2">Certificación kinesiológica</p>
+    <p class="text-spa-charcoal max-w-xl mx-auto">
+      Todas nuestras especialistas cuentan con formación y certificación profesional, para que cada tratamiento sea seguro y efectivo.
+    </p>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="text-center mb-10">
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Nuestro equipo</span>
+      <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Especialistas dedicadas a tu bienestar</h2>
+    </div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      {team.map((member) => (
+        <div class="bg-white rounded-2xl border border-[#E8E2D7] p-5 text-center">
+          <div class="w-20 h-20 rounded-full bg-spa-sand mx-auto mb-4"></div>
+          <h3 class="font-editorial text-lg text-spa-charcoal">{member.name}</h3>
+          <p class="text-xs text-spa-taupe uppercase tracking-wide mb-3">{member.role}</p>
+          <ul class="text-xs text-spa-taupe space-y-1">
+            {member.services.map((s) => <li>{s}</li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <div class="bg-spa-taupe-dark text-white py-16 px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="font-editorial text-2xl sm:text-3xl font-light mb-3">¿Tienes alguna consulta o requerimiento especial?</h2>
+    <p class="text-white/80 mb-8 max-w-xl mx-auto">
+      Convenios corporativos, celebraciones o atención domiciliaria — escríbenos y lo conversamos.
+    </p>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a
+        href={`https://wa.me/${SITE_INFO.whatsapp}`}
+        target="_blank"
+        rel="noopener"
+        class="bg-white hover:bg-spa-bg text-spa-charcoal px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition-all shadow-md"
+      >
+        WhatsApp
+      </a>
+      <a
+        href={`mailto:${SITE_INFO.email}`}
+        class="bg-transparent border border-white/40 hover:bg-white/10 px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition-all"
+      >
+        {SITE_INFO.email}
+      </a>
+    </div>
+  </div>
+</ECommerceLayout>

@@ -31,17 +31,23 @@ try {
 }
 ---
 <ECommerceLayout title={categoryName ? `Tienda · ${categoryName}` : 'Tienda'}>
-  <div class="mb-6">
-    <h1 class="font-editorial text-3xl text-spa-charcoal">{categoryName ?? 'Tienda'}</h1>
-    {category && (
-      <a href="/tienda" class="text-xs text-spa-taupe hover:text-spa-charcoal transition-colors">
-        &larr; Ver todo el catálogo
-      </a>
+  <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 mb-10">
+    <div class="max-w-6xl mx-auto text-center">
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Las Condes · Santiago de Chile</span>
+      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal uppercase tracking-wide">{categoryName ?? 'Tienda'}</h1>
+      {category && (
+        <a href="/tienda" class="inline-block mt-4 text-xs font-semibold tracking-wider uppercase text-[#6E5C4E] hover:text-spa-charcoal border border-[#DDD5CA] px-4 py-2 rounded-full hover:bg-white transition-colors">
+          &larr; Ver todo el catálogo
+        </a>
+      )}
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    {products.length > 0 ? (
+      <ProductGrid products={products} basePath="/tienda" />
+    ) : (
+      <p class="text-sm text-spa-taupe text-center">No hay productos disponibles en esta categoría por ahora.</p>
     )}
   </div>
-  {products.length > 0 ? (
-    <ProductGrid products={products} basePath="/tienda" />
-  ) : (
-    <p class="text-sm text-[#6E5C4E]">No hay productos disponibles en esta categoría por ahora.</p>
-  )}
 </ECommerceLayout>

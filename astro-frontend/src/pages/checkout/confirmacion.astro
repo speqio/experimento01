@@ -6,19 +6,34 @@ import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 
 const orderId = Astro.url.searchParams.get('order');
 const status = Astro.url.searchParams.get('status') ?? 'unknown';
+const success = status === 'success';
 ---
 <ECommerceLayout title="Confirmación de compra">
-  {status === 'success' ? (
-    <div>
-      <h1 class="text-2xl font-semibold mb-2">¡Gracias por tu compra!</h1>
-      <p class="text-gray-600">Tu pedido {orderId ? `#${orderId}` : ''} fue confirmado.</p>
+  <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+    <div class={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${success ? 'bg-emerald-100' : 'bg-red-100'}`}>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class={`w-8 h-8 ${success ? 'text-emerald-600' : 'text-red-500'}`}>
+        {success ? <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" /> : <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />}
+      </svg>
     </div>
-  ) : (
-    <div>
-      <h1 class="text-2xl font-semibold mb-2">No pudimos confirmar el pago</h1>
-      <p class="text-gray-600">
-        Intenta nuevamente desde <a href="/checkout" class="underline">el checkout</a> o contáctanos si el problema persiste.
-      </p>
-    </div>
-  )}
+
+    {success ? (
+      <div>
+        <h1 class="font-editorial text-3xl font-light text-spa-charcoal mb-3">¡Gracias por tu compra!</h1>
+        <p class="text-spa-taupe">Tu pedido {orderId ? `#${orderId}` : ''} fue confirmado. Te enviaremos los detalles por correo.</p>
+        <a
+          href="/tienda"
+          class="inline-block mt-8 bg-spa-charcoal hover:bg-[#433B36] text-white px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition-all duration-300"
+        >
+          Seguir explorando
+        </a>
+      </div>
+    ) : (
+      <div>
+        <h1 class="font-editorial text-3xl font-light text-spa-charcoal mb-3">No pudimos confirmar el pago</h1>
+        <p class="text-spa-taupe">
+          Intenta nuevamente desde <a href="/checkout" class="text-spa-charcoal underline">el checkout</a> o contáctanos si el problema persiste.
+        </p>
+      </div>
+    )}
+  </div>
 </ECommerceLayout>

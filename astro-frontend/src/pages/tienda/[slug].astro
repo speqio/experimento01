@@ -5,6 +5,7 @@ import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import CheckoutUpsell from '../../components/upsell/CheckoutUpsell.tsx';
 import { wpQuery } from '../../lib/wp-graphql';
 import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG } from '../../lib/queries/products';
+import { getProductDuration, getProductBadge, extractDuration } from '../../lib/parse';
 import type { SimpleProduct } from '../../types/catalog';
 
 export async function getStaticPaths() {
@@ -24,29 +25,71 @@ const data = await wpQuery<{ product: SimpleProduct }>({
   variables: { slug },
 });
 const product = data.product;
+
+const duration = getProductDuration(product.attributes) ?? extractDuration(product.description ?? '').duration;
+const description = getProductDuration(product.attributes)
+  ? product.description
+  : extractDuration(product.description ?? '').description;
+const badge = getProductBadge(product.name);
+const hasDiscount = Boolean(product.regularPrice && product.price && product.regularPrice !== product.price);
 ---
 <ECommerceLayout title={product.name} description={product.shortDescription}>
-  <div class="grid md:grid-cols-2 gap-8">
-    {product.image?.sourceUrl ? (
-      <img src={product.image.sourceUrl} alt={product.image.altText ?? product.name} class="w-full rounded-lg" />
-    ) : (
-      <div class="w-full aspect-square bg-spa-sand rounded-lg" />
-    )}
-    <div>
-      <h1 class="text-2xl font-semibold">{product.name}</h1>
-      <p class="text-xl mt-2">{product.price}</p>
-      <div class="mt-4 text-gray-700 [&_p]:mb-2 last:[&_p]:mb-0" set:html={product.description} />
-      <button
-        type="button"
-        class="mt-6 bg-gray-900 text-white rounded px-6 py-3"
-        data-add-to-cart={product.databaseId}
-      >
-        Agregar al carrito
-      </button>
-    </div>
-  </div>
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <div class="grid md:grid-cols-2 gap-10 lg:gap-16">
+      <div class="relative">
+        {product.image?.sourceUrl ? (
+          <img
+            src={product.image.sourceUrl}
+            alt={product.image.altText ?? product.name}
+            class="w-full aspect-[4/5] object-cover arch-card"
+          />
+        ) : (
+          <div class="w-full aspect-[4/5] bg-spa-sand arch-card" />
+        )}
+        {badge && (
+          <span class="absolute top-4 right-4 bg-spa-charcoal text-white text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
+            {badge}
+          </span>
+        )}
+      </div>
 
-  <CheckoutUpsell client:load suggestions={product.upsell?.nodes ?? []} />
+      <div class="flex flex-col justify-center">
+        <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Tienda</span>
+        <h1 class="font-editorial text-3xl sm:text-4xl font-normal text-spa-charcoal leading-tight mb-4">
+          {product.name}
+        </h1>
+
+        {duration && (
+          <div class="flex items-center gap-2 text-sm text-spa-taupe mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-4 h-4">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 3" />
+            </svg>
+            <span>{duration}</span>
+          </div>
+        )}
+
+        <div class="text-spa-taupe leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0" set:html={description} />
+
+        <div class="flex items-baseline gap-3 mt-6 mb-6">
+          {hasDiscount && (
+            <span class="text-spa-taupe line-through text-sm">{product.regularPrice}</span>
+          )}
+          <span class="font-editorial text-2xl text-spa-charcoal font-medium">{product.price}</span>
+        </div>
+
+        <button
+          type="button"
+          class="bg-spa-charcoal hover:bg-[#433B36] text-white py-3.5 px-8 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md w-full sm:w-auto"
+          data-add-to-cart={product.databaseId}
+        >
+          Agregar al carrito
+        </button>
+      </div>
+    </div>
+
+    <CheckoutUpsell client:load suggestions={product.upsell?.nodes ?? []} />
+  </div>
 </ECommerceLayout>
 
 <script>

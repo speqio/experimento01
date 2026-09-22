@@ -3,20 +3,32 @@
 export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+
+const inputClass =
+  'w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe placeholder:text-spa-taupe';
 ---
 <ECommerceLayout title="Checkout">
-  <h1 class="text-2xl font-semibold mb-6">Checkout</h1>
-  <form id="checkout-form" class="space-y-4 max-w-lg">
-    <div class="grid grid-cols-2 gap-4">
-      <input name="firstName" required placeholder="Nombre" class="border rounded px-3 py-2" />
-      <input name="lastName" required placeholder="Apellido" class="border rounded px-3 py-2" />
-    </div>
-    <input name="email" type="email" required placeholder="Email" class="w-full border rounded px-3 py-2" />
-    <input name="phone" required placeholder="Teléfono" class="w-full border rounded px-3 py-2" />
-    <input name="address1" required placeholder="Dirección" class="w-full border rounded px-3 py-2" />
-    <input name="city" required placeholder="Ciudad" class="w-full border rounded px-3 py-2" />
-    <button type="submit" class="bg-gray-900 text-white rounded px-6 py-3">Pagar con Webpay</button>
-  </form>
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Último paso</span>
+    <h1 class="font-editorial text-3xl sm:text-4xl font-light text-spa-charcoal mb-8">Datos de pago</h1>
+
+    <form id="checkout-form" class="space-y-4 bg-white rounded-2xl border border-[#E8E2D7] p-6 sm:p-8">
+      <div class="grid grid-cols-2 gap-4">
+        <input name="firstName" required placeholder="Nombre" class={inputClass} />
+        <input name="lastName" required placeholder="Apellido" class={inputClass} />
+      </div>
+      <input name="email" type="email" required placeholder="Email" class={inputClass} />
+      <input name="phone" required placeholder="Teléfono" class={inputClass} />
+      <input name="address1" required placeholder="Dirección" class={inputClass} />
+      <input name="city" required placeholder="Ciudad" class={inputClass} />
+      <button
+        type="submit"
+        class="w-full bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md mt-2"
+      >
+        Pagar con Webpay
+      </button>
+    </form>
+  </div>
 </ECommerceLayout>
 
 <script>
