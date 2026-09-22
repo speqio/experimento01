@@ -5,7 +5,7 @@ import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import ProductGrid from '../../components/catalog/ProductGrid.astro';
 import { wpQuery } from '../../lib/wp-graphql';
 import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG, GET_PRODUCTS_BY_CATEGORIES } from '../../lib/queries/products';
-import { getProductDuration, getProductBadge, extractDuration, parseProductSections } from '../../lib/parse';
+import { getProductDuration, getProductBadge, extractDuration, parseProductSections, getProductTagline } from '../../lib/parse';
 import { SITE_INFO } from '../../lib/siteInfo';
 import type { SimpleProduct } from '../../types/catalog';
 
@@ -31,6 +31,7 @@ const data = await wpQuery<{ product: SimpleProduct }>({
 const product = data.product;
 
 const duration = getProductDuration(product.attributes) ?? extractDuration(product.shortDescription ?? '').duration;
+const tagline = getProductTagline(product.shortDescription ?? '');
 const categoryName = product.productCategories?.nodes?.[0]?.name ?? 'Tienda';
 const categorySlug = product.productCategories?.nodes?.[0]?.slug;
 const badge = getProductBadge(product.name);
@@ -56,6 +57,20 @@ const whatsappHref = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompon
 ---
 <ECommerceLayout title={product.name} description={product.shortDescription}>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <nav class="flex items-center gap-2 text-xs text-spa-taupe mb-6" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-spa-charcoal transition-colors">Inicio</a>
+      <span>/</span>
+      <a href="/tienda" class="hover:text-spa-charcoal transition-colors">Tienda</a>
+      {categorySlug && (
+        <>
+          <span>/</span>
+          <a href={`/tienda?cat=${categorySlug}`} class="hover:text-spa-charcoal transition-colors">{categoryName}</a>
+        </>
+      )}
+      <span>/</span>
+      <span class="text-spa-charcoal">{product.name}</span>
+    </nav>
+
     <div class="relative mb-10">
       {product.image?.sourceUrl ? (
         <img
@@ -77,9 +92,13 @@ const whatsappHref = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompon
       <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">
         {categoryName} &middot; {SITE_INFO.address}
       </span>
-      <h1 class="font-editorial text-3xl sm:text-4xl font-normal text-spa-charcoal leading-tight mb-4">
+      <h1 class="font-editorial text-3xl sm:text-4xl font-normal text-spa-charcoal leading-tight mb-2">
         {product.name}
       </h1>
+
+      {tagline && (
+        <p class="text-spa-taupe italic mb-4">{tagline}</p>
+      )}
 
       {duration && (
         <div class="flex items-center gap-2 text-sm text-spa-taupe mb-6">
@@ -91,12 +110,13 @@ const whatsappHref = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompon
         </div>
       )}
 
+      <h2 class="font-editorial text-lg text-spa-charcoal mb-2 mt-2">Descripción</h2>
       <div class="text-spa-taupe leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0 [&_ul]:hidden" set:html={intro} />
     </div>
 
-    <div class="grid sm:grid-cols-2 gap-6 mt-10">
+    <div class="max-w-3xl flex flex-col gap-8 mt-8">
       {includes.length > 0 && (
-        <div class="bg-white rounded-2xl border border-[#E8E2D7] p-6">
+        <div>
           <h2 class="font-editorial text-lg text-spa-charcoal mb-4">Protocolo incluido</h2>
           <ul class="space-y-2.5 text-sm text-spa-taupe">
             {includes.map((item) => (
@@ -109,7 +129,7 @@ const whatsappHref = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompon
         </div>
       )}
       {benefits.length > 0 && (
-        <div class="bg-white rounded-2xl border border-[#E8E2D7] p-6">
+        <div>
           <h2 class="font-editorial text-lg text-spa-charcoal mb-4">Beneficios principales</h2>
           <ul class="space-y-2.5 text-sm text-spa-taupe">
             {benefits.map((item) => (
@@ -132,13 +152,6 @@ const whatsappHref = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompon
       </div>
 
       <div class="flex flex-wrap gap-3">
-        <button
-          type="button"
-          class="bg-spa-charcoal hover:bg-[#433B36] text-white py-3.5 px-8 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md"
-          data-add-to-cart={product.databaseId}
-        >
-          Agregar al carrito
-        </button>
         <a
           href={whatsappHref}
           target="_blank"
@@ -147,6 +160,13 @@ const whatsappHref = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompon
         >
           Agendar hora
         </a>
+        <button
+          type="button"
+          class="bg-spa-charcoal hover:bg-[#433B36] text-white py-3.5 px-8 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md"
+          data-add-to-cart={product.databaseId}
+        >
+          Agregar al carrito
+        </button>
         <a
           href="/gift-cards"
           class="bg-transparent hover:bg-spa-sand text-spa-charcoal border border-[#DDD5CA] py-3.5 px-8 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300"

@@ -19,6 +19,16 @@ export function getProductBadge(name: string): string | null {
 // una oración suelta "Duración: 60 minutos." al final de shortDescription
 // (texto editorial cargado en el CSV, no un campo estructurado). Se extrae
 // como fallback y se quita de la descripción para no mostrarla dos veces.
+// Tagline corto bajo el título de la ficha de producto: no existe un campo
+// ACF dedicado para esto en producción, así que se deriva de la primera
+// oración real de `shortDescription` en vez de inventar contenido.
+export function getProductTagline(shortDescriptionHtml: string): string | null {
+  const text = shortDescriptionHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const withoutDuration = text.replace(/Duraci[oó]n:.*$/i, '').trim();
+  const firstSentence = withoutDuration.match(/^[^.!?]+[.!?]?/)?.[0]?.trim();
+  return firstSentence || null;
+}
+
 export function extractDuration(shortDescriptionHtml: string): { description: string; duration: string | null } {
   const match = shortDescriptionHtml.match(/<p>\s*(?:<span[^>]*>)?\s*Duraci[oó]n:\s*([^<.]+)\.?\s*(?:<\/span>)?\s*<\/p>\s*/i);
   if (!match) return { description: shortDescriptionHtml, duration: null };
