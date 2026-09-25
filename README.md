@@ -44,6 +44,12 @@ Secretas (panel de Cloudflare → Variables and Secrets; localmente en `.env`): 
 
 ## Estado / pendientes
 
-- Probado en staging: WordPress `cms.laboratorio.space`, frontend `laboratorio.space`. Pendiente confirmar la prueba de compra completa (pago → orden *processing* → cupón → email → canje a $0).
-- Email saliente puede requerir SMTP en el hosting.
+**Probado (2026-09-25):** compra de regalo en staging (frontend `laboratorio.space`, WordPress `cms.laboratorio.space`): pago Webpay de integración → orden en *Procesando* en WooCommerce.
+
+**Pendientes:**
+- **Emails:** no llegan porque el hosting no tiene SMTP. Crear una casilla en cPanel (ej. no-reply@laboratorio.space), instalar WP Mail SMTP o FluentSMTP en `cms.laboratorio.space`, probar el envío y revisar SPF/DKIM. El mu-plugin ya envía con `wp_mail()`; no requiere cambios de código.
+- Verificar que el cupón de 100% se crea al pasar a *Procesando* (WooCommerce → Marketing → Cupones) y probar el **canje** (mismo producto/variante, total $0).
+- La orden #678 salió con $239.200, 20% menos que los $299.000 de las otras: revisar si hay algún descuento o promoción activa que aplique sin querer.
 - Pasar a producción: repetir en el WordPress definitivo la subida del mu-plugin, claves REST y ajustes de WooCommerce; Webpay con credenciales reales (`PRODUCCION`).
+- Opcional: fecha de entrega programada del email de regalo (YITH la tenía).
+- Opcional: cabeceras de seguridad (CSP, etc.) y revisión de qué expone el código fuente del frontend.
