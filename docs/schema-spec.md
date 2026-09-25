@@ -15,7 +15,7 @@ Metodología Spec-Driven Design (SDD) aplicada al e-commerce headless de Spa, Ma
 ```
 
 - **Frontend**: Astro (modo híbrido) + Tailwind CSS + Nanostores, desplegado como Cloudflare Worker.
-- **Backend**: WordPress + WooCommerce + ACF PRO + WPGraphQL + WooGraphQL + plugin de Gift Cards (modo saldo/crédito).
+- **Backend**: WordPress + WooCommerce + ACF PRO + WPGraphQL + WooGraphQL + mu-plugin propio de Gift Cards (cupón de 100% por producto/variante).
 - **Conexión desacoplada del dominio**: el frontend nunca hardcodea la URL de WordPress — vive en `PUBLIC_WPGRAPHQL_URL`. Migrar de dominio es cambiar esa variable + `Allowed Origins` en WPGraphQL CORS, sin tocar código.
 
 ## 2. Matriz de Renderizado (Hybrid Strategy)
@@ -80,19 +80,9 @@ export interface SpaService {
 ```ts
 // giftcard.d.ts
 export interface GiftCardInput {
-  recipientName: string;
+  buyerEmail: string;
   recipientEmail: string;
-  senderName: string;
   message: string;
-  deliveryDate?: string;
-  amount: number;
-}
-
-export interface GiftCardBalance {
-  code: string;
-  remainingBalance: number;
-  originalAmount: number;
-  expiresAt?: string;
 }
 
 // checkout.d.ts
@@ -102,8 +92,11 @@ export interface CartItemMetaData {
 }
 
 export interface WebpayInitResponse {
-  token: string;
-  url: string;
+  token?: string;
+  url?: string;
+  free?: boolean; // total $0: sin Webpay
+  redirect?: string;
+  error?: string;
 }
 
 export interface CheckoutInput {
@@ -160,10 +153,11 @@ query GetProductBySlug($slug: ID!) {
 ### 4.2 addToCart con MetaData para Gift Cards
 
 ```graphql
-mutation AddGiftCardToCart($productId: Int!, $extraData: String!) {
+mutation AddGiftCardToCart($productId: Int!, $extraData: String!, $variationId: Int) {
   addToCart(
     input: {
       productId: $productId
+      variationId: $variationId
       quantity: 1
       extraData: $extraData
     }
@@ -178,7 +172,7 @@ mutation AddGiftCardToCart($productId: Int!, $extraData: String!) {
 }
 ```
 
-### 4.3 Aplicar saldo de Gift Card al carrito (modo crédito)
+### 4.3 Canjear el código de una Gift Card (cupón 100%)
 
 ```graphql
 mutation ApplyGiftCardBalance($code: String!) {
@@ -187,13 +181,12 @@ mutation ApplyGiftCardBalance($code: String!) {
       total
       subtotal
       appliedCoupons { code discountAmount }
-      needsPayment
     }
   }
 }
 ```
 
-> El plugin de Gift Cards ya activo expone el saldo como cupón/crédito aplicable — por eso se reutiliza `applyCoupon` en vez de una mutación custom. Si el saldo no cubre el total, `needsPayment` sigue en `true` y el resto se cobra por Webpay en el mismo checkout.
+> El mu-plugin crea, al confirmarse el pago, un cupón de 100% atado al producto/variante regalado; se canjea con `applyCoupon`. `Cart.needsPayment` no existe en esta versión de WooGraphQL: el frontend deduce "requiere pago" del total del carrito. Si el total queda en $0, `/api/webpay-init` completa la orden sin pasar por Webpay.
 
 ## 5. Portabilidad de dominio
 

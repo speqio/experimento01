@@ -9,8 +9,8 @@ Ambiente actual: **`INTEGRACION`** (sandbox de Transbank). La transición a prod
         │ 1. Click "Pagar con Webpay"
         ▼
 [ POST /api/webpay-init.ts (SSR) ]
-        │ 2. Crea orden "pendiente" en WooCommerce (REST/GraphQL)
-        │ 3. transbank-sdk → WebpayPlus.Transaction.create(buyOrder, sessionId, amount, returnUrl)
+        │ 2. Crea la orden "pendiente" en WooCommerce (mutación GraphQL `checkout` con la sesión del carrito)
+        │ 3. `src/lib/webpay.ts` (fetch a la API REST de Webpay) → create(buyOrder, sessionId, amount, returnUrl)
         ▼
 [ Transbank ] ──── 4. Devuelve { token, url } ────► [ Astro responde al cliente ]
         │
@@ -22,9 +22,9 @@ Ambiente actual: **`INTEGRACION`** (sandbox de Transbank). La transición a prod
         │ 5. Transbank redirige de vuelta (POST/GET) a la returnUrl
         ▼
 [ POST/GET /api/webpay-commit.ts (SSR) ]
-        │ 6. transbank-sdk → WebpayPlus.Transaction.commit(token)
-        │ 7. Si response_code === 0 → actualiza orden en WooCommerce a "Completada"
-        │    (y si había gift card aplicada, confirma el descuento de saldo)
+        │ 6. `src/lib/webpay.ts` → commit(token)
+        │ 7. Si response_code === 0 → pasa la orden a "processing" por REST (WC_REST_KEY/SECRET)
+        │    (esto dispara el mu-plugin: cupón de gift card + email)
         ▼
 [ Redirige a /checkout/confirmacion ]
 ```
@@ -67,3 +67,10 @@ Cuando Transbank entregue el código de comercio real:
 3. En `transbank-sdk`, instanciar `WebpayPlus` con `Environment.Production` en vez de `Environment.Integration` (esto se lee de `WEBPAY_ENVIRONMENT`, sin cambiar código).
 4. Probar el flujo completo con un monto real bajo antes de anunciar el cambio.
 5. Confirmar con Transbank el certificado/whitelist de la `returnUrl` de producción.
+
+## 5. Notas de implementación
+
+- Se usa `fetch` contra la API REST de Transbank en vez de `transbank-sdk`: el SDK depende de axios/http y falla en Cloudflare Workers.
+- `buy_order` = `order-<id de la orden de WooCommerce>`; el commit lo parsea para saber qué orden actualizar.
+- Total $0 (código de gift card canjeado al 100%): Transbank no acepta monto 0, así que `/api/webpay-init` marca la orden `processing` y responde `{ free: true, redirect }`.
+- `PUBLIC_SITE_URL` debe ser el dominio exacto con que el cliente abre el sitio (sin `/` final): es la `return_url` de Webpay y el carrito vive en `localStorage` de ese dominio.
