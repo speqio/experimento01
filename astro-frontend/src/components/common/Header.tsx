@@ -41,7 +41,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FAF8F5]/98 backdrop-blur-md border-b border-[#ECE6DC]">
+    <header className="relative z-40 bg-[#FAF8F5]/98 backdrop-blur-md border-b border-[#ECE6DC]">
       <div className="bg-[#26211D] text-[#ECE5DC] text-[11px] py-1 px-4 text-center flex items-center justify-between sm:justify-center gap-4">
         <span className="hidden sm:flex items-center gap-1.5">
           <Sparkles className="w-3 h-3 text-[#C8B8A6] shrink-0" />
