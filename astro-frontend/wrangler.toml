@@ -7,11 +7,14 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./dist"
 binding = "ASSETS"
 
-# Secrets (no van aquí, se configuran con `wrangler secret put`):
-#   PUBLIC_WPGRAPHQL_URL
-#   PUBLIC_SITE_URL
-#   WEBPAY_ENVIRONMENT
-#   WEBPAY_COMMERCE_CODE
+# Variables no secretas: viven aquí para que cada deploy no las borre.
+[vars]
+PUBLIC_SITE_URL = "https://spamandala-astro-frontend.desarrollo-5a7.workers.dev"
+PUBLIC_WPGRAPHQL_URL = "https://cms.laboratorio.space/graphql"
+WEBPAY_ENVIRONMENT = "INTEGRACION"
+WEBPAY_COMMERCE_CODE = "597055555532"
+
+# Secrets (NO van aquí; se cargan en el panel de Cloudflare o con "wrangler secret put"):
 #   WEBPAY_API_KEY
 #   WC_REST_KEY
 #   WC_REST_SECRET
