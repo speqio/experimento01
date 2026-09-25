@@ -1,22 +1,15 @@
 ---
-// Venta directa de gift cards (sin pasar por un servicio de spa).
+// Las gift cards se compran desde cada producto ("Quiero mi giftcard").
 export const prerender = true;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
-import GiftCardForm from '../../components/giftcard/GiftCardForm.tsx';
-import { wpQuery } from '../../lib/wp-graphql';
-import { GET_GIFTCARD_PRODUCTS } from '../../lib/queries/giftcards';
-import type { SimpleProduct } from '../../types/catalog';
 
-let giftCardProduct: SimpleProduct | undefined;
-try {
-  const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
-    query: GET_GIFTCARD_PRODUCTS,
-  });
-  giftCardProduct = data.products.nodes[0];
-} catch {
-  // WordPress aún no configurado/disponible en build time.
-}
+const steps = [
+  { title: 'Elige un regalo', text: 'Busca el tratamiento o producto que quieres regalar y presiona "Quiero mi giftcard".' },
+  { title: 'Personaliza', text: 'Ingresa tu email, el del destinatario y un mensaje personalizado.' },
+  { title: 'Paga', text: 'Completa el pago en el checkout. El destinatario recibe su código por email.' },
+  { title: 'Canjea', text: 'Al comprar ese producto, ingresa el código en el checkout y queda sin costo.' },
+];
 ---
 <ECommerceLayout title="Gift Cards">
   <div class="bg-spa-taupe-dark text-white py-16 px-4 sm:px-6 lg:px-8">
@@ -24,16 +17,25 @@ try {
       <span class="text-xs font-semibold tracking-[0.2em] uppercase text-white/70 block mb-3">Un detalle que se transforma en experiencia</span>
       <h1 class="font-editorial text-3xl sm:text-5xl font-light">Gift Cards</h1>
       <p class="mt-4 text-white/80 leading-relaxed">
-        Regala saldo para usar en cualquier producto o servicio. Se puede usar completo o combinar con otro medio de pago.
+        Regala una experiencia de bienestar: el destinatario canjea su código y disfruta el tratamiento sin costo.
       </p>
     </div>
   </div>
 
-  <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-    {giftCardProduct ? (
-      <GiftCardForm client:load productId={giftCardProduct.databaseId} />
-    ) : (
-      <p class="text-sm text-spa-taupe text-center">Configura el producto de Gift Card en WooCommerce (ver docs/wp-setup-guide.md §5).</p>
-    )}
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+    <ol class="grid sm:grid-cols-2 gap-5">
+      {steps.map((step, i) => (
+        <li class="bg-white rounded-2xl border border-[#E8E2D7] p-6">
+          <span class="font-editorial text-2xl text-spa-taupe">{i + 1}</span>
+          <h2 class="font-editorial text-xl text-spa-charcoal mt-1">{step.title}</h2>
+          <p class="text-sm text-spa-taupe mt-2 leading-relaxed">{step.text}</p>
+        </li>
+      ))}
+    </ol>
+    <div class="text-center mt-10">
+      <a href="/tienda" class="inline-block bg-spa-charcoal hover:bg-[#433B36] text-white px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition-all">
+        Elegir regalo
+      </a>
+    </div>
   </div>
 </ECommerceLayout>

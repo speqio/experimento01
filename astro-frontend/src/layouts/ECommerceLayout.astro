@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import Header from '../components/common/Header.tsx';
+import GiftCardModal from '../components/giftcard/GiftCardModal.tsx';
 import Footer from '../components/common/Footer.astro';
 import { wpQuery } from '../lib/wp-graphql';
 import { GET_PRODUCT_CATEGORIES } from '../lib/queries/products';
@@ -30,4 +31,5 @@ try {
     <slot />
   </main>
   <Footer />
+  <GiftCardModal client:load />
 </BaseLayout>

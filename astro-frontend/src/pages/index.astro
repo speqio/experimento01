@@ -133,12 +133,14 @@ const rituals = products.slice(3, 6);
                       >
                         Agregar al carrito
                       </button>
-                      <a
-                        href="/gift-cards"
+                      <button
+                        type="button"
+                        data-gift-product={product.databaseId}
+                        data-gift-name={product.name}
                         class="bg-spa-charcoal hover:bg-[#433B36] text-white py-2.5 px-2 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors text-center"
                       >
                         Quiero mi giftcard
-                      </a>
+                      </button>
                     </div>
                   </div>
                 </div>
