@@ -77,9 +77,24 @@ export const GET_PRODUCT_CATEGORIES = /* GraphQL */ `
 `;
 
 export const GET_PRODUCTS = /* GraphQL */ `
-  query GetProducts($first: Int = 24, $category: String) {
-    products(first: $first, where: { status: "publish", category: $category }) {
+  query GetProducts($first: Int = 24, $category: String, $search: String) {
+    products(first: $first, where: { status: "publish", category: $category, search: $search }) {
       nodes { ${PRODUCT_CARD_FIELDS} }
+    }
+  }
+`;
+
+export const SEARCH_PRODUCTS = /* GraphQL */ `
+  query SearchProducts($search: String!, $first: Int = 5) {
+    products(first: $first, where: { status: "publish", search: $search }) {
+      nodes {
+        id
+        name
+        slug
+        image { sourceUrl altText }
+        ... on SimpleProduct { price }
+        ... on VariableProduct { price }
+      }
     }
   }
 `;

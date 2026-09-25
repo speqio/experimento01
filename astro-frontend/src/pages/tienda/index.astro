@@ -10,13 +10,14 @@ import { GET_PRODUCTS, GET_PRODUCT_CATEGORIES } from '../../lib/queries/products
 import type { SimpleProduct, ProductCategory } from '../../types/catalog';
 
 const category = Astro.url.searchParams.get('cat');
+const search = Astro.url.searchParams.get('q')?.trim() || null;
 
 let products: SimpleProduct[] = [];
 let categoryName: string | null = null;
 try {
   const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
     query: GET_PRODUCTS,
-    variables: { first: 48, category },
+    variables: { first: 48, category, search },
   });
   products = data.products.nodes;
 
@@ -30,12 +31,12 @@ try {
   // WordPress aún no configurado/disponible en build time.
 }
 ---
-<ECommerceLayout title={categoryName ? `Tienda · ${categoryName}` : 'Tienda'}>
+<ECommerceLayout title={search ? `Tienda · ${search}` : categoryName ? `Tienda · ${categoryName}` : 'Tienda'}>
   <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 mb-10">
     <div class="max-w-6xl mx-auto text-center">
       <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Las Condes · Santiago de Chile</span>
-      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal uppercase tracking-wide">{categoryName ?? 'Tienda'}</h1>
-      {category && (
+      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal uppercase tracking-wide">{search ? `Resultados para «${search}»` : categoryName ?? 'Tienda'}</h1>
+      {(category || search) && (
         <a href="/tienda" class="inline-block mt-4 text-xs font-semibold tracking-wider uppercase text-[#6E5C4E] hover:text-spa-charcoal border border-[#DDD5CA] px-4 py-2 rounded-full hover:bg-white transition-colors">
           &larr; Ver todo el catálogo
         </a>
@@ -47,7 +48,7 @@ try {
     {products.length > 0 ? (
       <ProductGrid products={products} basePath="/tienda" />
     ) : (
-      <p class="text-sm text-spa-taupe text-center">No hay productos disponibles en esta categoría por ahora.</p>
+      <p class="text-sm text-spa-taupe text-center">{search ? 'No encontramos productos que coincidan con tu búsqueda.' : 'No hay productos disponibles en esta categoría por ahora.'}</p>
     )}
   </div>
 </ECommerceLayout>
