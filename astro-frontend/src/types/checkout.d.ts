@@ -4,8 +4,11 @@ export interface CartItemMetaData {
 }
 
 export interface WebpayInitResponse {
-  token: string;
-  url: string;
+  token?: string;
+  url?: string;
+  free?: boolean; // total $0: sin Webpay
+  redirect?: string;
+  error?: string;
 }
 
 export interface CheckoutInput {

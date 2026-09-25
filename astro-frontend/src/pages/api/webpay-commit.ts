@@ -6,6 +6,7 @@ import {
   Environment,
   IntegrationCommerceCodes,
 } from 'transbank-sdk';
+import { updateOrderStatus } from '../../lib/woo-server';
 
 export const prerender = false;
 
@@ -20,7 +21,7 @@ function getWebpayTransaction(env: Record<string, string | undefined>) {
 }
 
 async function commitAndRedirect(request: Request, locals: any) {
-  const env = locals.runtime?.env ?? process.env;
+  const env = { ...import.meta.env, ...process.env, ...(locals.runtime?.env ?? {}) } as Record<string, string | undefined>;
   const url = new URL(request.url);
 
   let token = url.searchParams.get('token_ws');
@@ -36,15 +37,18 @@ async function commitAndRedirect(request: Request, locals: any) {
   const tx = getWebpayTransaction(env);
   const result = await tx.commit(token);
 
+  const orderId = Number(String(result.buy_order).replace('order-', ''));
+
   if (result.response_code === 0) {
-    // TODO: actualizar la orden en WooCommerce a "Completada" vía REST/GraphQL
-    // usando result.buy_order, y confirmar el consumo de saldo de gift card
-    // si se aplicó (ver docs/webpay-sequence.md §2).
+    // Dispara el mu-plugin de gift cards (cupón + email) al pasar a processing.
+    await updateOrderStatus(env, orderId, 'processing', result.authorization_code);
     return Response.redirect(
-      `${env.PUBLIC_SITE_URL}/checkout/confirmacion?status=success&order=${result.buy_order}`,
+      `${env.PUBLIC_SITE_URL}/checkout/confirmacion?status=success&order=${orderId}`,
       303,
     );
   }
+
+  await updateOrderStatus(env, orderId, 'failed').catch(() => {});
 
   return Response.redirect(`${env.PUBLIC_SITE_URL}/checkout/confirmacion?status=error`, 303);
 }

@@ -59,7 +59,8 @@ add_action('woocommerce_order_status_changed', function ($order_id, $from, $to) 
         $gift = $item->get_meta(MANDALA_GIFT_KEY);
         if (empty($gift) || $item->get_meta('_mandala_gift_code')) continue;
 
-        $product_id = $item->get_product_id();
+        // Si es variable, el cupón queda atado a la variante exacta (p. ej. "5 sesiones, 1 hora").
+        $product_id = $item->get_variation_id() ?: $item->get_product_id();
         $code = mandala_gift_create_coupon($product_id, $gift, $order_id);
         if (!$code) continue;
 
@@ -121,4 +122,31 @@ add_action('graphql_register_types', function () {
             return $cart_item[MANDALA_GIFT_KEY]['recipientEmail'] ?? null;
         },
     ]);
+});
+
+/**
+ * 5) Gateway mínimo "webpay": el pago real lo hace Astro con Transbank; esto solo
+ *    permite que WooGraphQL `checkout` cree la orden (queda pendiente de pago).
+ */
+add_action('plugins_loaded', function () {
+    if (!class_exists('WC_Payment_Gateway')) return;
+
+    class Mandala_Webpay_Gateway extends WC_Payment_Gateway {
+        public function __construct() {
+            $this->id                 = 'webpay';
+            $this->method_title       = 'Webpay Plus (headless)';
+            $this->method_description = 'Pago procesado por el frontend Astro con Transbank.';
+            $this->has_fields         = false;
+            $this->enabled            = 'yes';
+            $this->title              = 'Webpay Plus';
+        }
+        public function process_payment($order_id) {
+            return ['result' => 'success', 'redirect' => ''];
+        }
+    }
+}, 20);
+
+add_filter('woocommerce_payment_gateways', function ($gateways) {
+    if (class_exists('Mandala_Webpay_Gateway')) $gateways[] = 'Mandala_Webpay_Gateway';
+    return $gateways;
 });

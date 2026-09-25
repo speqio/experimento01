@@ -67,7 +67,8 @@ function applySummary(cart: {
         product: node.product?.node,
       })) ?? cartSummary.get().items,
     appliedCoupons: cart.appliedCoupons ?? [],
-    needsPayment: cart.needsPayment ?? true,
+    // Cart no expone needsPayment en esta versión de WooGraphQL: total en $0 = no requiere pago.
+    needsPayment: String(cart.total ?? '').replace(/[^0-9]/g, '').replace(/^0+$/, '') !== '',
   };
   cartSummary.set(summary);
   cartItemCount.set(summary.itemCount);
@@ -84,12 +85,12 @@ export async function fetchCart() {
   }
 }
 
-export async function addToCart(productId: number, quantity = 1) {
+export async function addToCart(productId: number, quantity = 1, variationId?: number) {
   isCartLoading.set(true);
   try {
     const data = await wpQuery<{ addToCart: { cart: any } }>({
       query: ADD_TO_CART,
-      variables: { productId, quantity },
+      variables: { productId, quantity, variationId },
     });
     return applySummary(data.addToCart.cart);
   } finally {
@@ -97,12 +98,12 @@ export async function addToCart(productId: number, quantity = 1) {
   }
 }
 
-export async function addGiftCardToCart(productId: number, giftCard: GiftCardInput) {
+export async function addGiftCardToCart(productId: number, giftCard: GiftCardInput, variationId?: number) {
   isCartLoading.set(true);
   try {
     const data = await wpQuery<{ addToCart: { cart: any } }>({
       query: ADD_GIFTCARD_TO_CART,
-      variables: { productId, extraData: JSON.stringify(giftCard) },
+      variables: { productId, extraData: JSON.stringify(giftCard), variationId },
     });
     return applySummary(data.addToCart.cart);
   } finally {

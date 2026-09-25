@@ -50,6 +50,11 @@ const badge = getProductBadge(product.name);
         )}
         <span class="text-lg font-bold text-spa-charcoal">{formatPriceDisplay(product.price)}</span>
       </div>
+      {product.__typename === 'VariableProduct' ? (
+        <a href={href} class="block bg-spa-charcoal hover:bg-[#433B36] text-white py-2.5 px-2 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors text-center">
+          Elegir opciones
+        </a>
+      ) : (
       <div class="grid grid-cols-2 gap-2">
         <button
           type="button"
@@ -67,6 +72,7 @@ const badge = getProductBadge(product.name);
           Quiero mi giftcard
         </button>
       </div>
+      )}
     </div>
   </div>
 </div>

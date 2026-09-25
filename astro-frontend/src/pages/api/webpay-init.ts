@@ -7,6 +7,7 @@ import {
   IntegrationCommerceCodes,
 } from 'transbank-sdk';
 import type { CheckoutInput, WebpayInitResponse } from '../../types/checkout';
+import { createOrderFromCart, updateOrderStatus } from '../../lib/woo-server';
 
 export const prerender = false;
 
@@ -20,18 +21,36 @@ function getWebpayTransaction(env: Record<string, string | undefined>) {
   return new WebpayPlus.Transaction(new Options(commerceCode, apiKey, environment));
 }
 
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+}
+
 export const POST: APIRoute = async ({ request, locals }) => {
   const input: CheckoutInput = await request.json();
 
   // `locals.runtime.env` expone los secrets del Worker (Cloudflare adapter).
-  const env = (locals as any).runtime?.env ?? process.env;
+  const env = { ...import.meta.env, ...process.env, ...((locals as any).runtime?.env ?? {}) } as Record<string, string | undefined>;
 
-  // TODO: crear la orden "pendiente" en WooCommerce vía REST/GraphQL con
-  // `input` y el total real del carrito (ver docs/webpay-sequence.md §2),
-  // aplicando el saldo de gift card ya reservado en el carrito si existe.
-  const buyOrder = `order-${Date.now()}`;
-  const sessionId = request.headers.get('woocommerce-session') ?? crypto.randomUUID();
-  const amount = 1; // placeholder: reemplazar por el total real de la orden
+  const sessionHeader = request.headers.get('woocommerce-session') ?? '';
+  if (!sessionHeader) return json({ error: 'Carrito vacío o sesión expirada' }, 400);
+
+  let order;
+  try {
+    const { paymentMethod: _pm, giftCardCode: _gc, ...billing } = input;
+    order = await createOrderFromCart(env, sessionHeader, billing);
+  } catch (e) {
+    return json({ error: (e as Error).message }, 500);
+  }
+
+  // Total $0 (ej. gift card canjeada al 100%): Transbank no acepta monto 0.
+  if (order.total <= 0) {
+    await updateOrderStatus(env, order.id, 'processing');
+    return json({ free: true, redirect: `${env.PUBLIC_SITE_URL}/checkout/confirmacion?status=success&order=${order.id}` });
+  }
+
+  const buyOrder = `order-${order.id}`;
+  const sessionId = crypto.randomUUID();
+  const amount = order.total;
 
   const tx = getWebpayTransaction(env);
   const returnUrl = `${env.PUBLIC_SITE_URL}/api/webpay-commit`;

@@ -3,6 +3,7 @@
 // SimpleProduct como VariableProduct (productos con variaciones), así que
 // hay que pedirlos con fragmentos inline para ambos tipos o quedan null.
 const PRODUCT_CARD_FIELDS = /* GraphQL */ `
+  __typename
   id
   databaseId
   name
@@ -35,7 +36,13 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       productCategories { nodes { name slug } }
       ... on InventoriedProduct { stockStatus }
       ... on SimpleProduct { price regularPrice }
-      ... on VariableProduct { price regularPrice }
+      ... on VariableProduct {
+        price
+        regularPrice
+        variations(first: 100) {
+          nodes { databaseId price regularPrice attributes { nodes { name value } } }
+        }
+      }
       ... on ProductWithAttributes { attributes { nodes { name options } } }
       ... on WithAcfGiftCardFields { giftCardFields { giftCard codigoGiftcard } }
       ... on WithAcfUpsellerFields {

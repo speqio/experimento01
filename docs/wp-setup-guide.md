@@ -70,3 +70,14 @@ Este proyecto usa las gift cards como **saldo/crédito de tienda combinable con 
 Antes de conectar el frontend, confirma en `Plugins → Plugins instalados` que están **activos**: WooCommerce, WPGraphQL, WPGraphQL for WooCommerce, WPGraphQL CORS, ACF PRO, plugin de Gift Cards.
 
 Prueba el endpoint GraphQL directamente (ej. con un cliente como Insomnia/Postman o `curl`) contra `https://<tu-dominio-staging>/graphql` con la query de `docs/schema-spec.md §4.1` antes de correr el frontend — así aíslas si un problema es del backend o del cliente Astro.
+
+## 7. Claves REST de WooCommerce (checkout headless)
+
+El servidor Astro marca las órdenes como pagadas tras Webpay usando la REST API de WooCommerce.
+
+1. `WooCommerce → Ajustes → Avanzado → REST API → Añadir clave`. Usuario: un administrador; permisos: **Lectura/Escritura**.
+2. Copia `Consumer key` (ck_…) y `Consumer secret` (cs_…) — solo se muestran una vez.
+3. Local: ponlas en `astro-frontend/.env` como `WC_REST_KEY` y `WC_REST_SECRET` (no se commitea).
+4. Producción (Cloudflare): `wrangler secret put WC_REST_KEY` y `wrangler secret put WC_REST_SECRET`.
+5. `WooCommerce → Ajustes → General`: habilitar cupones y moneda CLP. `Ajustes → Cuentas y privacidad`: permitir compra como invitado.
+6. Subir `wordpress/mu-plugins/mandala-giftcards.php` (incluye el método de pago `webpay` y las gift cards).

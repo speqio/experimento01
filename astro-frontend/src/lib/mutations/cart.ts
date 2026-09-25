@@ -1,7 +1,6 @@
 const CART_FIELDS = /* GraphQL */ `
   total
   subtotal
-  needsPayment
   appliedCoupons { code discountAmount }
   contents {
     itemCount
@@ -31,17 +30,17 @@ export const GET_CART = /* GraphQL */ `
 `;
 
 export const ADD_TO_CART = /* GraphQL */ `
-  mutation AddToCart($productId: Int!, $quantity: Int = 1) {
-    addToCart(input: { productId: $productId, quantity: $quantity }) {
+  mutation AddToCart($productId: Int!, $quantity: Int = 1, $variationId: Int) {
+    addToCart(input: { productId: $productId, quantity: $quantity, variationId: $variationId }) {
       cart { ${CART_FIELDS} }
     }
   }
 `;
 
 export const ADD_GIFTCARD_TO_CART = /* GraphQL */ `
-  mutation AddGiftCardToCart($productId: Int!, $extraData: String!) {
+  mutation AddGiftCardToCart($productId: Int!, $extraData: String!, $variationId: Int) {
     addToCart(
-      input: { productId: $productId, quantity: 1, extraData: $extraData }
+      input: { productId: $productId, quantity: 1, extraData: $extraData, variationId: $variationId }
     ) {
       cart { ${CART_FIELDS} }
     }

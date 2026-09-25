@@ -12,7 +12,7 @@ const empty: GiftCardInput = { buyerEmail: '', recipientEmail: '', message: '' }
 
 // Se abre al hacer click en cualquier [data-gift-product] de la página.
 export default function GiftCardModal() {
-  const [target, setTarget] = useState<{ id: number; name: string } | null>(null);
+  const [target, setTarget] = useState<{ id: number; name: string; variationId?: number } | null>(null);
   const [form, setForm] = useState<GiftCardInput>(empty);
   const [error, setError] = useState('');
   const loading = useStore(isCartLoading);
@@ -21,7 +21,11 @@ export default function GiftCardModal() {
     function onClick(e: MouseEvent) {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-gift-product]');
       if (!btn) return;
-      setTarget({ id: Number(btn.dataset.giftProduct), name: btn.dataset.giftName ?? '' });
+      setTarget({
+        id: Number(btn.dataset.giftProduct),
+        name: btn.dataset.giftName ?? '',
+        variationId: btn.dataset.variationId ? Number(btn.dataset.variationId) : undefined,
+      });
       setError('');
     }
     document.addEventListener('click', onClick);
@@ -33,10 +37,10 @@ export default function GiftCardModal() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await addGiftCardToCart(target!.id, form);
+      await addGiftCardToCart(target!.id, form, target!.variationId);
       window.location.href = '/checkout';
-    } catch {
-      setError('No pudimos agregar la gift card. Inténtalo nuevamente.');
+    } catch (err) {
+      setError((err as Error).message.replace(/<[^>]*>/g, ''));
     }
   }
 

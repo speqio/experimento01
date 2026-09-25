@@ -49,12 +49,19 @@ const inputClass =
       paymentMethod: 'webpay',
     };
 
+    const session = localStorage.getItem('woo-session');
     const res = await fetch('/api/webpay-init', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session ? { 'woocommerce-session': `Session ${session}` } : {}),
+      },
       body: JSON.stringify(input),
     });
-    const { token, url }: WebpayInitResponse = await res.json();
+    const data: WebpayInitResponse = await res.json();
+    if (data.error || !res.ok) return alert(data.error ?? 'No se pudo iniciar el pago');
+    if (data.free && data.redirect) return void (window.location.href = data.redirect);
+    const { token, url } = data as { token: string; url: string };
 
     // Redirección automática al formulario de Webpay Plus vía POST.
     const redirectForm = document.createElement('form');

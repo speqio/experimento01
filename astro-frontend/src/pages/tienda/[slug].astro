@@ -42,6 +42,14 @@ const categoryName = product.productCategories?.nodes?.[0]?.name ?? 'Tienda';
 const categorySlug = product.productCategories?.nodes?.[0]?.slug;
 const badge = getProductBadge(product.name);
 const hasDiscount = Boolean(product.regularPrice && product.price && product.regularPrice !== product.price);
+const variations: { databaseId: number; price?: string; regularPrice?: string; attributes: { nodes: { name: string; value: string }[] } }[] =
+  (product as any).variations?.nodes ?? [];
+const variantAttrs = variations[0]
+  ? variations[0].attributes.nodes.map((a) => ({
+      name: a.name,
+      options: [...new Set(variations.map((v) => v.attributes.nodes.find((x) => x.name === a.name)?.value ?? ''))].filter(Boolean),
+    }))
+  : [];
 const { intro, benefits, includes } = parseProductSections(product.description ?? '');
 
 let related: SimpleProduct[] = [];
@@ -180,14 +188,28 @@ if (categorySlug) {
               {hasDiscount && (
                 <span class="text-sm line-through text-white/50">{formatPriceDisplay(product.regularPrice)}</span>
               )}
-              <span class="text-3xl font-bold">{formatPriceDisplay(product.price)}</span>
+              <span id="product-price" class="text-3xl font-bold">{formatPriceDisplay(product.price)}</span>
             </div>
           </div>
           <div class="p-6 sm:p-7 space-y-5">
+            {variantAttrs.length > 0 && (
+              <div class="space-y-3" id="variant-picker">
+                {variantAttrs.map((attr) => (
+                  <label class="block">
+                    <span class="block text-[11px] font-semibold tracking-wide uppercase text-spa-taupe mb-1.5">{attr.name}</span>
+                    <select data-variant-attr={attr.name} class="w-full border border-[#DDD5CA] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-spa-taupe">
+                      <option value="">Elige una opción</option>
+                      {attr.options.map((o) => <option value={o}>{o}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
             <div class="space-y-3">
               <button
                 type="button"
                 data-add-to-cart={product.databaseId}
+                data-needs-variation={variantAttrs.length > 0 ? "1" : undefined}
                 class="w-full border border-[#DDD5CA] hover:bg-spa-bg text-spa-charcoal py-3.5 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase flex items-center justify-center gap-2 transition-colors"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></svg>
@@ -196,6 +218,7 @@ if (categorySlug) {
               <button
                 type="button"
                 data-gift-product={product.databaseId}
+                data-needs-variation={variantAttrs.length > 0 ? "1" : undefined}
                 data-gift-name={product.name}
                 class="w-full bg-spa-cream hover:bg-[#EAE4D9] text-spa-charcoal py-3.5 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase flex items-center justify-center gap-2 transition-colors"
               >
@@ -262,12 +285,56 @@ if (categorySlug) {
   </section>
 </ECommerceLayout>
 
+<script type="application/json" id="variations-data" set:html={JSON.stringify(variations)} />
+
 <script>
   import { addToCart } from '../../store/cartStore';
+
+  const variations: { databaseId: number; price?: string; attributes: { nodes: { name: string; value: string }[] } }[] =
+    JSON.parse(document.getElementById('variations-data')?.textContent ?? '[]');
+  const selects = [...document.querySelectorAll<HTMLSelectElement>('[data-variant-attr]')];
+  const priceEl = document.getElementById('product-price');
+  const actionBtns = [...document.querySelectorAll<HTMLElement>('[data-needs-variation]')];
+
+  function currentVariation() {
+    if (selects.some((s) => !s.value)) return null;
+    return (
+      variations.find((v) =>
+        selects.every((s) => v.attributes.nodes.find((a) => a.name === s.dataset.variantAttr)?.value === s.value),
+      ) ?? null
+    );
+  }
+
+  function refresh() {
+    const v = currentVariation();
+    actionBtns.forEach((b) => {
+      if (v) b.dataset.variationId = String(v.databaseId);
+      else delete b.dataset.variationId;
+      b.classList.toggle('opacity-50', !v);
+    });
+    if (v?.price && priceEl) priceEl.textContent = v.price.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '');
+  }
+  selects.forEach((s) => s.addEventListener('change', refresh));
+  refresh();
+
+  // En fase de captura, antes que el modal de gift card: exige elegir variante.
+  document.addEventListener(
+    'click',
+    (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-needs-variation]');
+      if (btn && !btn.dataset.variationId) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        alert('Elige las opciones del producto (sesiones, horas) antes de continuar.');
+      }
+    },
+    true,
+  );
+
   document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = Number(btn.dataset.addToCart);
-      addToCart(id, 1);
+      addToCart(id, 1, btn.dataset.variationId ? Number(btn.dataset.variationId) : undefined);
     });
   });
 </script>
