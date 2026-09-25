@@ -9,7 +9,7 @@ binding = "ASSETS"
 
 # Variables no secretas: viven aquí para que cada deploy no las borre.
 [vars]
-PUBLIC_SITE_URL = "https://spamandala-astro-frontend.desarrollo-5a7.workers.dev"
+PUBLIC_SITE_URL = "https://laboratorio.space"
 PUBLIC_WPGRAPHQL_URL = "https://cms.laboratorio.space/graphql"
 WEBPAY_ENVIRONMENT = "INTEGRACION"
 WEBPAY_COMMERCE_CODE = "597055555532"
