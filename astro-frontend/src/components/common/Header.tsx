@@ -310,7 +310,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
                 Promociones
               </a>
               <a
-                href="/gift-cards"
+                href="/agenda"
                 className="bg-transparent hover:bg-spa-sand text-spa-charcoal border border-[#DDD5CA] px-5 py-1.5 rounded-full text-xs font-medium tracking-wide flex items-center gap-1.5 transition-colors"
               >
                 <Calendar className="w-3.5 h-3.5 text-spa-taupe" />
@@ -475,7 +475,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
             Carrito
           </a>
           <a
-            href="/gift-cards"
+            href="/agenda"
             className="flex items-center justify-center gap-2 border border-[#DDD5CA] hover:bg-spa-sand text-spa-charcoal px-5 py-2.5 rounded-full text-sm font-medium tracking-wide transition-colors"
           >
             <Calendar className="w-4 h-4 text-spa-taupe" />

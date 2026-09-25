@@ -1,0 +1,27 @@
+---
+export const prerender = true;
+
+import ECommerceLayout from '../layouts/ECommerceLayout.astro';
+import { RESERVO_URL } from '../lib/siteInfo';
+---
+<ECommerceLayout title="Agenda tu hora" description="Reserva tu hora en Mándala Spa">
+  <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 text-center">
+    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Reservas online</span>
+    <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal max-w-3xl mx-auto leading-tight">
+      Agenda tu hora
+    </h1>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <iframe
+      src={RESERVO_URL}
+      title="Agenda de reservas Mándala Spa"
+      loading="lazy"
+      class="w-full border-0 rounded-2xl bg-white min-h-[900px]"
+    ></iframe>
+    <p class="text-center text-xs text-spa-taupe mt-4">
+      ¿No carga el calendario?
+      <a href={RESERVO_URL} target="_blank" rel="noopener" class="underline hover:text-spa-charcoal">Ábrelo en una nueva pestaña</a>.
+    </p>
+  </div>
+</ECommerceLayout>

@@ -9,3 +9,5 @@ export const SITE_INFO = {
   facebook: 'https://facebook.com/spamandala',
   schedule: 'Lun a Sáb, 10:00 - 20:00 hrs',
 };
+
+export const RESERVO_URL = 'https://agendamiento.reservo.cl/makereserva/agenda/h0iYsYc0h0mkkT2Y0E606nC2p3k4Km';
