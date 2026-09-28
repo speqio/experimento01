@@ -10,6 +10,7 @@ import {
   extractDuration,
   parseProductSections,
   getProductTagline,
+  getCardSummary,
   formatPriceDisplay,
 } from '../../lib/parse';
 import { SITE_INFO } from '../../lib/siteInfo';
@@ -52,7 +53,7 @@ const variantAttrs = variations[0]
     }))
   : [];
 const upsells = await getUpsellsFor(product.databaseId);
-const { intro, benefits, includes } = parseProductSections(product.description ?? '');
+const { intro, benefits, includes, indicatedFor, contraindications } = parseProductSections(product.description ?? '');
 
 let related: SimpleProduct[] = [];
 if (categorySlug) {
@@ -68,7 +69,7 @@ if (categorySlug) {
 }
 
 ---
-<ECommerceLayout title={product.name} description={product.shortDescription}>
+<ECommerceLayout title={product.name} description={getCardSummary(product.shortDescription ?? '', 160)}>
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
     <nav class="flex items-center flex-wrap gap-1.5 text-xs text-spa-taupe" aria-label="Breadcrumb">
       <a href="/" class="hover:text-spa-charcoal transition-colors">Inicio</a>
@@ -144,7 +145,7 @@ if (categorySlug) {
           <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-spa-taupe mb-3 flex items-center gap-2">
             <span class="w-6 h-px bg-spa-taupe" />Descripción Sensorial
           </h2>
-          <div class="text-[#4A4036] text-sm sm:text-base leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0 [&_ul]:hidden" set:html={intro} />
+          <div class="text-[#4A4036] text-sm sm:text-base leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1" set:html={intro} />
         </div>
 
         {includes.length > 0 && (
@@ -178,6 +179,26 @@ if (categorySlug) {
                 </span>
               ))}
             </div>
+          </div>
+        )}
+        {(indicatedFor.length > 0 || contraindications.length > 0) && (
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {indicatedFor.length > 0 && (
+              <div class="bg-white p-5 rounded-2xl border border-[#E8E2D7]">
+                <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">Indicado para</h3>
+                <ul class="space-y-2 text-xs sm:text-sm text-[#4A4036] list-disc pl-4">
+                  {indicatedFor.map((item) => <li>{item}</li>)}
+                </ul>
+              </div>
+            )}
+            {contraindications.length > 0 && (
+              <div class="bg-spa-bg p-5 rounded-2xl border border-[#E8E2D7]">
+                <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">Contraindicaciones</h3>
+                <ul class="space-y-2 text-xs sm:text-sm text-[#4A4036] list-disc pl-4">
+                  {contraindications.map((item) => <li>{item}</li>)}
+                </ul>
+              </div>
+            )}
           </div>
         )}
       </div>
