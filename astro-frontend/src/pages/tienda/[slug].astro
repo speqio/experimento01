@@ -14,7 +14,6 @@ import {
   getPriceDisplay,
   formatPriceDisplay,
 } from '../../lib/parse';
-import { SITE_INFO } from '../../lib/siteInfo';
 import { getUpsellsFor } from '../../lib/queries/upsells';
 import type { SimpleProduct } from '../../types/catalog';
 
@@ -54,7 +53,7 @@ const variantAttrs = variations[0]
     }))
   : [];
 const upsells = await getUpsellsFor(product.databaseId);
-const { intro, benefits, includes, indicatedFor, contraindications } = parseProductSections(product.description ?? '');
+const { intro, benefits, includes, indicatedFor, contraindications, extras } = parseProductSections(product.description ?? '');
 
 let related: SimpleProduct[] = [];
 if (categorySlug) {
@@ -129,25 +128,20 @@ if (categorySlug) {
         </svg>
         <span class="capitalize">{categoryName}</span>
       </div>
-      <div class="hidden sm:flex items-center gap-2 text-sm text-[#4A4036]">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe">
-          <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-        <span>{SITE_INFO.address}</span>
-      </div>
     </div>
   </div>
 
   <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
       <div class="lg:col-span-7 space-y-10">
-        <div>
-          <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-spa-taupe mb-3 flex items-center gap-2">
-            <span class="w-6 h-px bg-spa-taupe" />Descripción Sensorial
-          </h2>
-          <div class="text-[#4A4036] text-sm sm:text-base leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1" set:html={intro} />
-        </div>
+        {intro && (
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-spa-taupe mb-3 flex items-center gap-2">
+              <span class="w-6 h-px bg-spa-taupe" />Descripción Sensorial
+            </h2>
+            <div class="text-[#4A4036] text-sm sm:text-base leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_h2]:font-editorial [&_h2]:text-xl [&_h2]:text-spa-charcoal [&_h2]:mb-2 [&_h3]:font-semibold [&_h3]:text-spa-charcoal [&_h3]:mb-1 [&_strong]:text-spa-charcoal" set:html={intro} />
+          </div>
+        )}
 
         {includes.length > 0 && (
           <div class="bg-white p-6 sm:p-7 rounded-2xl border border-[#E8E2D7] shadow-sm">
@@ -202,6 +196,13 @@ if (categorySlug) {
             )}
           </div>
         )}
+
+        {extras.map((extra) => (
+          <div class="bg-white p-6 sm:p-7 rounded-2xl border border-[#E8E2D7] shadow-sm">
+            <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">{extra.title}</h3>
+            <div class="text-[#4A4036] text-sm leading-relaxed [&_p]:mb-2 last:[&_p]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-1 [&_strong]:text-spa-charcoal" set:html={extra.html} />
+          </div>
+        ))}
       </div>
 
       <div class="lg:col-span-5">

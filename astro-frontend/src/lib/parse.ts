@@ -42,29 +42,20 @@ export function getCardSummary(shortDescriptionHtml: string, max = 140): string 
   return summarize(htmlToText(description), max);
 }
 
-// El `description` real de WooCommerce trae secciones editoriales marcadas
-// con un párrafo/encabezado "Etiqueta:" seguido de un <ul> (Beneficios, Incluye,
-// Indicado para, Contraindicaciones) — no son campos ACF separados. Se extraen
-// para mostrarlas como bloques propios; lo que no calza queda en `intro`.
-const SECTION_LABELS = {
-  benefits: 'Beneficios(?:\\s+principales)?',
-  includes: '(?:Incluye|Protocolo(?:\\s+incluido)?(?:\\s+en\\s+la\\s+sesi[oó]n)?)',
-  indicatedFor: 'Indicad[oa]s?\\s+para',
-  contraindications: 'Contraindicaciones',
-} as const;
+// El `description` real de WooCommerce sigue (casi siempre) un formato editorial:
+// un párrafo de introducción y luego secciones marcadas con una etiqueta
+// ("Beneficios:", "Incluye:", "Indicado para:", "Contraindicaciones:") seguida de una
+// lista o de un párrafo. La etiqueta puede venir como <p>Etiqueta:</p> o como encabezado.
+// Aquí se recorre el HTML ya limpio por bloques y se clasifica cada sección; lo que no
+// encaja en las cinco estándar se conserva en `extras` (p. ej. "Modo de uso").
+export type SectionKey = 'benefits' | 'includes' | 'indicatedFor' | 'contraindications';
 
-function extractListSection(html: string, label: string): { items: string[]; html: string } {
-  const re = new RegExp(
-    `<(p|h[2-4])>\\s*(?:<(?:strong|em)>)?\\s*${label}\\s*:?\\s*(?:</(?:strong|em)>)?\\s*</\\1>\\s*<(ul|ol)>([\\s\\S]*?)</\\2>`,
-    'i',
-  );
-  const match = html.match(re);
-  if (!match) return { items: [], html };
-  const items = Array.from(match[3].matchAll(/<li>([\s\S]*?)<\/li>/gi))
-    .map((m) => htmlToText(m[1]))
-    .filter(Boolean);
-  return { items, html: html.replace(match[0], '') };
-}
+const SECTION_ALIASES: [SectionKey, RegExp][] = [
+  ['benefits', /^beneficios\b/],
+  ['includes', /^(que incluye\b.*|.*\bincluye|protocolo\b.*)$/],
+  ['indicatedFor', /^(indicad[oa]s? para|ideal para( personas con)?)$/],
+  ['contraindications', /^contraindicaciones$/],
+];
 
 export interface ProductSections {
   intro: string;
@@ -72,26 +63,106 @@ export interface ProductSections {
   includes: string[];
   indicatedFor: string[];
   contraindications: string[];
+  extras: { title: string; html: string }[];
+}
+
+const normLabel = (t: string) =>
+  t
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/^[¿\s]+/, '')
+    .replace(/[?:.\s]+$/g, '')
+    .trim();
+
+function classify(label: string): SectionKey | null {
+  const n = normLabel(label);
+  for (const [key, re] of SECTION_ALIASES) if (re.test(n)) return key;
+  return null;
 }
 
 export function parseProductSections(html: string): ProductSections {
-  let rest = cleanHtml(html);
-  const out: Record<keyof typeof SECTION_LABELS, string[]> = {
-    benefits: [],
-    includes: [],
-    indicatedFor: [],
-    contraindications: [],
+  const blocks = cleanHtml(html).match(/<(p|ul|ol|h[2-4])>[\s\S]*?<\/\1>/g) ?? [];
+  const result: ProductSections = { intro: '', benefits: [], includes: [], indicatedFor: [], contraindications: [], extras: [] };
+  const intro: string[] = [];
+  let seenKnown = false;
+
+  let current: { key: SectionKey | null; title: string; level: number; blocks: string[] } | null = null;
+  const flush = () => {
+    if (!current) return;
+    const items: string[] = [];
+    // Los subtítulos (h3/h4) dentro de una sección se funden con el párrafo que les sigue.
+    let pendingTitle = '';
+    for (const blk of current.blocks) {
+      if (/^<(ul|ol)>/.test(blk)) {
+        if (pendingTitle) items.push(pendingTitle);
+        pendingTitle = '';
+        for (const li of blk.matchAll(/<li>([\s\S]*?)<\/li>/g)) {
+          const t = htmlToText(li[1]);
+          if (t) items.push(t);
+        }
+      } else if (/^<h[2-4]>/.test(blk)) {
+        if (pendingTitle) items.push(pendingTitle);
+        pendingTitle = htmlToText(blk);
+      } else {
+        // Párrafo con viñetas manuales ("✔ a<br>✔ b"): cada línea es un ítem.
+        const lines = blk
+          .replace(/^<p>|<\/p>$/g, '')
+          .split(/<br>/)
+          .map((l) => htmlToText(l).replace(/^[✔✓•·\-–]\s*/, ''))
+          .filter(Boolean);
+        if (lines.length > 1) {
+          if (pendingTitle) items.push(pendingTitle);
+          items.push(...lines);
+        } else if (lines[0]) {
+          items.push(pendingTitle ? `${pendingTitle}: ${lines[0]}` : lines[0]);
+        } else if (pendingTitle) {
+          items.push(pendingTitle);
+        }
+        pendingTitle = '';
+      }
+    }
+    if (pendingTitle) items.push(pendingTitle);
+    if (current.key) result[current.key].push(...items);
+    else if (current.blocks.length) result.extras.push({ title: current.title, html: current.blocks.join('') });
+    current = null;
   };
-  for (const key of Object.keys(SECTION_LABELS) as (keyof typeof SECTION_LABELS)[]) {
-    const r = extractListSection(rest, SECTION_LABELS[key]);
-    out[key] = r.items;
-    rest = r.html;
+
+  for (const blk of blocks) {
+    const tag = blk.match(/^<(\w+)>/)![1];
+    const text = htmlToText(blk);
+    const isHeading = /^h[2-4]$/.test(tag);
+    const isLabelPara = tag === 'p' && text.length <= 60 && (/:$/.test(text) || classify(text) !== null);
+
+    // Un h3/h4 dentro de una sección abierta con h2 (o etiqueta) es contenido de esa sección.
+    const level = isHeading ? Number(tag[1]) : 2;
+    const known = isHeading || isLabelPara ? classify(text) : null;
+    // Un subtítulo desconocido (h3/h4) dentro de una sección estándar es contenido de ella
+    // (p. ej. cada tratamiento bajo "¿Qué incluye…?"); un subtítulo estándar abre sección propia.
+    const nested = isHeading && current !== null && current.key !== null && level > current.level && known === null;
+
+    if ((isHeading || isLabelPara) && !nested) {
+      // Un encabezado desconocido antes de cualquier sección estándar es el título de la
+      // intro (no abre un bloque aparte); después de una sección estándar abre un extra.
+      if (known === null && isHeading && !seenKnown) {
+        intro.push(blk);
+        continue;
+      }
+      flush();
+      // Un párrafo-etiqueta desconocido solo abre bloque si termina en ":".
+      if (known || isHeading || /:$/.test(text)) {
+        if (known) seenKnown = true;
+        current = { key: known, title: text.replace(/[:\s]+$/, ''), level, blocks: [] };
+        continue;
+      }
+    }
+    if (current) current.blocks.push(blk);
+    else intro.push(blk);
   }
-  // Etiquetas huérfanas ("Indicado para:" sin lista) no aportan nada: se descartan.
-  rest = rest
-    .replace(/<(p|h[2-4])>\s*(?:<(?:strong|em)>)?\s*(?:Indicad[oa]s?\s+para|Contraindicaciones)\s*:?\s*(?:<\/(?:strong|em)>)?\s*<\/\1>/gi, '')
-    .trim();
-  return { intro: rest, ...out };
+  flush();
+
+  result.intro = intro.join('');
+  return result;
 }
 
 // WooGraphQL devuelve `price`/`regularPrice` como rango ("$X - $Y") para
