@@ -1,6 +1,6 @@
 ---
 import type { SimpleProduct } from '../../types/catalog';
-import { getProductDuration, getProductBadge, extractDuration, getCardSummary, formatPriceDisplay } from '../../lib/parse';
+import { getProductDuration, getProductBadge, extractDuration, getCardSummary, getPriceDisplay } from '../../lib/parse';
 
 interface Props {
   product: Pick<
@@ -13,6 +13,7 @@ const { product, href } = Astro.props;
 
 const { duration: descDuration } = extractDuration(product.shortDescription ?? '');
 const summary = getCardSummary(product.shortDescription ?? '');
+const priceInfo = getPriceDisplay(product.price, product.regularPrice);
 const duration = getProductDuration(product.attributes) ?? descDuration;
 const badge = getProductBadge(product.name);
 ---
@@ -46,10 +47,10 @@ const badge = getProductBadge(product.name);
 
     <div class="mt-auto pt-4 border-t border-spa-cream">
       <div class="flex items-baseline gap-2 mb-4">
-        {product.regularPrice && product.regularPrice !== product.price && (
-          <span class="text-sm line-through text-[#A89E95]">{formatPriceDisplay(product.regularPrice)}</span>
+        {priceInfo.original && (
+          <span class="text-sm line-through text-[#A89E95]">{priceInfo.original}</span>
         )}
-        <span class="text-lg font-bold text-spa-charcoal">{formatPriceDisplay(product.price)}</span>
+        <span class="text-lg font-bold text-spa-charcoal">{priceInfo.current}</span>
       </div>
       {product.__typename === 'VariableProduct' ? (
         <a href={href} class="block bg-spa-charcoal hover:bg-[#433B36] text-white py-2.5 px-2 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors text-center">

@@ -102,3 +102,34 @@ export function formatPriceDisplay(price?: string | null): string {
   const [from] = price.split(' - ');
   return price.includes(' - ') ? `Desde ${from.trim()}` : price;
 }
+
+// Números de un precio de WooGraphQL ("$65.000" o rango "$65.000 - $239.200", CLP sin decimales).
+function priceBounds(price?: string | null): [number, number] | null {
+  if (!price) return null;
+  const nums = price
+    .split(' - ')
+    .map((part) => Number(part.replace(/[^0-9]/g, '')))
+    .filter((n) => Number.isFinite(n) && n > 0);
+  if (!nums.length) return null;
+  return [Math.min(...nums), Math.max(...nums)];
+}
+
+/**
+ * Precio a mostrar y precio tachado. Solo se tacha cuando la opción que se muestra
+ * (la más barata en un rango) realmente tiene descuento; comparar los textos completos
+ * del rango tachaba un "Desde $65.000" igual al precio vigente.
+ */
+export function getPriceDisplay(price?: string | null, regularPrice?: string | null): { current: string; original: string | null } {
+  const current = formatPriceDisplay(price);
+  const p = priceBounds(price);
+  const r = priceBounds(regularPrice);
+  if (!p || !r || r[0] <= p[0]) return { current, original: null };
+  return { current, original: formatPriceDisplay(regularPrice) };
+}
+
+/** ¿Alguna opción del producto está rebajada? (para la página de promociones). */
+export function hasAnyDiscount(price?: string | null, regularPrice?: string | null): boolean {
+  const p = priceBounds(price);
+  const r = priceBounds(regularPrice);
+  return Boolean(p && r && (r[0] > p[0] || r[1] > p[1]));
+}

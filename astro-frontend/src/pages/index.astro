@@ -5,7 +5,7 @@ import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import { wpQuery } from '../lib/wp-graphql';
 import { GET_PRODUCTS } from '../lib/queries/products';
 import { SITE_INFO } from '../lib/siteInfo';
-import { getProductDuration, getProductBadge, extractDuration, getCardSummary } from '../lib/parse';
+import { getProductDuration, getProductBadge, extractDuration, getCardSummary, getPriceDisplay, formatPriceDisplay } from '../lib/parse';
 import type { SimpleProduct } from '../types/catalog';
 
 let products: SimpleProduct[] = [];
@@ -88,6 +88,7 @@ const rituals = products.slice(3, 6);
           {featured.map((product) => {
             const { duration: descDuration } = extractDuration(product.shortDescription ?? '');
             const summary = getCardSummary(product.shortDescription ?? '');
+            const priceInfo = getPriceDisplay(product.price, product.regularPrice);
             const duration = getProductDuration(product.attributes) ?? descDuration;
             const badge = getProductBadge(product.name);
             return (
@@ -121,10 +122,10 @@ const rituals = products.slice(3, 6);
 
                   <div class="mt-auto pt-4 border-t border-spa-cream">
                     <div class="flex items-baseline gap-2 mb-4">
-                      {product.regularPrice && product.regularPrice !== product.price && (
-                        <span class="text-sm line-through text-[#A89E95]">{product.regularPrice}</span>
+                      {priceInfo.original && (
+                        <span class="text-sm line-through text-[#A89E95]">{priceInfo.original}</span>
                       )}
-                      <span class="text-lg font-bold text-spa-charcoal">{product.price}</span>
+                      <span class="text-lg font-bold text-spa-charcoal">{priceInfo.current}</span>
                     </div>
                     {product.__typename === 'VariableProduct' ? (
                       <a href={`/tienda/${product.slug}`} class="block bg-spa-charcoal hover:bg-[#433B36] text-white py-2.5 px-2 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors text-center">
@@ -201,7 +202,7 @@ const rituals = products.slice(3, 6);
                 <h3 class="font-editorial text-xl font-semibold text-spa-charcoal mb-2">
                   <a href={`/tienda/${product.slug}`} class="hover:text-spa-taupe transition-colors">{product.name}</a>
                 </h3>
-                <div class="text-lg font-bold text-spa-charcoal mb-3" set:html={product.price} />
+                <div class="text-lg font-bold text-spa-charcoal mb-3">{formatPriceDisplay(product.price)}</div>
                 <a href={`/tienda/${product.slug}`} class="block w-full text-center bg-spa-sand hover:bg-spa-charcoal hover:text-white text-spa-charcoal py-2.5 px-4 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors">
                   Ver producto
                 </a>

@@ -11,6 +11,7 @@ import {
   parseProductSections,
   getProductTagline,
   getCardSummary,
+  getPriceDisplay,
   formatPriceDisplay,
 } from '../../lib/parse';
 import { SITE_INFO } from '../../lib/siteInfo';
@@ -43,7 +44,7 @@ const tagline = getProductTagline(product.shortDescription ?? '');
 const categoryName = product.productCategories?.nodes?.[0]?.name ?? 'Tienda';
 const categorySlug = product.productCategories?.nodes?.[0]?.slug;
 const badge = getProductBadge(product.name);
-const hasDiscount = Boolean(product.regularPrice && product.price && product.regularPrice !== product.price);
+const priceInfo = getPriceDisplay(product.price, product.regularPrice);
 const variations: { databaseId: number; price?: string; regularPrice?: string; attributes: { nodes: { name: string; value: string }[] } }[] =
   (product as any).variations?.nodes ?? [];
 const variantAttrs = variations[0]
@@ -208,10 +209,8 @@ if (categorySlug) {
           <div class="bg-spa-charcoal px-6 sm:px-7 py-5 text-white">
             <span class="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#D4C3B3] block mb-1.5">Reserva tu experiencia</span>
             <div class="flex items-baseline gap-2.5">
-              {hasDiscount && (
-                <span class="text-sm line-through text-white/50">{formatPriceDisplay(product.regularPrice)}</span>
-              )}
-              <span id="product-price" class="text-3xl font-bold">{formatPriceDisplay(product.price)}</span>
+              <span id="product-regular-price" class="text-sm line-through text-white/50" hidden={!priceInfo.original}>{priceInfo.original}</span>
+              <span id="product-price" class="text-3xl font-bold">{priceInfo.current}</span>
             </div>
           </div>
           <div class="p-6 sm:p-7 space-y-5">
@@ -299,7 +298,7 @@ if (categorySlug) {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
           {related.map((item) => {
             const itemBadge = getProductBadge(item.name);
-            const itemDiscount = Boolean(item.regularPrice && item.price && item.regularPrice !== item.price);
+            const itemPrice = getPriceDisplay(item.price, item.regularPrice);
             return (
               <a
                 href={`/tienda/${item.slug}`}
@@ -318,10 +317,10 @@ if (categorySlug) {
                 <div class="p-5">
                   <h3 class="font-editorial text-lg text-spa-charcoal mb-1.5 leading-snug group-hover:text-spa-taupe transition-colors">{item.name}</h3>
                   <div class="flex items-baseline gap-2">
-                    {itemDiscount && (
-                      <span class="text-xs line-through text-[#A89E95]">{formatPriceDisplay(item.regularPrice)}</span>
+                    {itemPrice.original && (
+                      <span class="text-xs line-through text-[#A89E95]">{itemPrice.original}</span>
                     )}
-                    <span class="text-sm font-bold text-spa-taupe">{formatPriceDisplay(item.price)}</span>
+                    <span class="text-sm font-bold text-spa-taupe">{itemPrice.current}</span>
                   </div>
                 </div>
               </a>
@@ -338,10 +337,14 @@ if (categorySlug) {
 <script>
   import { addToCart } from '../../store/cartStore';
 
-  const variations: { databaseId: number; price?: string; attributes: { nodes: { name: string; value: string }[] } }[] =
+  const variations: { databaseId: number; price?: string; regularPrice?: string; attributes: { nodes: { name: string; value: string }[] } }[] =
     JSON.parse(document.getElementById('variations-data')?.textContent ?? '[]');
   const selects = [...document.querySelectorAll<HTMLSelectElement>('[data-variant-attr]')];
   const priceEl = document.getElementById('product-price');
+  const regularEl = document.getElementById('product-regular-price');
+  const initialPrice = priceEl?.textContent ?? '';
+  const initialRegular = regularEl?.textContent ?? '';
+  const digits = (t?: string) => Number((t ?? '').replace(/[^0-9]/g, '')) || 0;
   const actionBtns = [...document.querySelectorAll<HTMLElement>('[data-needs-variation]')];
 
   function currentVariation() {
@@ -361,7 +364,18 @@ if (categorySlug) {
       b.classList.toggle('opacity-50', !v);
       b.dataset.giftVariant = selects.map((s) => s.value).filter(Boolean).join(' · ');
     });
-    if (v?.price && priceEl) priceEl.textContent = v.price.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '');
+    if (!priceEl || !regularEl) return;
+    if (v?.price) {
+      const clean = (t: string) => t.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '');
+      priceEl.textContent = clean(v.price);
+      const showRegular = v.regularPrice && digits(v.regularPrice) > digits(v.price);
+      regularEl.textContent = showRegular ? clean(v.regularPrice ?? '') : '';
+      regularEl.hidden = !showRegular;
+    } else {
+      priceEl.textContent = initialPrice;
+      regularEl.textContent = initialRegular;
+      regularEl.hidden = !initialRegular;
+    }
   }
   selects.forEach((s) => s.addEventListener('change', refresh));
   refresh();
