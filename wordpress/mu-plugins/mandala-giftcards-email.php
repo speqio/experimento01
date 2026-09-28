@@ -74,31 +74,36 @@ function mandala_gift_email_html(array $d) {
     </td></tr>
     <tr><td align="center" style="padding:0 24px 24px 24px;font-family:<?php echo $sans; ?>;font-size:14px;line-height:1.6;color:#675647;"><?php echo $intro; ?></td></tr>
 
-    <!-- Tarjeta mockup -->
-    <tr><td style="padding:0 0 24px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:<?php echo $brand_color; ?>;border-radius:16px;overflow:hidden;">
-        <?php if (!empty($d['image'])) : ?>
-        <tr><td style="padding:0;line-height:0;">
-          <img src="<?php echo esc_url($d['image']); ?>" alt="<?php echo esc_attr($d['product_name']); ?>" width="560" style="display:block;width:100%;height:auto;border:0;">
-        </td></tr>
-        <?php endif; ?>
-        <tr><td style="padding:20px 24px 4px 24px;">
+    <!-- Tarjeta (imagen estática; el efecto 3D solo existe en el modal del sitio) -->
+    <tr><td align="center" style="padding:0 0 4px 0;line-height:0;">
+      <img src="<?php echo esc_url($site . '/gift-card-email.jpg'); ?>" alt="Gift Card <?php echo esc_attr(MANDALA_BRAND); ?>" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;">
+    </td></tr>
+
+    <!-- Detalle del regalo -->
+    <tr><td style="padding:0 0 26px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFFFFF;border:1px solid #E2DDD3;border-radius:14px;">
+        <tr><td style="padding:18px 20px 6px 20px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-            <td style="font-family:<?php echo $serif; ?>;font-size:13px;letter-spacing:6px;color:#FFFFFF;text-transform:uppercase;">Mándala</td>
-            <td align="right" style="font-family:<?php echo $sans; ?>;font-size:10px;letter-spacing:3px;color:#D4C3B3;text-transform:uppercase;">Gift Card</td>
+            <?php if (!empty($d['image'])) : ?>
+            <td width="72" valign="middle" style="padding-right:14px;line-height:0;">
+              <img src="<?php echo esc_url($d['image']); ?>" alt="<?php echo esc_attr($d['product_name']); ?>" width="72" height="72" style="display:block;width:72px;height:72px;border:0;border-radius:10px;object-fit:cover;">
+            </td>
+            <?php endif; ?>
+            <td valign="middle">
+              <div style="font-family:<?php echo $serif; ?>;font-size:19px;line-height:1.3;color:<?php echo $brand_color; ?>;"><?php echo esc_html($d['product_name']); ?></div>
+              <?php if (!empty($d['variant'])) : ?>
+              <div style="font-family:<?php echo $sans; ?>;font-size:13px;color:<?php echo $taupe; ?>;padding-top:3px;"><?php echo esc_html($d['variant']); ?></div>
+              <?php endif; ?>
+            </td>
           </tr></table>
         </td></tr>
-        <tr><td style="padding:8px 24px 0 24px;font-family:<?php echo $serif; ?>;font-size:22px;line-height:1.3;color:#FFFFFF;"><?php echo esc_html($d['product_name']); ?></td></tr>
-        <?php if (!empty($d['variant'])) : ?>
-        <tr><td style="padding:4px 24px 0 24px;font-family:<?php echo $sans; ?>;font-size:13px;color:#D4C3B3;"><?php echo esc_html($d['variant']); ?></td></tr>
-        <?php endif; ?>
         <?php if (!empty($d['message'])) : ?>
-        <tr><td style="padding:14px 24px 0 24px;font-family:<?php echo $serif; ?>;font-style:italic;font-size:15px;line-height:1.55;color:#EFECE4;">“<?php echo esc_html($d['message']); ?>”</td></tr>
+        <tr><td style="padding:10px 20px 4px 20px;font-family:<?php echo $serif; ?>;font-style:italic;font-size:15px;line-height:1.55;color:#675647;">“<?php echo esc_html($d['message']); ?>”</td></tr>
         <?php endif; ?>
-        <tr><td style="padding:18px 24px 22px 24px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #4a423d;"><tr>
-            <td style="padding-top:12px;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:2px;color:#9c8f84;text-transform:uppercase;">Para</td>
-            <td align="right" style="padding-top:12px;font-family:<?php echo $sans; ?>;font-size:12px;color:#D4C3B3;"><?php echo esc_html($d['recipient_email']); ?></td>
+        <tr><td style="padding:12px 20px 16px 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #EFECE4;"><tr>
+            <td style="padding-top:10px;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:2px;color:<?php echo $taupe; ?>;text-transform:uppercase;">Para</td>
+            <td align="right" style="padding-top:10px;font-family:<?php echo $sans; ?>;font-size:12px;color:<?php echo $brand_color; ?>;"><?php echo esc_html($d['recipient_email']); ?></td>
           </tr></table>
         </td></tr>
       </table>
