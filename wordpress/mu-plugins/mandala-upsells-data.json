@@ -1,0 +1,121 @@
+{
+  "_origen": "Extraído del HTML de spamandala.cl (bloque \"Complementa tu experiencia\"); IDs ya traducidos a staging por slug/nombre.",
+  "upsells": [
+    {
+      "staging_id": 83,
+      "name": "Upgrade hidratación facial",
+      "popup": "Revitaliza tu piel con una hidratación facial profunda. Nutre, suaviza y devuelve el brillo natural a tu rostro con un tratamiento refrescante y reparador.",
+      "principales": [
+        48,
+        89,
+        90,
+        134,
+        327,
+        348,
+        384
+      ]
+    },
+    {
+      "staging_id": 84,
+      "name": "Upgrade suavizante de manos",
+      "popup": "Consiente tus manos con un spa revitalizante. Exfoliación, hidratación y masaje para nutrir la piel, aliviar la tensión y dejarlas suaves y renovadas.",
+      "principales": [
+        91,
+        92,
+        326,
+        347
+      ]
+    },
+    {
+      "staging_id": 386,
+      "name": "Extensión reiki",
+      "popup": "Equilibra tu energía y reduce el estrés con 30 minutos de Reiki. Disfruta de una sesión relajante que armoniza cuerpo y mente para tu bienestar.",
+      "principales": [
+        48,
+        89,
+        90,
+        134,
+        327,
+        348,
+        384
+      ]
+    },
+    {
+      "staging_id": 387,
+      "name": "30 min. reflexología podal",
+      "popup": "Relaja tu cuerpo con 30 minutos de reflexología podal. Estimula puntos clave en los pies para aliviar tensiones, mejorar la circulación y equilibrar tu energía.",
+      "principales": [
+        19,
+        20,
+        97,
+        98,
+        99,
+        533,
+        615,
+        619
+      ]
+    },
+    {
+      "staging_id": 597,
+      "name": "30 min. Aurículoterapia + champi",
+      "popup": "Auriculoterapia con semillas en Spa Mandala: terapia natural y no invasiva para reducir estrés, equilibrar cuerpo y mente y potenciar otros tratamientos.",
+      "principales": [
+        41,
+        46,
+        49,
+        51,
+        52,
+        54,
+        91,
+        92,
+        260,
+        263,
+        326,
+        331,
+        338,
+        347,
+        447
+      ]
+    },
+    {
+      "staging_id": 654,
+      "name": "Upgrade equilibrio para dos",
+      "popup": "Sonoterapia palo de lluvia y auriculoterapia para favorecer el equilibrio integral.",
+      "principales": [
+        47,
+        53,
+        58,
+        80,
+        81,
+        86,
+        87,
+        102,
+        317,
+        339,
+        343,
+        413,
+        414,
+        418,
+        422,
+        423,
+        649
+      ]
+    },
+    {
+      "staging_id": 655,
+      "name": "Upgrade Tiaré",
+      "popup": "&lt;div dir=\"auto\"&gt;Ritual de apertura del chakra corazón con suaves pases de masaje y aroma de Tiaré.&lt;/div&gt;",
+      "principales": [
+        47,
+        53,
+        58,
+        102,
+        317,
+        413,
+        422,
+        423,
+        649
+      ]
+    }
+  ]
+}

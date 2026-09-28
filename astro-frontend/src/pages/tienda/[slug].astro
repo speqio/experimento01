@@ -13,6 +13,7 @@ import {
   formatPriceDisplay,
 } from '../../lib/parse';
 import { SITE_INFO } from '../../lib/siteInfo';
+import { getUpsellsFor } from '../../lib/queries/upsells';
 import type { SimpleProduct } from '../../types/catalog';
 
 export async function getStaticPaths() {
@@ -50,6 +51,7 @@ const variantAttrs = variations[0]
       options: [...new Set(variations.map((v) => v.attributes.nodes.find((x) => x.name === a.name)?.value ?? ''))].filter(Boolean),
     }))
   : [];
+const upsells = await getUpsellsFor(product.databaseId);
 const { intro, benefits, includes } = parseProductSections(product.description ?? '');
 
 let related: SimpleProduct[] = [];
@@ -205,6 +207,30 @@ if (categorySlug) {
                 ))}
               </div>
             )}
+            {upsells.length > 0 && (
+              <div class="rounded-xl border border-[#E8E2D7] bg-spa-bg p-4" id="upsell-block">
+                <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">Complementa tu experiencia</h3>
+                <div class="space-y-3">
+                  {upsells.map((u) => (
+                    <div class="border-b border-dashed border-[#DDD5CA] pb-3 last:border-0 last:pb-0">
+                      <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" class="mt-1 accent-[#2C2724]" data-upsell-id={u.databaseId} />
+                        <span class="flex-1">
+                          <span class="block text-sm font-semibold text-spa-charcoal leading-snug">{u.name}</span>
+                          <span class="block text-sm font-bold text-spa-taupe-dark">{formatPriceDisplay(u.price)}</span>
+                        </span>
+                      </label>
+                      {u.popup && (
+                        <details class="mt-2 ml-7 text-xs text-[#675647] leading-relaxed">
+                          <summary class="cursor-pointer text-spa-taupe underline underline-offset-2">Ver detalles</summary>
+                          <p class="mt-1.5">{u.popup}</p>
+                        </details>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div class="space-y-3">
               <button
                 type="button"
@@ -334,9 +360,14 @@ if (categorySlug) {
   );
 
   document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const id = Number(btn.dataset.addToCart);
-      addToCart(id, 1, btn.dataset.variationId ? Number(btn.dataset.variationId) : undefined);
+      await addToCart(id, 1, btn.dataset.variationId ? Number(btn.dataset.variationId) : undefined);
+      // Complementos marcados: el carrito ya tiene el principal (WordPress lo exige).
+      const extras = [...document.querySelectorAll<HTMLInputElement>('[data-upsell-id]:checked')];
+      for (const box of extras) {
+        await addToCart(Number(box.dataset.upsellId), 1);
+      }
     });
   });
 </script>

@@ -74,6 +74,14 @@ add_action('acf/init', function () {
                 'filters' => ['search', 'post_type', 'taxonomy'],
                 'return_format' => 'object',
             ],
+            [
+                // Campo usado por el plugin de producción upsells-dependientes.php
+                // (get_field('popup_complemento_texto')): texto del botón "Ver detalles".
+                'key' => 'field_mandala_popup_complemento',
+                'label' => 'Texto popup complemento',
+                'name' => 'popup_complemento_texto',
+                'type' => 'textarea',
+            ],
         ],
         'location' => [
             [['param' => 'post_type', 'operator' => '==', 'value' => 'product']],
