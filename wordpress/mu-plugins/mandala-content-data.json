@@ -1,0 +1,160 @@
+{
+ "_origen": "docs/contenido-productos.md",
+ "products": [
+  {
+   "id": 413,
+   "name": "Spa purify",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Favorece la relajación física y mental.</li><li>Promueve una sensación de bienestar y equilibrio general.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 132,
+   "name": "Reflexología con masajes y limpieza de pies",
+   "html": "<p>Beneficios:</p><ul><li>Favorece la relajación física y mental.</li><li>Ayuda a aliviar el cansancio en los pies.</li><li>Promueve una sensación de bienestar y equilibrio general.</li></ul><p>Incluye:</p><ul><li>Reflexología podal.</li><li>Limpieza de pies.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas con cansancio o tensión en los pies.</li><li>Quienes buscan una experiencia de relajación profunda.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 87,
+   "name": "Para dos: Masaje relajante y drenante de piernas",
+   "html": "<p>Beneficios:</p><ul><li>Estimula la circulación sanguínea y linfática.</li><li>Ayuda a aliviar la sensación de cansancio y pesadez en las piernas.</li><li>Favorece una sensación de ligereza y bienestar.</li></ul><p>Indicado para:</p><ul><li>Personas con sensación de piernas cansadas o pesadas.</li><li>Quienes buscan un masaje suave y relajante en piernas.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 81,
+   "name": "Para dos: masaje de relajación cuerpo completo + descontracturante en espalda",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Combina relajación general con alivio de contracturas.</li><li>Favorece la relajación física y mental.</li></ul><p>Incluye:</p><ul><li>Masaje de relajación de cuerpo completo combinado con trabajo descontracturante.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan relajarse y aliviar contracturas en una misma sesión.</li><li>Quienes presentan estrés o tensión muscular.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 80,
+   "name": "Para dos: Masaje de relajación cuerpo completo",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Favorece la relajación física y mental.</li><li>Promueve una sensación de bienestar y equilibrio general.</li></ul><p>Incluye:</p><ul><li>Masaje de relajación con maniobras suaves y envolventes.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan relajación profunda.</li><li>Quienes presentan estrés o tensión muscular.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 86,
+   "name": "Para dos: Masaje Mixto Premium",
+   "html": "<p>Incluye:</p><ul><li>Masaje de relajación de cuerpo completo combinado con trabajo descontracturante.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan relajarse y aliviar contracturas en una misma sesión.</li><li>Quienes presentan estrés o tensión muscular.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 254,
+   "name": "Masaje de relajación cuerpo completo para embarazadas",
+   "html": "<p>Beneficios:</p><ul><li>Favorece la relajación física y mental.</li><li>Ayuda a aliviar la tensión y el cansancio corporal.</li><li>Promueve una sensación de bienestar.</li></ul><p>Incluye:</p><ul><li>Masaje adaptado a embarazadas.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Embarazadas que buscan un momento de descanso (informando previamente al spa).</li><li>Quienes desean un masaje adaptado a sus necesidades.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>Informa a nuestras especialistas tu semana de embarazo antes de agendar.</li></ul>"
+  },
+  {
+   "id": 28,
+   "name": "Masaje de relajación + masaje descontracturante de cuello y espalda alta + drenaje y exfoliación de piernas para embarazadas",
+   "html": "<p>Beneficios:</p><ul><li>Favorece la relajación física y mental.</li><li>Ayuda a aliviar la tensión y el cansancio corporal.</li><li>Promueve una sensación de bienestar.</li></ul><p>Incluye:</p><ul><li>Masaje adaptado a embarazadas.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Embarazadas que buscan un momento de descanso (informando previamente al spa).</li><li>Quienes desean un masaje adaptado a sus necesidades.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>Informa a nuestras especialistas tu semana de embarazo antes de agendar.</li></ul>"
+  },
+  {
+   "id": 18,
+   "name": "Masaje de relajación + drenaje de piernas para embarazadas",
+   "html": "<p>Beneficios:</p><ul><li>Favorece la relajación física y mental.</li><li>Ayuda a aliviar la tensión y el cansancio corporal.</li><li>Promueve una sensación de bienestar.</li></ul><p>Incluye:</p><ul><li>Masaje adaptado a embarazadas.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Embarazadas que buscan un momento de descanso (informando previamente al spa).</li><li>Quienes desean un masaje adaptado a sus necesidades.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>Informa a nuestras especialistas tu semana de embarazo antes de agendar.</li></ul>"
+  },
+  {
+   "id": 99,
+   "name": "Masaje descontracturante lumbar - ciática",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a aliviar la tensión en la zona lumbar.</li><li>Contribuye a mejorar la movilidad y flexibilidad.</li><li>Ayuda a aliviar el cansancio y la tensión corporal.</li></ul><p>Incluye:</p><ul><li>Masaje descontracturante enfocado en zona lumbar y glúteos.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas con molestias o tensión en la zona lumbar.</li><li>Quienes buscan alivio muscular con presión profunda.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>Este masaje no reemplaza el diagnóstico ni el tratamiento médico.</li></ul>"
+  },
+  {
+   "id": 414,
+   "name": "Para dos: Masaje descontracturante alta presión",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a aliviar contracturas y tensión muscular.</li><li>Contribuye a mejorar la movilidad y flexibilidad.</li><li>Ayuda a aliviar el cansancio y la tensión corporal.</li></ul><p>Incluye:</p><ul><li>Masaje descontracturante con presiones profundas en las zonas de mayor tensión.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas con contracturas o dolor muscular.</li><li>Quienes acumulan tensión en espalda, cuello u hombros.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 97,
+   "name": "Masaje descontracturante alta presión",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a aliviar contracturas y tensión muscular.</li><li>Contribuye a mejorar la movilidad y flexibilidad.</li><li>Ayuda a aliviar el cansancio y la tensión corporal.</li></ul><p>Incluye:</p><ul><li>Masaje descontracturante con presiones profundas en las zonas de mayor tensión.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas con contracturas o dolor muscular.</li><li>Quienes acumulan tensión en espalda, cuello u hombros.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 418,
+   "name": "Para dos: Masaje descontracturante presión media",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a aliviar contracturas y tensión muscular.</li><li>Contribuye a mejorar la movilidad y flexibilidad.</li><li>Ayuda a aliviar el cansancio y la tensión corporal.</li></ul><p>Incluye:</p><ul><li>Masaje descontracturante con presiones profundas en las zonas de mayor tensión.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas con contracturas o dolor muscular.</li><li>Quienes acumulan tensión en espalda, cuello u hombros.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 98,
+   "name": "Masaje descontracturante presión media",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a aliviar contracturas y tensión muscular.</li><li>Contribuye a mejorar la movilidad y flexibilidad.</li><li>Ayuda a aliviar el cansancio y la tensión corporal.</li></ul><p>Incluye:</p><ul><li>Masaje descontracturante con presiones profundas en las zonas de mayor tensión.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas con contracturas o dolor muscular.</li><li>Quienes acumulan tensión en espalda, cuello u hombros.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 56,
+   "name": "Limpieza facial profunda con hidratación para dos",
+   "html": "<p>Contraindicaciones:</p><ul><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 102,
+   "name": "Spa purify para dos",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Favorece la relajación física y mental.</li><li>Promueve una sensación de bienestar y equilibrio general.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 58,
+   "name": "Spa face & body para dos",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Favorece la relajación física y mental.</li><li>Promueve una sensación de bienestar y equilibrio general.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 49,
+   "name": "Limpieza facial pieles grasas",
+   "html": "<p>Contraindicaciones:</p><ul><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 91,
+   "name": "Masaje de relajación y descontracturante con piedras calientes",
+   "html": "<p>Beneficios:</p><ul><li>El calor de las piedras ayuda a relajar la musculatura.</li><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Favorece la relajación física y mental.</li></ul><p>Incluye:</p><ul><li>Masaje con piedras calientes.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas que disfrutan del calor durante el masaje.</li><li>Quienes presentan estrés o tensión muscular.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>Informa a nuestras especialistas si tienes sensibilidad al calor.</li></ul>"
+  },
+  {
+   "id": 92,
+   "name": "Masaje de relajación cuerpo completo con descontracturante en espalda",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Combina relajación general con alivio de contracturas.</li><li>Favorece la relajación física y mental.</li></ul><p>Incluye:</p><ul><li>Masaje de relajación de cuerpo completo combinado con trabajo descontracturante.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan relajarse y aliviar contracturas en una misma sesión.</li><li>Quienes presentan estrés o tensión muscular.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 422,
+   "name": "Spa oriental para dos",
+   "html": "<p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 53,
+   "name": "Spa oriental",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Favorece la relajación física y mental.</li><li>Promueve una sensación de bienestar y equilibrio general.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 423,
+   "name": "Spa de lujo para dos",
+   "html": "<p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 47,
+   "name": "Spa de lujo",
+   "html": "<p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 317,
+   "name": "Spa face & body",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Favorece la relajación física y mental.</li><li>Promueve una sensación de bienestar y equilibrio general.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 339,
+   "name": "Para dos: Masaje de relajación con piedras calientes",
+   "html": "<p>Incluye:</p><ul><li>Masaje con piedras calientes.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas que disfrutan del calor durante el masaje.</li><li>Quienes presentan estrés o tensión muscular.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>Informa a nuestras especialistas si tienes sensibilidad al calor.</li></ul>"
+  },
+  {
+   "id": 343,
+   "name": "Para dos: Masaje de relajación + masaje descontracturante en espalda + piedras calientes",
+   "html": "<p>Incluye:</p><ul><li>Masaje con piedras calientes.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas que disfrutan del calor durante el masaje.</li><li>Quienes presentan estrés o tensión muscular.</li><li>Ideal para disfrutar en pareja, con amigos o familiares.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>Informa a nuestras especialistas si tienes sensibilidad al calor.</li></ul>"
+  },
+  {
+   "id": 649,
+   "name": "Spa circuit duo",
+   "html": "<p>Beneficios:</p><ul><li>Ayuda a reducir el estrés y la tensión muscular.</li><li>Favorece la relajación física y mental.</li><li>Promueve una sensación de bienestar y equilibrio general.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan una experiencia completa de relajación.</li><li>Quienes desean regalarse un momento para desconectar y renovar su bienestar.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li><li>No se recomienda realizar el tratamiento sobre heridas abiertas, infecciones activas, quemaduras solares recientes o alteraciones dermatológicas sin evaluación previa.</li></ul>"
+  },
+  {
+   "id": 347,
+   "name": "Masaje Mixto Premium",
+   "html": "<p>Incluye:</p><ul><li>Masaje de relajación de cuerpo completo combinado con trabajo descontracturante.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas que buscan relajarse y aliviar contracturas en una misma sesión.</li><li>Quienes presentan estrés o tensión muscular.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 619,
+   "name": "Masaje descontracturante de espalda",
+   "html": "<p>Incluye:</p><ul><li>Masaje descontracturante con presiones profundas en las zonas de mayor tensión.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas con contracturas o dolor muscular.</li><li>Quienes acumulan tensión en espalda, cuello u hombros.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  },
+  {
+   "id": 615,
+   "name": "Masaje bruxismo",
+   "html": "<p>Incluye:</p><ul><li>Masaje enfocado en mandíbula, cuello y hombros.</li><li>Inducción a la relajación con sonido de cuenco y aromaterapia al inicio y cierre de la experiencia.</li><li>Estación de autoatención con agua fresca e infusión herbal al finalizar la sesión.</li></ul><p>Indicado para:</p><ul><li>Personas con tensión en mandíbula, cuello o cabeza.</li><li>Quienes acumulan estrés en la zona facial y cervical.</li></ul><p>Contraindicaciones:</p><ul><li>No se recomienda realizar esta terapia en casos de fiebre, infecciones, enfermedades agudas, trombosis o sospecha de problemas circulatorios sin evaluación médica previa. Ante dudas, consultar previamente a tu médico.</li></ul>"
+  }
+ ]
+}
