@@ -82,7 +82,14 @@ function classify(label: string): SectionKey | null {
 }
 
 export function parseProductSections(html: string): ProductSections {
-  const blocks = cleanHtml(html).match(/<(p|ul|ol|h[2-4])>[\s\S]*?<\/\1>/g) ?? [];
+  // Se descartan los párrafos con listas de precios por sesión ("1 sesión $60.000 – 1 hora
+  // <br> 4 sesiones …"): duplican las variaciones de WooCommerce, que ya muestran los precios.
+  const isPriceList = (blk: string) => {
+    if (!blk.startsWith('<p>')) return false;
+    const t = htmlToText(blk);
+    return t.length < 600 && /\$\s?\d/.test(t) && /sesi[oó]n|sesiones|\bhoras?\b|minutos/i.test(t);
+  };
+  const blocks = (cleanHtml(html).match(/<(p|ul|ol|h[2-4])>[\s\S]*?<\/\1>/g) ?? []).filter((b) => !isPriceList(b));
   const result: ProductSections = { intro: '', benefits: [], includes: [], indicatedFor: [], contraindications: [], extras: [] };
   const intro: string[] = [];
   let seenKnown = false;
