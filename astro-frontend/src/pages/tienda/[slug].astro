@@ -220,6 +220,7 @@ if (categorySlug) {
                 data-gift-product={product.databaseId}
                 data-needs-variation={variantAttrs.length > 0 ? "1" : undefined}
                 data-gift-name={product.name}
+                data-gift-image={product.image?.sourceUrl}
                 class="w-full bg-spa-cream hover:bg-[#EAE4D9] text-spa-charcoal py-3.5 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase flex items-center justify-center gap-2 transition-colors"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe"><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></svg>
@@ -311,6 +312,7 @@ if (categorySlug) {
       if (v) b.dataset.variationId = String(v.databaseId);
       else delete b.dataset.variationId;
       b.classList.toggle('opacity-50', !v);
+      b.dataset.giftVariant = selects.map((s) => s.value).filter(Boolean).join(' · ');
     });
     if (v?.price && priceEl) priceEl.textContent = v.price.replace(/&nbsp;/g, ' ').replace(/<[^>]*>/g, '');
   }

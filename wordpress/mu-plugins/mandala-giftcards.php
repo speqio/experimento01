@@ -66,7 +66,7 @@ add_action('woocommerce_order_status_changed', function ($order_id, $from, $to) 
 
         $item->add_meta_data('_mandala_gift_code', $code, true);
         $item->save();
-        mandala_gift_send_email($code, $gift, $item->get_name());
+        mandala_gift_send_email($code, $gift, $item, $order);
     }
 }, 10, 3);
 
@@ -93,22 +93,55 @@ function mandala_gift_create_coupon($product_id, $gift, $order_id) {
     return $coupon->get_id() ? $code : null;
 }
 
-function mandala_gift_send_email($code, $gift, $product_name) {
-    $site  = get_bloginfo('name');
-    $url   = apply_filters('mandala_gift_site_url', home_url('/'));
-    $msg   = $gift['message'] ? '<p style="font-style:italic">“' . esc_html($gift['message']) . '”</p>' : '';
-    $body  = '<div style="font-family:Georgia,serif;max-width:520px;margin:auto;padding:32px;background:#F5F0E8;color:#3A332E">'
-        . '<h2 style="font-weight:300">Tienes un regalo de ' . esc_html($site) . '</h2>'
-        . $msg
-        . '<p>Te regalaron: <strong>' . esc_html($product_name) . '</strong></p>'
-        . '<p style="font-size:26px;letter-spacing:4px;background:#fff;padding:16px;text-align:center;border-radius:12px">' . esc_html($code) . '</p>'
-        . '<p>Ingresa este código en el checkout al comprar ese producto y quedará sin costo.</p>'
-        . '<p><a href="' . esc_url($url) . '">' . esc_html($url) . '</a></p></div>';
-    $headers = ['Content-Type: text/html; charset=UTF-8'];
+function mandala_gift_send_email($code, $gift, $item, $order) {
+    $brand   = defined('MANDALA_BRAND') ? MANDALA_BRAND : 'Mándala Spa';
+    $product = $item->get_product();
+    $parent  = wc_get_product($item->get_product_id());
 
-    wp_mail($gift['recipientEmail'], "Recibiste una gift card de $site", $body, $headers);
+    // Foto: la de la variante o, si no tiene, la del producto padre.
+    $image_id = $product ? $product->get_image_id() : 0;
+    if (!$image_id && $parent) $image_id = $parent->get_image_id();
+    $image = $image_id ? wp_get_attachment_image_url($image_id, 'large') : '';
+
+    $variant = ($product && $product->is_type('variation'))
+        ? wc_get_formatted_variation($product, true, false)
+        : '';
+
+    $coupon  = new WC_Coupon($code);
+    $expires = $coupon->get_date_expires()
+        ? date_i18n('j \d\e F \d\e Y', $coupon->get_date_expires()->getTimestamp())
+        : '';
+
+    $from_name = trim($order->get_billing_first_name());
+
+    $data = [
+        'code'            => $code,
+        'product_name'    => $parent ? $parent->get_name() : $item->get_name(),
+        'variant'         => $variant,
+        'image'           => $image,
+        'message'         => $gift['message'] ?? '',
+        'from_name'       => $from_name,
+        'recipient_email' => $gift['recipientEmail'],
+        'expires'         => $expires,
+    ];
+    $headers = function_exists('mandala_gift_email_headers')
+        ? mandala_gift_email_headers()
+        : ['Content-Type: text/html; charset=UTF-8'];
+
+    $who = $from_name ?: 'Alguien especial';
+    wp_mail(
+        $gift['recipientEmail'],
+        "$who te regaló una experiencia en $brand",
+        mandala_gift_email_html($data + ['mode' => 'recipient']),
+        $headers
+    );
     if (!empty($gift['buyerEmail'])) {
-        wp_mail($gift['buyerEmail'], "Tu gift card fue enviada — $site", $body, $headers);
+        wp_mail(
+            $gift['buyerEmail'],
+            "Tu gift card fue enviada — $brand",
+            mandala_gift_email_html($data + ['mode' => 'buyer']),
+            $headers
+        );
     }
 }
 

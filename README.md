@@ -37,6 +37,8 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 4. Al pasar a *processing*, el mu-plugin crea un cupón de 100% atado al producto/variante regalado, de un solo uso, y envía el código por email al destinatario (copia al comprador).
 5. El destinatario ingresa el código en el checkout y el ítem queda en $0.
 
+**Correo de regalo:** el template HTML vive en `wordpress/mu-plugins/mandala-giftcards-email.php` (subir junto a `mandala-giftcards.php` a `wp-content/mu-plugins/`). Incluye mockup de la tarjeta con la foto del producto, código, vigencia, pasos de canje y botón "Agenda tu hora" (`<frontend>/agenda`). Asunto y remitente usan la marca (`MANDALA_BRAND`, `MANDALA_FROM_EMAIL`), no el título del sitio WordPress. Para poner el logo, subirlo a Medios y definir `MANDALA_EMAIL_LOGO_URL` en ese archivo. Vista previa sin comprar (solo administradores): `https://cms.laboratorio.space/wp-admin/admin-post.php?action=mandala_gift_preview&product=<ID>` (añadir `&mode=buyer` para la copia del comprador, `&send=1` para enviarte una prueba).
+
 ## Variables de entorno
 
 No secretas (en `astro-frontend/wrangler.toml`, `[vars]`): `PUBLIC_SITE_URL` (dominio exacto que usa el cliente), `PUBLIC_WPGRAPHQL_URL`, `WEBPAY_ENVIRONMENT`, `WEBPAY_COMMERCE_CODE`.
