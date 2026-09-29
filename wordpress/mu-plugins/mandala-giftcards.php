@@ -162,7 +162,15 @@ function mandala_gift_create_coupon($product_id, $gift, $order_id) {
     $coupon->set_amount(100);
     $coupon->set_product_ids([$product_id]);
     $coupon->set_usage_limit(1);
+    $coupon->set_usage_limit_per_user(1);
     $coupon->set_individual_use(false);
+    // Antifraude: si alguien reenvía o intercepta el código, no lo puede canjear con
+    // otro email — WooCommerce valida esto contra el email de facturación al pagar.
+    // Se puede desactivar con el filtro si genera fricción real (ej. alguien agenda
+    // por otra persona con su propio email).
+    if (apply_filters('mandala_gift_lock_to_recipient_email', true) && is_email($gift['recipientEmail'])) {
+        $coupon->set_email_restriction([$gift['recipientEmail']]);
+    }
     $months = (int) apply_filters('mandala_gift_validity_months', 12);
     if ($months > 0) {
         $coupon->set_date_expires(strtotime("+{$months} months"));

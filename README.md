@@ -37,6 +37,8 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 4. Al pasar a *processing*, el mu-plugin crea un cupón de 100% atado al producto/variante regalado, de un solo uso, y envía el código por email al destinatario (copia al comprador).
 5. El destinatario ingresa el código en el checkout y el ítem queda en $0.
 
+**Antifraude del código:** código aleatorio de 12 caracteres (no adivinable), `usage_limit(1)` (WooCommerce lo bloquea a nivel de núcleo apenas se usa una vez) y **restringido al email del destinatario** (`set_email_restriction`) — si alguien reenvía o intercepta el correo, no puede canjearlo con un email distinto al que se lo enviamos. Se puede desactivar con el filtro `mandala_gift_lock_to_recipient_email` si genera fricción real (ej. alguien agenda por otra persona).
+
 **Envío programado:** en el modal, el comprador puede elegir una fecha de envío (opcional, hasta 180 días). El cupón se crea igual al confirmarse el pago, pero el correo se despacha ese día a las 09:00 (hora del sitio) vía `wp_schedule_single_event` (WP-Cron), en vez de salir de inmediato. Es idempotente (meta `_mandala_gift_sent`), así que no se duplica si WP-Cron corre varias veces. **Requiere que WP-Cron corra puntual**: si el sitio recibe poco tráfico, configura en cPanel un cron real que golpee `wp-cron.php` cada 15-30 min (ver comentario al inicio de `mandala-giftcards.php`).
 
 **Tarjeta 3D:** el modal muestra la tarjeta con inclinación, brillo y flotación (`src/components/giftcard/GiftCardPreview.tsx`, arte en `public/gift-card.webp`). Los correos no ejecutan JS/3D, por eso usan la imagen estática `public/gift-card-email.jpg` (servida en `<frontend>/gift-card-email.jpg`); si cambia el arte, hay que regenerarla.

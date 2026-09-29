@@ -131,7 +131,7 @@ function mandala_gift_email_html(array $d) {
         <tr><td style="padding:22px 24px 6px 24px;font-family:<?php echo $serif; ?>;font-size:18px;color:<?php echo $brand_color; ?>;">Cómo canjear tu regalo</td></tr>
         <tr><td style="padding:6px 24px 4px 24px;font-family:<?php echo $sans; ?>;font-size:13px;line-height:1.7;color:#675647;">
           <strong style="color:<?php echo $brand_color; ?>;">1.</strong> Entra a <a href="<?php echo esc_url($site); ?>" style="color:<?php echo $brand_color; ?>;"><?php echo esc_html(preg_replace('#^https?://#', '', $site)); ?></a> y elige el mismo servicio<?php echo !empty($d['variant']) ? ' (' . esc_html($d['variant']) . ')' : ''; ?>.<br>
-          <strong style="color:<?php echo $brand_color; ?>;">2.</strong> Agrégalo al carrito e ingresa el código en el checkout.<br>
+          <strong style="color:<?php echo $brand_color; ?>;">2.</strong> Agrégalo al carrito e ingresa el código en el checkout, usando <strong><?php echo esc_html($d['recipient_email']); ?></strong> como tu email.<br>
           <strong style="color:<?php echo $brand_color; ?>;">3.</strong> El total queda en $0. ¡Listo!
         </td></tr>
         <tr><td style="padding:0 0 18px 0;"></td></tr>
