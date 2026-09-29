@@ -3,8 +3,14 @@
  * Plugin Name: Spa Mándala — Gift Cards (headless)
  * Description: Reemplaza YITH Gift Cards. Un producto se compra "como regalo"
  *              (emails + mensaje vía addToCart extraData). Al confirmarse el pago
- *              se genera un cupón de 100% atado a ese producto y se envía por
- *              email al destinatario. Ver docs/wp-setup-guide.md §5.
+ *              se genera un cupón de 100% atado a ese producto. El correo con el
+ *              código se envía de inmediato, o en la fecha que el comprador eligió
+ *              (envío programado, vía WP-Cron). Ver docs/wp-setup-guide.md §5.
+ *
+ * Envío programado: requiere que WP-Cron corra a tiempo. La mayoría de los hosts
+ * lo disparan solo con las visitas al sitio; si el envío programado llega tarde,
+ * configura en cPanel un cron real que golpee wp-cron.php cada 15-30 min, ej.:
+ *   wget -q -O /dev/null "https://cms.laboratorio.space/wp-cron.php?doing_wp_cron"
  */
 
 if (!defined('ABSPATH')) exit;
@@ -18,12 +24,21 @@ const MANDALA_GIFT_KEY = '_mandala_gift';
 add_filter('woocommerce_add_cart_item_data', function ($cart_item_data, $product_id) {
     if (empty($cart_item_data['recipientEmail'])) return $cart_item_data;
 
+    // Fecha de envío elegida por el comprador (YYYY-MM-DD); si es hoy, pasada o
+    // inválida, se ignora y el correo sale apenas se confirme el pago.
+    $delivery_date = '';
+    $raw_date = (string) ($cart_item_data['deliveryDate'] ?? '');
+    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw_date) && $raw_date > current_time('Y-m-d')) {
+        $delivery_date = $raw_date;
+    }
+
     $gift = [
         'buyerEmail'     => sanitize_email($cart_item_data['buyerEmail'] ?? ''),
         'recipientEmail' => sanitize_email($cart_item_data['recipientEmail']),
         'message'        => sanitize_textarea_field(mb_substr($cart_item_data['message'] ?? '', 0, 300)),
+        'deliveryDate'   => $delivery_date,
     ];
-    unset($cart_item_data['buyerEmail'], $cart_item_data['recipientEmail'], $cart_item_data['message']);
+    unset($cart_item_data['buyerEmail'], $cart_item_data['recipientEmail'], $cart_item_data['message'], $cart_item_data['deliveryDate']);
     if (!is_email($gift['recipientEmail'])) return $cart_item_data;
 
     $cart_item_data[MANDALA_GIFT_KEY] = $gift;
@@ -38,6 +53,12 @@ add_filter('woocommerce_get_item_data', function ($item_data, $cart_item) {
             'key'   => 'Regalo para',
             'value' => $cart_item[MANDALA_GIFT_KEY]['recipientEmail'],
         ];
+        if (!empty($cart_item[MANDALA_GIFT_KEY]['deliveryDate'])) {
+            $item_data[] = [
+                'key'   => 'Se envía el',
+                'value' => date_i18n('j \d\e F \d\e Y', strtotime($cart_item[MANDALA_GIFT_KEY]['deliveryDate'])),
+            ];
+        }
     }
     return $item_data;
 }, 10, 2);
@@ -49,7 +70,7 @@ add_action('woocommerce_checkout_create_order_line_item', function ($item, $cart
     }
 }, 10, 3);
 
-/** 3) Pago confirmado → emitir cupones + emails. */
+/** 3) Pago confirmado → emitir cupón (siempre) + email (de inmediato o programado). */
 add_action('woocommerce_order_status_changed', function ($order_id, $from, $to) {
     if (!in_array($to, ['processing', 'completed'], true)) return;
     $order = wc_get_order($order_id);
@@ -66,9 +87,41 @@ add_action('woocommerce_order_status_changed', function ($order_id, $from, $to) 
 
         $item->add_meta_data('_mandala_gift_code', $code, true);
         $item->save();
-        mandala_gift_send_email($code, $gift, $item, $order);
+
+        $send_at = mandala_gift_scheduled_timestamp($gift['deliveryDate'] ?? '');
+        if ($send_at) {
+            // Envío programado: el correo se despacha en la fecha elegida (ver acción abajo).
+            wp_schedule_single_event($send_at, 'mandala_gift_send_scheduled', [$order_id, $item->get_id()]);
+        } else {
+            mandala_gift_send_email($code, $gift, $item, $order);
+            $item->add_meta_data('_mandala_gift_sent', 1, true);
+            $item->save();
+        }
     }
 }, 10, 3);
+
+/** Timestamp (hora del sitio, 09:00) para el envío programado; 0 = enviar ya. */
+function mandala_gift_scheduled_timestamp($date) {
+    if (empty($date) || $date <= current_time('Y-m-d')) return 0;
+    $dt = DateTime::createFromFormat('Y-m-d H:i:s', "$date 09:00:00", wp_timezone());
+    return $dt ? $dt->getTimestamp() : 0;
+}
+
+/** Despacha el email programado (WP-Cron). Idempotente: si ya se envió, no repite. */
+add_action('mandala_gift_send_scheduled', function ($order_id, $item_id) {
+    $order = wc_get_order($order_id);
+    if (!$order) return;
+    $item = $order->get_item($item_id);
+    if (!$item) return;
+
+    $gift = $item->get_meta(MANDALA_GIFT_KEY);
+    $code = $item->get_meta('_mandala_gift_code');
+    if (empty($gift) || empty($code) || $item->get_meta('_mandala_gift_sent')) return;
+
+    mandala_gift_send_email($code, $gift, $item, $order);
+    $item->add_meta_data('_mandala_gift_sent', 1, true);
+    $item->save();
+}, 10, 2);
 
 function mandala_gift_create_coupon($product_id, $gift, $order_id) {
     do {

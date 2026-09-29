@@ -4,4 +4,6 @@ export interface GiftCardInput {
   buyerEmail: string;
   recipientEmail: string;
   message: string;
+  // Fecha de envío del correo (YYYY-MM-DD). Vacío = se envía apenas se confirma el pago.
+  deliveryDate?: string;
 }

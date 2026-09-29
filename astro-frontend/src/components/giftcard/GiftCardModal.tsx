@@ -9,7 +9,21 @@ const inputClass =
   'w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe placeholder:text-spa-taupe';
 const labelClass = 'block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2';
 
-const empty: GiftCardInput = { buyerEmail: '', recipientEmail: '', message: '' };
+const empty: GiftCardInput = { buyerEmail: '', recipientEmail: '', message: '', deliveryDate: '' };
+
+// YYYY-MM-DD en la zona horaria local, para el min del selector de fecha.
+function todayLocal(): string {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+
+function maxDeliveryDate(): string {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  d.setDate(d.getDate() + 180);
+  return d.toISOString().slice(0, 10);
+}
 
 interface Target {
   id: number;
@@ -108,6 +122,23 @@ export default function GiftCardModal() {
               />
             </div>
 
+            <div>
+              <label className={labelClass}>Fecha de envío (opcional)</label>
+              <input
+                type="date"
+                value={form.deliveryDate ?? ''}
+                min={todayLocal()}
+                max={maxDeliveryDate()}
+                onChange={(e) => setForm({ ...form, deliveryDate: e.target.value })}
+                className={inputClass}
+              />
+              <p className="text-[11px] text-spa-taupe mt-1.5">
+                {form.deliveryDate
+                  ? `Le llegará el correo el ${new Date(form.deliveryDate + 'T00:00:00').toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+                  : 'Déjalo vacío para enviarlo apenas se confirme el pago.'}
+              </p>
+            </div>
+
             {error && <p className="text-sm text-red-600">{error}</p>}
 
             <button
@@ -118,7 +149,9 @@ export default function GiftCardModal() {
               {loading ? 'Agregando…' : 'Continuar al pago'}
             </button>
             <p className="text-[11px] text-spa-taupe text-center">
-              El destinatario recibirá un correo con su código una vez confirmado el pago.
+              {form.deliveryDate
+                ? 'El destinatario recibirá su código el día que elegiste.'
+                : 'El destinatario recibirá un correo con su código una vez confirmado el pago.'}
             </p>
           </form>
         </div>
