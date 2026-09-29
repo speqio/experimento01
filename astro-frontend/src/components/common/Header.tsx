@@ -246,7 +246,8 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
               className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-spa-sand transition-colors group"
             >
               <span className="text-xs sm:text-sm font-serif font-medium text-spa-charcoal">
-                ${Number(summary.total || 0).toLocaleString('es-CL')}
+                {/* cart.total llega ya formateado desde WooGraphQL (ej. "$65.000"), no un número crudo */}
+                {summary.total && summary.total !== '0' ? summary.total.replace(/&nbsp;/g, ' ') : '$0'}
               </span>
               <div className="relative">
                 <ShoppingBag className="w-5 h-5 text-spa-charcoal group-hover:text-spa-taupe transition-colors" />

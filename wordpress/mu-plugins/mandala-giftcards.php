@@ -242,7 +242,7 @@ add_action('graphql_register_types', function () {
         },
     ]);
 
-    register_graphql_field('Product', 'giftCardEnabled', [
+    $gift_card_enabled_field = [
         'type'        => 'Boolean',
         'description' => 'Falso si el dueño desactivó esta gift card (global o solo este producto) desde wp-admin → Gift Cards.',
         'resolve'     => function ($source) {
@@ -254,7 +254,12 @@ add_action('graphql_register_types', function () {
             }
             return mandala_gift_is_enabled_for($id);
         },
-    ]);
+    ];
+    // `products(...).nodes` expone la interfaz "Product", pero la query singular
+    // `product(id, idType: SLUG)` devuelve "ProductUnion" (tipo distinto en esta
+    // versión de WooGraphQL) — se registra en ambos para que funcione en las dos.
+    register_graphql_field('Product', 'giftCardEnabled', $gift_card_enabled_field);
+    register_graphql_field('ProductUnion', 'giftCardEnabled', $gift_card_enabled_field);
 
     register_graphql_object_type('MandalaGiftCardSettings', [
         'description' => 'Ajustes globales de gift cards (wp-admin → Gift Cards → Ajustes).',
