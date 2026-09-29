@@ -33,8 +33,13 @@ interface Target {
   variationId?: number;
 }
 
+interface ModalProps {
+  // Diseño de la tarjeta (wp-admin → Gift Cards → Ajustes), resuelto en ECommerceLayout.astro.
+  cardImageUrl?: string;
+}
+
 // Se abre al hacer click en cualquier [data-gift-product] de la página.
-export default function GiftCardModal() {
+export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   const [target, setTarget] = useState<Target | null>(null);
   const [form, setForm] = useState<GiftCardInput>(empty);
   const [error, setError] = useState('');
@@ -96,6 +101,7 @@ export default function GiftCardModal() {
               variant={target.variant}
               recipient={form.recipientEmail}
               message={form.message}
+              cardImageUrl={cardImageUrl}
             />
           </div>
 

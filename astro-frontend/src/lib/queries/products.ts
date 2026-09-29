@@ -9,6 +9,7 @@ const PRODUCT_CARD_FIELDS = /* GraphQL */ `
   name
   slug
   shortDescription
+  giftCardEnabled
   image { sourceUrl altText }
   ... on InventoriedProduct { stockStatus }
   ... on SimpleProduct { price regularPrice }
@@ -32,6 +33,7 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       slug
       description
       shortDescription
+      giftCardEnabled
       image { sourceUrl altText }
       productCategories { nodes { name slug } }
       ... on InventoriedProduct { stockStatus }
@@ -111,5 +113,13 @@ export const GET_PRODUCTS_BY_CATEGORIES = /* GraphQL */ `
     products(first: $first, where: { status: "publish", categoryIn: $categoryIn }) {
       nodes { ${PRODUCT_CARD_FIELDS} }
     }
+  }
+`;
+
+// Ajustes globales de gift cards (wp-admin → Gift Cards → Ajustes), ver
+// wordpress/mu-plugins/mandala-giftcards.php (campo RootQuery.giftCardSettings).
+export const GET_GIFT_CARD_SETTINGS = /* GraphQL */ `
+  query GetGiftCardSettings {
+    giftCardSettings { enabled imageUrl }
   }
 `;

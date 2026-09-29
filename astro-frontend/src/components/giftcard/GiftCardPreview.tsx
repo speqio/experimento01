@@ -6,6 +6,8 @@ interface Props {
   variant?: string;
   recipient: string;
   message: string;
+  // Diseño de la tarjeta (wp-admin → Gift Cards → Ajustes); vacío = respaldo local.
+  cardImageUrl?: string;
 }
 
 const MAX_ROT = 18;
@@ -13,7 +15,7 @@ const REST_SHADOW = '0 15px 35px rgba(0,0,0,0.25), 0 5px 15px rgba(0,0,0,0.2)';
 
 // Tarjeta con efecto 3D (tilt + glare + sheen) y, debajo, el detalle del regalo en vivo.
 // En el correo se usa una imagen estática equivalente (public/gift-card-email.jpg).
-export default function GiftCardPreview({ image, productName, variant, recipient, message }: Props) {
+export default function GiftCardPreview({ image, productName, variant, recipient, message, cardImageUrl }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const glareRef = useRef<HTMLDivElement>(null);
@@ -105,7 +107,7 @@ export default function GiftCardPreview({ image, productName, variant, recipient
               transformStyle: 'preserve-3d',
               boxShadow: REST_SHADOW,
               transition: 'transform 0.6s cubic-bezier(0.23,1,0.32,1), box-shadow 0.6s cubic-bezier(0.23,1,0.32,1)',
-              backgroundImage: "url('/gift-card.webp')",
+              backgroundImage: `url('${cardImageUrl || '/gift-card.webp'}')`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               overflow: 'hidden',

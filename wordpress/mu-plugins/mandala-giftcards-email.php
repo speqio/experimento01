@@ -74,9 +74,12 @@ function mandala_gift_email_html(array $d) {
     </td></tr>
     <tr><td align="center" style="padding:0 24px 24px 24px;font-family:<?php echo $sans; ?>;font-size:14px;line-height:1.6;color:#675647;"><?php echo $intro; ?></td></tr>
 
-    <!-- Tarjeta (imagen estática; el efecto 3D solo existe en el modal del sitio) -->
-    <tr><td align="center" style="padding:0 0 4px 0;line-height:0;">
-      <img src="<?php echo esc_url($site . '/gift-card-email.jpg'); ?>" alt="Gift Card <?php echo esc_attr(MANDALA_BRAND); ?>" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;">
+    <!-- Tarjeta (imagen estática; el efecto 3D solo existe en el modal del sitio).
+         El arte se administra en wp-admin → Gift Cards → Ajustes; Outlook de
+         escritorio ignora border-radius/box-shadow y muestra la esquina cuadrada
+         (degradación aceptable, no rompe el layout). -->
+    <tr><td align="center" style="padding:0 0 22px 0;">
+      <img src="<?php echo esc_url(mandala_gift_image_url()); ?>" alt="Gift Card <?php echo esc_attr(MANDALA_BRAND); ?>" width="480" style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.18);">
     </td></tr>
 
     <!-- Detalle del regalo -->

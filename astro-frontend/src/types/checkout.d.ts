@@ -20,4 +20,6 @@ export interface CheckoutInput {
   city: string;
   paymentMethod: 'webpay';
   giftCardCode?: string;
+  // Origen del comprador (utm/referrer), ver lib/attribution.ts. Solo trazabilidad.
+  attribution?: Record<string, unknown> | null;
 }

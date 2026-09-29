@@ -34,6 +34,7 @@ const inputClass =
 <script>
   import type { CheckoutInput } from '../../types/checkout';
   import type { WebpayInitResponse } from '../../types/checkout';
+  import { getAttribution } from '../../lib/attribution';
 
   const form = document.getElementById('checkout-form') as HTMLFormElement;
   form.addEventListener('submit', async (e) => {
@@ -47,6 +48,7 @@ const inputClass =
       address1: String(formData.get('address1')),
       city: String(formData.get('city')),
       paymentMethod: 'webpay',
+      attribution: getAttribution(),
     };
 
     const session = localStorage.getItem('woo-session');

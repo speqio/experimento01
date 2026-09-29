@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import type { CheckoutInput, WebpayInitResponse } from '../../types/checkout';
-import { createOrderFromCart, updateOrderStatus } from '../../lib/woo-server';
+import { createOrderFromCart, updateOrderStatus, setOrderMeta } from '../../lib/woo-server';
 import { webpayCreate } from '../../lib/webpay';
 
 export const prerender = false;
@@ -19,8 +19,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const sessionHeader = request.headers.get('woocommerce-session') ?? '';
     if (!sessionHeader) return json({ error: 'Carrito vacío o sesión expirada' }, 400);
 
-    const { paymentMethod: _pm, giftCardCode: _gc, ...billing } = input;
+    const { paymentMethod: _pm, giftCardCode: _gc, attribution, ...billing } = input;
     const order = await createOrderFromCart(env, sessionHeader, billing);
+
+    if (attribution) {
+      // No bloquea el pago si falla — solo trazabilidad para wp-admin → Gift Cards.
+      await setOrderMeta(env, order.id, { _mandala_attribution: JSON.stringify(attribution) }).catch(() => {});
+    }
 
     // Total $0 (ej. gift card canjeada al 100%): Transbank no acepta monto 0.
     if (order.total <= 0) {

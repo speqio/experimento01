@@ -70,6 +70,9 @@ const {
     </div>
 
     <script>
+      import { captureAttribution } from '../lib/attribution';
+      captureAttribution();
+
       const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       function hideLoader() {

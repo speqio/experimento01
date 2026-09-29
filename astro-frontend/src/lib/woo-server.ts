@@ -46,6 +46,21 @@ export async function createOrderFromCart(
   return { id: order.databaseId, total: Math.round(Number(order.total)) };
 }
 
+/** Adjunta meta_data a una orden vía REST (ej. `_mandala_attribution`, ver lib/attribution.ts). */
+export async function setOrderMeta(env: Env, orderId: number, meta: Record<string, unknown>) {
+  const origin = new URL(graphqlUrl(env)).origin;
+  const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
+  const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    body: JSON.stringify({
+      meta_data: Object.entries(meta).map(([key, value]) => ({ key, value })),
+    }),
+  });
+  // No crítico: si falla, la orden y el regalo siguen funcionando sin trazabilidad de origen.
+  if (!res.ok) console.error(`setOrderMeta ${orderId} REST ${res.status}: ${await res.text()}`);
+}
+
 /** Cambia el estado de una orden vía REST (requiere WC_REST_KEY/WC_REST_SECRET). */
 export async function updateOrderStatus(
   env: Env,

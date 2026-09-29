@@ -43,6 +43,18 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 
 **Correo de regalo:** el template HTML vive en `wordpress/mu-plugins/mandala-giftcards-email.php` (subir junto a `mandala-giftcards.php` a `wp-content/mu-plugins/`). Incluye mockup de la tarjeta con la foto del producto, código, vigencia, pasos de canje y botón "Agenda tu hora" (`<frontend>/agenda`). Asunto y remitente usan la marca (`MANDALA_BRAND`, `MANDALA_FROM_EMAIL`), no el título del sitio WordPress. Para poner el logo, subirlo a Medios y definir `MANDALA_EMAIL_LOGO_URL` en ese archivo. Vista previa sin comprar (solo administradores): `https://cms.laboratorio.space/wp-admin/admin-post.php?action=mandala_gift_preview&product=<ID>` (añadir `&mode=buyer` para la copia del comprador, `&send=1` para enviarte una prueba).
 
+### Panel de gift cards (wp-admin)
+
+`wp-admin → WooCommerce → Gift Cards` (`wordpress/mu-plugins/mandala-giftcards-admin.php`), tres pestañas:
+
+- **Trazabilidad:** todas las compras hechas "como regalo" — comprador, destinatario, producto, monto, estado (Por enviar / Programado / Enviado / Canjeado / Expirado) y **origen** del comprador (ver abajo). Cada fila enlaza a la orden en WooCommerce.
+- **Productos:** checkbox por producto para permitir o no regalarlo. Guarda `_mandala_gift_enabled` en el producto. El link "Editar precio →" abre el producto en WooCommerce (el precio de la gift card siempre es el de la variante elegida, no hay un precio aparte que mantener).
+- **Ajustes:** interruptor global (`mandala_gift_enabled`, apaga todas las gift cards del sitio) y selector de imagen de la tarjeta (biblioteca de medios de WordPress) — se usa tanto en la tarjeta 3D del modal como en el correo.
+
+**Importante — caché del sitio:** las fichas de producto (`/tienda/[slug]`) son páginas estáticas generadas en el build. Desactivar un producto u ocultar el botón "Regalar" en el panel no lo hace desaparecer del sitio ya desplegado hasta el próximo `git push`/deploy. Por eso WordPress igual **rechaza la compra en el servidor** de inmediato aunque el botón siga visible — nunca se vende una gift card inválida.
+
+**Origen (trazabilidad):** `astro-frontend/src/lib/attribution.ts` captura `utm_source`/`utm_medium`/`utm_campaign` de la URL y `document.referrer` la primera vez que alguien entra al sitio (se guarda en `sessionStorage`, dura la sesión de compra). Al pagar, viaja como meta `_mandala_attribution` de la orden (WooCommerce REST). Sin utm ni referrer externo se clasifica como "Directo"; google/bing como "Búsqueda orgánica"; facebook/instagram/tiktok como "Redes sociales"; cualquier otro `utm_source` se muestra tal cual (ej. campañas de email o WhatsApp con `?utm_source=...`).
+
 ## Variables de entorno
 
 No secretas (en `astro-frontend/wrangler.toml`, `[vars]`): `PUBLIC_SITE_URL` (dominio exacto que usa el cliente), `PUBLIC_WPGRAPHQL_URL`, `WEBPAY_ENVIRONMENT`, `WEBPAY_COMMERCE_CODE`.

@@ -5,7 +5,7 @@ import { getProductDuration, getProductBadge, extractDuration, getCardSummary, g
 interface Props {
   product: Pick<
     SimpleProduct,
-    'databaseId' | 'name' | 'slug' | 'price' | 'regularPrice' | 'image' | 'shortDescription' | 'attributes'
+    'databaseId' | 'name' | 'slug' | 'price' | 'regularPrice' | 'image' | 'shortDescription' | 'attributes' | 'giftCardEnabled'
   >;
   href: string;
 }
@@ -57,7 +57,7 @@ const badge = getProductBadge(product.name);
           Elegir opciones
         </a>
       ) : (
-      <div class="grid grid-cols-2 gap-2">
+      <div class={`grid gap-2 ${product.giftCardEnabled === false ? 'grid-cols-1' : 'grid-cols-2'}`}>
         <button
           type="button"
           data-add-to-cart={product.databaseId}
@@ -65,6 +65,7 @@ const badge = getProductBadge(product.name);
         >
           Agregar al carrito
         </button>
+        {product.giftCardEnabled !== false && (
         <button
           type="button"
           data-gift-product={product.databaseId}
@@ -74,6 +75,7 @@ const badge = getProductBadge(product.name);
         >
           Quiero mi giftcard
         </button>
+        )}
       </div>
       )}
     </div>

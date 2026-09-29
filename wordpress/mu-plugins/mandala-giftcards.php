@@ -16,6 +16,29 @@
 if (!defined('ABSPATH')) exit;
 
 const MANDALA_GIFT_KEY = '_mandala_gift';
+const MANDALA_GIFT_IMAGE_OPTION = 'mandala_gift_image_url';
+const MANDALA_GIFT_DEFAULT_IMAGE = 'https://spamandala.cl/wp-content/uploads/2026/07/Spa-mandala-Gift-card.webp';
+
+/**
+ * Interruptores administrables desde el panel (mandala-giftcards-admin.php):
+ * global (mandala_gift_enabled) y por producto (meta _mandala_gift_enabled).
+ * Se validan siempre del lado del servidor, no solo ocultando el botón en el
+ * frontend, porque las fichas de producto son estáticas (prerender) y un
+ * cambio en wp-admin no se refleja ahí hasta el próximo build/deploy.
+ */
+function mandala_gift_globally_enabled() {
+    return (bool) get_option('mandala_gift_enabled', 1);
+}
+function mandala_gift_product_enabled($product_id) {
+    return get_post_meta($product_id, '_mandala_gift_enabled', true) !== 'no';
+}
+function mandala_gift_is_enabled_for($product_id) {
+    return $product_id > 0 ? (mandala_gift_globally_enabled() && mandala_gift_product_enabled($product_id)) : mandala_gift_globally_enabled();
+}
+function mandala_gift_image_url() {
+    $url = get_option(MANDALA_GIFT_IMAGE_OPTION, '');
+    return $url ?: MANDALA_GIFT_DEFAULT_IMAGE;
+}
 
 /**
  * 1) Carrito: WooGraphQL vuelca el JSON de extraData directamente en
@@ -23,6 +46,11 @@ const MANDALA_GIFT_KEY = '_mandala_gift';
  */
 add_filter('woocommerce_add_cart_item_data', function ($cart_item_data, $product_id) {
     if (empty($cart_item_data['recipientEmail'])) return $cart_item_data;
+
+    if (!mandala_gift_is_enabled_for($product_id)) {
+        wc_add_notice('Esta gift card no está disponible por el momento.', 'error');
+        return $cart_item_data;
+    }
 
     // Fecha de envío elegida por el comprador (YYYY-MM-DD); si es hoy, pasada o
     // inválida, se ignora y el correo sale apenas se confirme el pago.
@@ -198,14 +226,50 @@ function mandala_gift_send_email($code, $gift, $item, $order) {
     }
 }
 
-/** 4) GraphQL: CartItem.giftCardData para mostrar "Regalo para X". */
+/**
+ * 4) GraphQL: CartItem.giftCardData para mostrar "Regalo para X"; Product.giftCardEnabled
+ *    para ocultar el botón "Regalar" (panel wp-admin, ver mandala-giftcards-admin.php);
+ *    giftCardSettings para el arte de la tarjeta 3D del modal/correo.
+ */
 add_action('graphql_register_types', function () {
     if (!function_exists('register_graphql_field')) return;
+
     register_graphql_field('CartItem', 'giftCardRecipient', [
         'type'    => 'String',
         'resolve' => function ($item) {
             $cart_item = WC()->cart ? WC()->cart->get_cart_item($item['key']) : null;
             return $cart_item[MANDALA_GIFT_KEY]['recipientEmail'] ?? null;
+        },
+    ]);
+
+    register_graphql_field('Product', 'giftCardEnabled', [
+        'type'        => 'Boolean',
+        'description' => 'Falso si el dueño desactivó esta gift card (global o solo este producto) desde wp-admin → Gift Cards.',
+        'resolve'     => function ($source) {
+            $id = 0;
+            if (is_object($source)) {
+                if (!empty($source->ID)) $id = (int) $source->ID;
+                elseif (!empty($source->databaseId)) $id = (int) $source->databaseId;
+                elseif (method_exists($source, 'get_id')) $id = (int) $source->get_id();
+            }
+            return mandala_gift_is_enabled_for($id);
+        },
+    ]);
+
+    register_graphql_object_type('MandalaGiftCardSettings', [
+        'description' => 'Ajustes globales de gift cards (wp-admin → Gift Cards → Ajustes).',
+        'fields'       => [
+            'enabled'  => ['type' => 'Boolean'],
+            'imageUrl' => ['type' => 'String'],
+        ],
+    ]);
+    register_graphql_field('RootQuery', 'giftCardSettings', [
+        'type'    => 'MandalaGiftCardSettings',
+        'resolve' => function () {
+            return [
+                'enabled'  => mandala_gift_globally_enabled(),
+                'imageUrl' => mandala_gift_image_url(),
+            ];
         },
     ]);
 });

@@ -132,7 +132,7 @@ const rituals = products.slice(3, 6);
                         Elegir opciones
                       </a>
                     ) : (
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class={`grid gap-2 ${product.giftCardEnabled === false ? 'grid-cols-1' : 'grid-cols-2'}`}>
                       <button
                         type="button"
                         data-add-to-cart={product.databaseId}
@@ -140,15 +140,17 @@ const rituals = products.slice(3, 6);
                       >
                         Agregar al carrito
                       </button>
+                      {product.giftCardEnabled !== false && (
                       <button
                         type="button"
                         data-gift-product={product.databaseId}
                         data-gift-name={product.name}
-          data-gift-image={product.image?.sourceUrl}
+                        data-gift-image={product.image?.sourceUrl}
                         class="bg-spa-charcoal hover:bg-[#433B36] text-white py-2.5 px-2 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors text-center"
                       >
                         Quiero mi giftcard
                       </button>
+                      )}
                     </div>
                     )}
                   </div>

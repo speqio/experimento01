@@ -4,9 +4,9 @@ import Header from '../components/common/Header.tsx';
 import GiftCardModal from '../components/giftcard/GiftCardModal.tsx';
 import Footer from '../components/common/Footer.astro';
 import { wpQuery } from '../lib/wp-graphql';
-import { GET_PRODUCT_CATEGORIES } from '../lib/queries/products';
+import { GET_PRODUCT_CATEGORIES, GET_GIFT_CARD_SETTINGS } from '../lib/queries/products';
 import { groupCategories } from '../lib/categoryGroups';
-import type { ProductCategory } from '../types/catalog';
+import type { ProductCategory, GiftCardSettings } from '../types/catalog';
 
 interface Props {
   title: string;
@@ -24,6 +24,15 @@ try {
 } catch {
   // WordPress aún no disponible en build time — el header cae al menú simple.
 }
+
+// Diseño de la tarjeta 3D, administrable en wp-admin → Gift Cards → Ajustes.
+let giftCardImageUrl = '';
+try {
+  const settings = await wpQuery<{ giftCardSettings: GiftCardSettings }>({ query: GET_GIFT_CARD_SETTINGS });
+  giftCardImageUrl = settings.giftCardSettings?.imageUrl ?? '';
+} catch {
+  // Sin conexión en build time — GiftCardPreview cae a su imagen local de respaldo.
+}
 ---
 <BaseLayout title={title} description={description}>
   <Header currentPath={currentPath} categoryGroups={categoryGroups} client:load />
@@ -31,5 +40,5 @@ try {
     <slot />
   </main>
   <Footer />
-  <GiftCardModal client:load />
+  <GiftCardModal cardImageUrl={giftCardImageUrl} client:load />
 </BaseLayout>

@@ -44,4 +44,11 @@ export interface SimpleProduct {
   crossSell?: { nodes: SimpleProduct[] };
   giftCardFields?: GiftCardFields;
   upsellerFields?: UpsellerFields;
+  // false = desactivada desde wp-admin → Gift Cards (global o solo este producto).
+  giftCardEnabled?: boolean;
+}
+
+export interface GiftCardSettings {
+  enabled: boolean;
+  imageUrl: string;
 }
