@@ -15,6 +15,12 @@ if (!defined('MANDALA_FROM_EMAIL')) define('MANDALA_FROM_EMAIL', 'no-reply@labor
 if (!defined('MANDALA_EMAIL_LOGO_URL')) define('MANDALA_EMAIL_LOGO_URL', '');
 // Dominio del frontend Astro (no el del CMS).
 if (!defined('MANDALA_FRONTEND_URL')) define('MANDALA_FRONTEND_URL', 'https://laboratorio.space');
+// Contacto para reservar "a mano" (teléfono/WhatsApp/correo) — ver mandala_gift_email_html()
+// sección "Cómo canjear". El canje manual lo confirma el administrador desde
+// wp-admin → Gift Cards → Trazabilidad ("Marcar como usado").
+if (!defined('MANDALA_CONTACT_PHONE')) define('MANDALA_CONTACT_PHONE', '+56 9 9224 2180');
+if (!defined('MANDALA_CONTACT_WHATSAPP')) define('MANDALA_CONTACT_WHATSAPP', '56992242180');
+if (!defined('MANDALA_CONTACT_EMAIL')) define('MANDALA_CONTACT_EMAIL', 'contacto@spamandala.cl');
 
 /**
  * $d: mode ('recipient'|'buyer'), code, product_name, variant, image, message,
@@ -136,16 +142,26 @@ function mandala_gift_email_html(array $d) {
     <tr><td style="padding:0 0 18px 0;"></td></tr>
     <?php endif; ?>
 
-    <!-- Cómo canjearlo -->
+    <!-- Cómo canjearlo: dos formas -->
     <tr><td style="padding:0 0 26px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:<?php echo $sand; ?>;border-radius:14px;">
         <tr><td style="padding:22px 24px 6px 24px;font-family:<?php echo $serif; ?>;font-size:18px;color:<?php echo $brand_color; ?>;">Cómo canjear tu regalo</td></tr>
-        <tr><td style="padding:6px 24px 4px 24px;font-family:<?php echo $sans; ?>;font-size:13px;line-height:1.7;color:#675647;">
+
+        <tr><td style="padding:6px 24px 2px 24px;font-family:<?php echo $sans; ?>;font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:<?php echo $taupe; ?>;">Opción 1 — Reserva en línea</td></tr>
+        <tr><td style="padding:4px 24px 4px 24px;font-family:<?php echo $sans; ?>;font-size:13px;line-height:1.7;color:#675647;">
           <strong style="color:<?php echo $brand_color; ?>;">1.</strong> Entra a <a href="<?php echo esc_url($site); ?>" style="color:<?php echo $brand_color; ?>;"><?php echo esc_html(preg_replace('#^https?://#', '', $site)); ?></a> y elige el mismo servicio<?php echo !empty($d['variant']) ? ' (' . esc_html($d['variant']) . ')' : ''; ?>.<br>
           <strong style="color:<?php echo $brand_color; ?>;">2.</strong> Agrégalo al carrito e ingresa el código en el checkout, usando <strong><?php echo esc_html($d['recipient_email']); ?></strong> como tu email.<br>
           <strong style="color:<?php echo $brand_color; ?>;">3.</strong> El total queda en $0. ¡Listo!
         </td></tr>
-        <tr><td style="padding:0 0 18px 0;"></td></tr>
+
+        <tr><td style="padding:14px 24px 0 24px;"><div style="border-top:1px solid #E2DBCE;"></div></td></tr>
+
+        <tr><td style="padding:14px 24px 2px 24px;font-family:<?php echo $sans; ?>;font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:<?php echo $taupe; ?>;">Opción 2 — Por teléfono, WhatsApp o correo</td></tr>
+        <tr><td style="padding:4px 24px 20px 24px;font-family:<?php echo $sans; ?>;font-size:13px;line-height:1.7;color:#675647;">
+          Si prefieres, escríbenos o llámanos para reservar directamente. Indícanos <strong>el correo en el que recibiste esta gift card</strong> (<strong><?php echo esc_html($d['recipient_email']); ?></strong>) y tu <strong>código de regalo</strong> (<strong><?php echo esc_html($d['code']); ?></strong>):<br><br>
+          📞 Teléfono / WhatsApp: <a href="https://wa.me/<?php echo esc_attr(MANDALA_CONTACT_WHATSAPP); ?>" style="color:<?php echo $brand_color; ?>;"><?php echo esc_html(MANDALA_CONTACT_PHONE); ?></a><br>
+          ✉️ Correo: <a href="mailto:<?php echo esc_attr(MANDALA_CONTACT_EMAIL); ?>" style="color:<?php echo $brand_color; ?>;"><?php echo esc_html(MANDALA_CONTACT_EMAIL); ?></a>
+        </td></tr>
       </table>
     </td></tr>
 
