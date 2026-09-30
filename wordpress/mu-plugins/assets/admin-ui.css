@@ -1,0 +1,167 @@
+/* Spa Mándala — estilo compartido de los paneles de wp-admin (Marketing: Gift Cards,
+ * Banners). Solo capa visual: restyle de los elementos nativos de WordPress dentro de
+ * .mandala-admin, sin tocar ningún name/id de formulario ni lógica PHP/JS existente. */
+
+.mandala-admin {
+  --mandala-charcoal: #2C2724;
+  --mandala-taupe: #8C7A6B;
+  --mandala-taupe-dark: #6E5C4E;
+  --mandala-sand: #EFECE4;
+  --mandala-bg: #F8F6F0;
+  --mandala-border: #E2DDD3;
+  max-width: 1160px;
+  margin-top: 18px;
+}
+
+.mandala-admin h1.wp-heading-inline {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  font-size: 26px;
+  color: var(--mandala-charcoal);
+}
+
+.mandala-admin .mandala-subtitle {
+  color: var(--mandala-taupe-dark);
+  font-size: 13px;
+  margin: 2px 0 18px;
+}
+
+/* Tabs tipo "pill", mismo lenguaje visual que el sitio público */
+.mandala-admin .nav-tab-wrapper {
+  border-bottom: none;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.mandala-admin .nav-tab {
+  background: #fff;
+  border: 1px solid var(--mandala-border);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--mandala-taupe-dark);
+  margin: 0;
+}
+.mandala-admin .nav-tab:hover {
+  color: var(--mandala-charcoal);
+  border-color: var(--mandala-taupe);
+}
+.mandala-admin .nav-tab-active,
+.mandala-admin .nav-tab-active:hover {
+  background: var(--mandala-charcoal);
+  border-color: var(--mandala-charcoal);
+  color: #fff;
+}
+
+/* Tarjeta contenedora de contenido */
+.mandala-card {
+  background: #fff;
+  border: 1px solid var(--mandala-border);
+  border-radius: 14px;
+  padding: 22px 24px;
+  margin-bottom: 20px;
+}
+
+/* Tablas de datos (Trazabilidad, Productos) */
+.mandala-admin table.widefat {
+  border: 1px solid var(--mandala-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.mandala-admin table.widefat thead th {
+  background: var(--mandala-bg);
+  color: var(--mandala-taupe-dark);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--mandala-border);
+}
+.mandala-admin table.widefat.striped > tbody > tr:nth-child(odd) {
+  background: #FCFBF8;
+}
+.mandala-admin table.widefat code {
+  background: var(--mandala-sand);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+/* form-table (Ajustes) más espaciado */
+.mandala-admin .form-table th {
+  color: var(--mandala-charcoal);
+  font-weight: 600;
+  padding-left: 0;
+}
+.mandala-admin .form-table td {
+  padding-bottom: 24px;
+}
+
+/* Botones redondeados, mismo estilo que el sitio */
+.mandala-admin .button,
+.mandala-admin .button-primary,
+.mandala-admin .button-small {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  padding: 6px 16px;
+  height: auto;
+  border-color: var(--mandala-border);
+}
+.mandala-admin .button-primary {
+  background: var(--mandala-charcoal);
+  border-color: var(--mandala-charcoal);
+}
+.mandala-admin .button-primary:hover,
+.mandala-admin .button-primary:focus {
+  background: #433B36;
+  border-color: #433B36;
+}
+
+.mandala-admin .notice {
+  border-radius: 10px;
+  border-left-width: 4px;
+}
+
+/* Página de aterrizaje "Marketing": tarjetas de acceso directo */
+.mandala-marketing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  max-width: 900px;
+}
+.mandala-marketing-card {
+  background: #fff;
+  border: 1px solid var(--mandala-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  text-decoration: none;
+  display: block;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.mandala-marketing-card:hover {
+  border-color: var(--mandala-taupe);
+  box-shadow: 0 6px 20px rgba(44, 39, 36, .08);
+}
+.mandala-marketing-card .dashicons {
+  color: var(--mandala-taupe);
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  margin-bottom: 10px;
+}
+.mandala-marketing-card h3 {
+  margin: 0 0 4px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  font-size: 17px;
+  color: var(--mandala-charcoal);
+}
+.mandala-marketing-card p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--mandala-taupe-dark);
+}

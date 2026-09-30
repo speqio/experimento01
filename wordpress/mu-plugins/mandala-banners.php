@@ -1,12 +1,12 @@
 <?php
 /**
  * Plugin Name: Spa Mándala — Panel de Banners
- * Description: Pantalla en wp-admin ("Banners") para editar los banners del sitio
- *              (imagen, texto, botones) sin tocar código — mismo patrón que el panel
- *              de Gift Cards (mandala-giftcards-admin.php). Cada banner se guarda como
- *              una opción (`mandala_banner_<key>`) y se expone por GraphQL como
- *              `siteBanner(key: "...")`, así se pueden agregar banners nuevos sin
- *              tocar el schema otra vez.
+ * Description: Pantalla en wp-admin (Marketing → Banners, ver mandala-admin-ui.php) para
+ *              editar los banners del sitio (imagen, texto, botones) sin tocar código —
+ *              mismo patrón que el panel de Gift Cards (mandala-giftcards-admin.php).
+ *              Cada banner se guarda como una opción (`mandala_banner_<key>`) y se
+ *              expone por GraphQL como `siteBanner(key: "...")`, así se pueden agregar
+ *              banners nuevos sin tocar el schema otra vez.
  */
 
 if (!defined('ABSPATH')) exit;
@@ -34,16 +34,15 @@ function mandala_banner_get($key) {
 }
 
 add_action('admin_menu', function () {
-    add_menu_page(
+    add_submenu_page(
+        MANDALA_MARKETING_SLUG,
         'Banners',
         'Banners',
         'manage_woocommerce',
         MANDALA_BANNERS_SLUG,
-        'mandala_banners_admin_render',
-        'dashicons-images-alt2',
-        58
+        'mandala_banners_admin_render'
     );
-});
+}, 10);
 
 add_action('admin_enqueue_scripts', function ($hook) {
     if (strpos($hook, MANDALA_BANNERS_SLUG) === false) return;
@@ -111,8 +110,8 @@ function mandala_banners_admin_render() {
     $tab = isset($_GET['tab']) && array_key_exists($_GET['tab'], MANDALA_BANNER_KEYS) ? $_GET['tab'] : 'home';
     $banner = mandala_banner_get($tab);
     ?>
-    <div class="wrap">
-      <h1>Banners — Spa Mándala</h1>
+    <div class="wrap mandala-admin">
+      <?php mandala_admin_header('Banners', 'Imagen, título, texto y botones de la portada y de /promociones.'); ?>
       <?php if (!empty($_GET['saved'])) : ?>
         <div class="notice notice-success is-dismissible"><p>Guardado.</p></div>
       <?php endif; ?>
@@ -123,7 +122,7 @@ function mandala_banners_admin_render() {
         <?php endforeach; ?>
       </h2>
 
-      <div style="max-width:760px;margin-top:20px;">
+      <div style="max-width:760px;">
         <p>Deja un campo vacío para que el sitio use el texto/imagen de fábrica.
            <?php echo $tab === 'home' ? 'Este banner es parte de una página estática: los cambios se ven recién en el próximo despliegue.' : 'Esta página no es estática: los cambios se ven de inmediato al recargar.'; ?>
         </p>
@@ -131,6 +130,7 @@ function mandala_banners_admin_render() {
           <?php wp_nonce_field('mandala_banner_save', 'mandala_banner_nonce'); ?>
           <input type="hidden" name="mandala_banner_key" value="<?php echo esc_attr($tab); ?>">
 
+          <div class="mandala-card">
           <table class="form-table">
             <tr>
               <th scope="row">Imagen de fondo</th>
@@ -159,6 +159,7 @@ function mandala_banners_admin_render() {
               <input type="text" name="mandala_banner[secondary_link]" value="<?php echo esc_attr($banner['secondary_link']); ?>" placeholder="/gift-cards o https://..." class="regular-text">
             </td></tr>
           </table>
+          </div>
           <p class="submit"><button type="submit" class="button button-primary">Guardar banner</button></p>
         </form>
       </div>

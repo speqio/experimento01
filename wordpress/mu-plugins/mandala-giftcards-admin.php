@@ -1,12 +1,13 @@
 <?php
 /**
  * Plugin Name: Spa Mándala — Panel de Gift Cards
- * Description: Pantalla en wp-admin (WooCommerce → Gift Cards) para que el cliente
- *              administre gift cards sin tocar código: activar/desactivar por producto
- *              o globalmente, cambiar el diseño de la tarjeta, y ver la trazabilidad
- *              de compras (comprador, destinatario, código, estado) con opción de
- *              marcar un código como usado a mano (reservas por teléfono/correo).
- *              Usa las mismas opciones/meta que lee mandala-giftcards.php.
+ * Description: Pantalla en wp-admin (Marketing → Gift Cards, ver mandala-admin-ui.php)
+ *              para que el cliente administre gift cards sin tocar código:
+ *              activar/desactivar por producto o globalmente, cambiar el diseño de la
+ *              tarjeta, y ver la trazabilidad de compras (comprador, destinatario,
+ *              código, estado) con opción de marcar un código como usado a mano
+ *              (reservas por teléfono/correo). Usa las mismas opciones/meta que lee
+ *              mandala-giftcards.php.
  */
 
 if (!defined('ABSPATH')) exit;
@@ -15,14 +16,14 @@ const MANDALA_GIFT_ADMIN_SLUG = 'mandala-gift-cards';
 
 add_action('admin_menu', function () {
     add_submenu_page(
-        'woocommerce',
+        MANDALA_MARKETING_SLUG,
         'Gift Cards',
         'Gift Cards',
         'manage_woocommerce',
         MANDALA_GIFT_ADMIN_SLUG,
         'mandala_gift_admin_render'
     );
-});
+}, 10);
 
 add_action('admin_enqueue_scripts', function ($hook) {
     if (strpos($hook, MANDALA_GIFT_ADMIN_SLUG) === false) return;
@@ -182,8 +183,8 @@ function mandala_gift_admin_render() {
     $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'trazabilidad';
     $tabs = ['trazabilidad' => 'Trazabilidad', 'productos' => 'Productos', 'ajustes' => 'Ajustes'];
     ?>
-    <div class="wrap">
-      <h1>Gift Cards — Spa Mándala</h1>
+    <div class="wrap mandala-admin">
+      <?php mandala_admin_header('Gift Cards', 'Trazabilidad de compras, qué productos se pueden regalar y el diseño de la tarjeta.'); ?>
       <?php if (!empty($_GET['saved'])) : ?>
         <div class="notice notice-success is-dismissible"><p>Guardado.</p></div>
       <?php endif; ?>
@@ -224,6 +225,7 @@ function mandala_gift_admin_tab_trazabilidad() {
       </select>
       <noscript><button type="submit" class="button">Filtrar</button></noscript>
     </form>
+    <div class="mandala-card">
     <table class="widefat striped">
       <thead><tr>
         <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Código</th><th>Usado</th><th>Estado</th><th></th>
@@ -268,6 +270,7 @@ function mandala_gift_admin_tab_trazabilidad() {
         <?php endfor; ?>
       </div></div>
     <?php endif; ?>
+    </div>
     <?php
 }
 
@@ -277,6 +280,7 @@ function mandala_gift_admin_tab_productos() {
     <p>Desmarca un producto para que no se pueda regalar como gift card. WordPress lo bloquea de inmediato aunque el botón siga visible en el sitio hasta el próximo despliegue.</p>
     <form method="post">
       <?php wp_nonce_field('mandala_gift_admin', 'mandala_gift_admin_nonce'); ?>
+      <div class="mandala-card">
       <table class="widefat striped">
         <thead><tr><th style="width:40px;">Permitir</th><th>Producto</th><th>Precio</th><th></th></tr></thead>
         <tbody>
@@ -295,6 +299,7 @@ function mandala_gift_admin_tab_productos() {
           <?php endforeach; ?>
         </tbody>
       </table>
+      </div>
       <p class="submit"><button type="submit" name="mandala_gift_save_products" class="button button-primary">Guardar</button></p>
     </form>
     <?php
@@ -306,6 +311,7 @@ function mandala_gift_admin_tab_ajustes() {
     ?>
     <form method="post">
       <?php wp_nonce_field('mandala_gift_admin', 'mandala_gift_admin_nonce'); ?>
+      <div class="mandala-card">
       <table class="form-table">
         <tr>
           <th scope="row">Gift cards activas</th>
@@ -324,6 +330,7 @@ function mandala_gift_admin_tab_ajustes() {
           </td>
         </tr>
       </table>
+      </div>
       <p class="submit"><button type="submit" name="mandala_gift_save_settings" class="button button-primary">Guardar ajustes</button></p>
     </form>
     <script>

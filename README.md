@@ -57,7 +57,7 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 
 ### Panel de gift cards (wp-admin)
 
-`wp-admin → WooCommerce → Gift Cards` (`wordpress/mu-plugins/mandala-giftcards-admin.php`), tres pestañas:
+`wp-admin → Marketing → Gift Cards` (`wordpress/mu-plugins/mandala-giftcards-admin.php`), tres pestañas:
 
 - **Trazabilidad:** todas las compras hechas "como regalo" — comprador, destinatario, producto, monto, código y estado (Por enviar / Programado / Enviado / Canjeado / Expirado). Filtro Todos/Usados/No usados. Cada fila enlaza a la orden en WooCommerce, y si el código aún no se usó tiene un botón **Marcar como usado** para reservas hechas por teléfono o correo (sube el `usage_count` del cupón para que WooCommerce lo bloquee igual que un canje online, y deja registro de quién y cuándo lo marcó — se ve como "Canjeado manualmente por X el [fecha]").
 - **Productos:** checkbox por producto para permitir o no regalarlo. Guarda `_mandala_gift_enabled` en el producto. El link "Editar precio →" abre el producto en WooCommerce (el precio de la gift card siempre es el de la variante elegida, no hay un precio aparte que mantener).
@@ -69,7 +69,11 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 
 ## Banners
 
-`wp-admin → Banners` (`wordpress/mu-plugins/mandala-banners.php`), un menú propio con pestañas por banner (hoy **Home** y **Promociones**, se agregan más sumando una fila a `MANDALA_BANNER_KEYS` en ese archivo). Cada uno: imagen (biblioteca de medios), texto superior, título, descripción y hasta dos botones (texto + link). Se expone por GraphQL como `siteBanner(key: "home" | "promociones")`, y si un campo queda vacío la página usa el contenido de fábrica como respaldo (nunca se rompe el diseño por no configurar algo).
+`wp-admin → Marketing → Banners` (`wordpress/mu-plugins/mandala-banners.php`), con pestañas por banner (hoy **Home** y **Promociones**, se agregan más sumando una fila a `MANDALA_BANNER_KEYS` en ese archivo). Cada uno: imagen (biblioteca de medios), texto superior, título, descripción y hasta dos botones (texto + link). Se expone por GraphQL como `siteBanner(key: "home" | "promociones")`, y si un campo queda vacío la página usa el contenido de fábrica como respaldo (nunca se rompe el diseño por no configurar algo).
+
+## Panel "Marketing" (wp-admin)
+
+Gift Cards y Banners viven bajo un solo menú, **Marketing** (`wordpress/mu-plugins/mandala-admin-ui.php`), con una página de aterrizaje de accesos directos a cada sección. Este archivo no tiene lógica de negocio propia — solo registra el menú padre y encola el CSS de marca compartido (`assets/admin-ui.css`) que le da a ambos paneles la misma identidad visual del sitio (tabs redondeados, tarjetas, colores de marca) en vez de los estilos genéricos de WordPress. Subir junto a los demás mu-plugins, incluida la carpeta `assets/`.
 
 **Home (`/`) es una página estática:** un cambio de banner ahí se guarda al instante en WordPress, pero el sitio ya desplegado no lo muestra hasta el próximo `git push`/deploy (mismo caveat que el resto del contenido estático de este proyecto). **Promociones (`/promociones`) es SSR:** los cambios se ven de inmediato al recargar la página, sin esperar un deploy.
 
