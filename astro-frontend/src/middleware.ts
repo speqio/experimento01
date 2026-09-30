@@ -52,21 +52,36 @@ export const onRequest = defineMiddleware(async (context, next) => {
       return next();
     }
 
+    // Toda esta capa es un "nice to have": si la Cache API falla por lo que
+    // sea (headers que no le gustan, límites del runtime, etc.) NUNCA debe
+    // tirar la respuesta real abajo. Antes un error acá (visto en Cloudflare
+    // como 500 en algunos celulares) rompía la página entera aunque Astro ya
+    // la hubiera generado bien.
     const cache = (caches as any).default;
-    const cacheKey = new Request(context.url.toString(), context.request);
-    const cached = await cache.match(cacheKey);
-    if (cached) return cached;
+    let cacheKey: Request | null = null;
+    try {
+      cacheKey = new Request(context.url.toString(), context.request);
+      const cached = await cache.match(cacheKey);
+      if (cached) return cached;
+    } catch {
+      cacheKey = null;
+    }
 
     const response = await next();
-    if (response.ok) {
-      const toCache = response.clone();
-      const headers = new Headers(toCache.headers);
-      headers.set('Cache-Control', `public, max-age=${CACHE_TTL_SECONDS}`);
-      const cacheable = new Response(toCache.body, { status: toCache.status, headers });
-      const ctx = (context.locals as any).runtime?.ctx;
-      const putPromise = cache.put(cacheKey, cacheable);
-      if (ctx?.waitUntil) ctx.waitUntil(putPromise);
-      else await putPromise;
+
+    if (cacheKey && response.ok) {
+      try {
+        const toCache = response.clone();
+        const headers = new Headers(toCache.headers);
+        headers.set('Cache-Control', `public, max-age=${CACHE_TTL_SECONDS}`);
+        const cacheable = new Response(toCache.body, { status: toCache.status, headers });
+        const ctx = (context.locals as any).runtime?.ctx;
+        const putPromise = cache.put(cacheKey, cacheable).catch(() => {});
+        if (ctx?.waitUntil) ctx.waitUntil(putPromise);
+        else await putPromise;
+      } catch {
+        // No se pudo cachear esta respuesta — no pasa nada, se sirve igual.
+      }
     }
     return response;
   }
