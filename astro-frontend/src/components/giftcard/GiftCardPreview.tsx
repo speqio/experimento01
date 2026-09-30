@@ -120,13 +120,10 @@ export default function GiftCardPreview({ image, productName, variant, recipient
           >
             {personalImageUrl && (
               // El diseño de fábrica ya trae el logo incorporado en el arte; la foto
-              // del comprador no, así que se superpone acá (con un fondo oscuro
-              // translúcido detrás para que se lea igual sobre fotos claras).
-              <div
-                className="absolute bottom-[5%] right-[5%] pointer-events-none rounded-lg px-2.5 py-1.5"
-                style={{ background: 'rgba(20,18,16,0.45)', backdropFilter: 'blur(2px)' }}
-              >
-                <img src="/gift-card-logo.png" alt="Mándala Spa" className="h-5 sm:h-6 w-auto object-contain" />
+              // del comprador no, así que se superpone acá (logo blanco, sin placa de
+              // fondo detrás).
+              <div className="absolute bottom-[5%] right-[5%] pointer-events-none">
+                <img src="/gift-card-logo.png" alt="Mándala Spa" className="h-8 sm:h-10 w-auto object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]" />
               </div>
             )}
             <div

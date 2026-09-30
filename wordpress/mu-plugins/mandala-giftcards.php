@@ -292,7 +292,7 @@ function mandala_gift_compose_card_image($photo_url) {
     // igual que en el mockup del sitio.
     $logo_path = __DIR__ . '/assets/gift-card-logo.png';
     if (file_exists($logo_path) && ($logo = @imagecreatefrompng($logo_path))) {
-        $logo_w = (int) round($target_w * 0.16);
+        $logo_w = (int) round($target_w * 0.26);
         $lw = imagesx($logo);
         $lh = imagesy($logo);
         $logo_h = (int) round($lh * ($logo_w / $lw));
@@ -310,27 +310,12 @@ function mandala_gift_compose_card_image($photo_url) {
         imagedestroy($logo);
 
         $margin = (int) round($target_w * 0.035);
-        $pad = (int) round($margin * 0.6);
-
-        $badge_w = $logo_w + $pad * 2;
-        $badge_h = $logo_h + $pad * 2;
-        $badge_x = $target_w - $margin - $badge_w;
-        $badge_y = $target_h - $margin - $badge_h;
-        $badge_r = (int) round($pad * 1.2);
+        $logo_x = $target_w - $margin - $logo_w;
+        $logo_y = $target_h - $margin - $logo_h;
 
         imagealphablending($card, true);
-        $badge_color = imagecolorallocatealpha($card, 20, 18, 16, 55); // ~45% opacidad
-
-        imagefilledrectangle($card, $badge_x + $badge_r, $badge_y, $badge_x + $badge_w - $badge_r, $badge_y + $badge_h, $badge_color);
-        imagefilledrectangle($card, $badge_x, $badge_y + $badge_r, $badge_x + $badge_w, $badge_y + $badge_h - $badge_r, $badge_color);
-        foreach ([[0, 0], [1, 0], [0, 1], [1, 1]] as [$right, $bottom]) {
-            $cx = $badge_x + ($right ? $badge_w - $badge_r : $badge_r);
-            $cy = $badge_y + ($bottom ? $badge_h - $badge_r : $badge_r);
-            imagefilledellipse($card, $cx, $cy, $badge_r * 2, $badge_r * 2, $badge_color);
-        }
-
         // imagecopy (no resampled) preserva el alpha ya resuelto arriba sin volver a interpolar.
-        imagecopy($card, $logo_resized, $badge_x + $pad, $badge_y + $pad, 0, 0, $logo_w, $logo_h);
+        imagecopy($card, $logo_resized, $logo_x, $logo_y, 0, 0, $logo_w, $logo_h);
         imagedestroy($logo_resized);
     }
 
