@@ -4,8 +4,9 @@
  * Description: Pantalla en wp-admin (WooCommerce → Gift Cards) para que el cliente
  *              administre gift cards sin tocar código: activar/desactivar por producto
  *              o globalmente, cambiar el diseño de la tarjeta, y ver la trazabilidad
- *              de compras (comprador, destinatario, estado, origen). Usa las mismas
- *              opciones/meta que lee mandala-giftcards.php.
+ *              de compras (comprador, destinatario, código, estado) con opción de
+ *              marcar un código como usado a mano (reservas por teléfono/correo).
+ *              Usa las mismas opciones/meta que lee mandala-giftcards.php.
  */
 
 if (!defined('ABSPATH')) exit;
@@ -52,16 +53,44 @@ add_action('admin_init', function () {
     }
 });
 
-/** Clasifica el origen guardado por el frontend (ver astro-frontend/src/lib/attribution.ts). */
-function mandala_gift_format_origin($order) {
-    $raw = $order->get_meta('_mandala_attribution');
-    if (empty($raw)) return 'Sin datos';
-    $data = is_array($raw) ? $raw : json_decode($raw, true);
-    if (!is_array($data)) return 'Sin datos';
-    $source = trim((string) ($data['source'] ?? ''));
-    if ($source === '' || strtolower($source) === 'direct') return 'Directo';
-    return esc_html(ucfirst($source));
-}
+/**
+ * Marca un código como usado a mano (reservas por teléfono/correo que no pasan por
+ * el checkout online). No borra el cupón: sube su usage_count para que WooCommerce
+ * lo bloquee igual que un canje normal, y deja registro de quién/cuándo lo marcó.
+ */
+add_action('admin_post_mandala_gift_mark_used', function () {
+    if (!current_user_can('manage_woocommerce')) wp_die('No autorizado', 403);
+    if (empty($_POST['mandala_gift_mark_used_nonce']) || !wp_verify_nonce($_POST['mandala_gift_mark_used_nonce'], 'mandala_gift_mark_used')) {
+        wp_die('Solicitud inválida', 400);
+    }
+
+    $code = sanitize_text_field((string) ($_POST['code'] ?? ''));
+    $coupon_id = $code ? wc_get_coupon_id_by_code($code) : 0;
+    if ($coupon_id) {
+        $coupon = new WC_Coupon($coupon_id);
+        if ($coupon->get_usage_count() < 1) {
+            $coupon->set_usage_count(1);
+        }
+        $coupon->update_meta_data('_mandala_gift_manual_redeem', [
+            'by' => wp_get_current_user()->display_name,
+            'at' => current_time('mysql'),
+        ]);
+        $coupon->save();
+    }
+
+    $redirect = add_query_arg(
+        array_filter([
+            'page'   => MANDALA_GIFT_ADMIN_SLUG,
+            'tab'    => 'trazabilidad',
+            'estado' => sanitize_key((string) ($_POST['estado'] ?? 'todos')),
+            'paged'  => (int) ($_POST['paged'] ?? 1) ?: null,
+            'marked' => 1,
+        ]),
+        admin_url('admin.php')
+    );
+    wp_safe_redirect($redirect);
+    exit;
+});
 
 /**
  * Trae todas las órdenes con al menos un ítem regalado, más recientes primero.
@@ -107,8 +136,17 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos')
             if ($coupon_id) {
                 $coupon = new WC_Coupon($coupon_id);
                 if ($coupon->get_usage_count() > 0) {
-                    $status = 'Canjeado';
                     $used = true;
+                    $manual = $coupon->get_meta('_mandala_gift_manual_redeem');
+                    if (!empty($manual['at'])) {
+                        $status = sprintf(
+                            'Canjeado manualmente por %s el %s',
+                            $manual['by'] ?: 'un administrador',
+                            date_i18n('j \d\e F \d\e Y', strtotime($manual['at']))
+                        );
+                    } else {
+                        $status = 'Canjeado';
+                    }
                 } elseif ($coupon->get_date_expires() && $coupon->get_date_expires()->getTimestamp() < time()) {
                     $status = 'Expirado';
                 }
@@ -116,14 +154,13 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos')
         }
 
         $items[] = [
-            'order'     => $order,
-            'item'      => $item,
-            'gift'      => $gift,
-            'code'      => $code,
-            'status'    => $status,
-            'used'      => $used,
-            'origin'    => mandala_gift_format_origin($order),
-            'total'     => $order->get_formatted_order_total(),
+            'order'  => $order,
+            'item'   => $item,
+            'gift'   => $gift,
+            'code'   => $code,
+            'status' => $status,
+            'used'   => $used,
+            'total'  => $order->get_formatted_order_total(),
         ];
     }
 
@@ -172,7 +209,10 @@ function mandala_gift_admin_tab_trazabilidad() {
     $estado = isset($_GET['estado']) ? sanitize_key($_GET['estado']) : 'todos';
     $result = mandala_gift_query_orders($page, 20, $estado);
     ?>
-    <p>Todas las compras hechas "como regalo", con su código, para saber cuáles ya se canjearon y cuáles siguen disponibles. El origen se completa solo cuando el frontend detecta utm_source/referencia (ver README).</p>
+    <?php if (!empty($_GET['marked'])) : ?>
+      <div class="notice notice-success is-dismissible"><p>Código marcado como usado.</p></div>
+    <?php endif; ?>
+    <p>Todas las compras hechas "como regalo", con su código, para saber cuáles ya se canjearon y cuáles siguen disponibles. Si alguien reservó por teléfono o correo, márcalo manualmente para que no se pueda canjear de nuevo online.</p>
     <form method="get" style="margin-bottom:12px;">
       <input type="hidden" name="page" value="<?php echo esc_attr(MANDALA_GIFT_ADMIN_SLUG); ?>">
       <input type="hidden" name="tab" value="trazabilidad">
@@ -186,7 +226,7 @@ function mandala_gift_admin_tab_trazabilidad() {
     </form>
     <table class="widefat striped">
       <thead><tr>
-        <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Código</th><th>Usado</th><th>Estado</th><th>Origen</th>
+        <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Código</th><th>Usado</th><th>Estado</th><th></th>
       </tr></thead>
       <tbody>
         <?php if (empty($result['items'])) : ?>
@@ -204,7 +244,18 @@ function mandala_gift_admin_tab_trazabilidad() {
             <td><code><?php echo esc_html($row['code'] ?: '—'); ?></code></td>
             <td><?php echo $row['code'] ? ($row['used'] ? 'Sí' : 'No') : '—'; ?></td>
             <td><?php echo esc_html($row['status']); ?></td>
-            <td><?php echo esc_html($row['origin']); ?></td>
+            <td>
+              <?php if ($row['code'] && !$row['used']) : ?>
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('¿Marcar <?php echo esc_js($row['code']); ?> como usado? No se podrá canjear online después.');">
+                  <input type="hidden" name="action" value="mandala_gift_mark_used">
+                  <input type="hidden" name="code" value="<?php echo esc_attr($row['code']); ?>">
+                  <input type="hidden" name="estado" value="<?php echo esc_attr($estado); ?>">
+                  <input type="hidden" name="paged" value="<?php echo esc_attr($page); ?>">
+                  <?php wp_nonce_field('mandala_gift_mark_used', 'mandala_gift_mark_used_nonce'); ?>
+                  <button type="submit" class="button button-small">Marcar como usado</button>
+                </form>
+              <?php endif; ?>
+            </td>
           </tr>
         <?php endforeach; ?>
       </tbody>
