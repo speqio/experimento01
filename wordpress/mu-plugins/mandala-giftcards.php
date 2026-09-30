@@ -41,6 +41,26 @@ function mandala_gift_image_url() {
 }
 
 /**
+ * Foto personalizada del comprador (api/gift-photo-upload.ts): sube a la Biblioteca
+ * de Medios con un usuario de mínimo privilegio (solo `upload_files`, nada de
+ * publicar/editar contenido), separado de las claves REST de WooCommerce.
+ *
+ * Cómo crearlo en wp-admin (una sola vez):
+ *   1. Usuarios → Añadir nuevo → username "giftcard-uploader", rol Suscriptor.
+ *   2. En su perfil → Application Passwords → generar una ("mandala-frontend").
+ *   3. Esa clave va SOLO al panel de Cloudflare como secretos WP_MEDIA_APP_USER /
+ *      WP_MEDIA_APP_PASSWORD — nunca al repo.
+ * Este filtro es lo que le da permiso de subir archivos pese a ser Suscriptor.
+ */
+const MANDALA_GIFT_UPLOADER_USER = 'giftcard-uploader';
+add_filter('user_has_cap', function ($allcaps, $caps, $args, $user) {
+    if (in_array('upload_files', (array) $caps, true) && $user instanceof WP_User && $user->user_login === MANDALA_GIFT_UPLOADER_USER) {
+        $allcaps['upload_files'] = true;
+    }
+    return $allcaps;
+}, 10, 4);
+
+/**
  * 1) Carrito: WooGraphQL vuelca el JSON de extraData directamente en
  *    $cart_item_data ({buyerEmail, recipientEmail, message}); lo normalizamos.
  */
@@ -60,13 +80,23 @@ add_filter('woocommerce_add_cart_item_data', function ($cart_item_data, $product
         $delivery_date = $raw_date;
     }
 
+    // Foto que el comprador subió para reemplazar el diseño (api/gift-photo-upload.ts,
+    // ya reenviada a la Biblioteca de Medios de este mismo WordPress). Defensa en
+    // profundidad: se descarta cualquier URL que no sea de este sitio, por si alguien
+    // arma la mutación a mano con una imagen externa.
+    $personal_image = esc_url_raw((string) ($cart_item_data['personalImageUrl'] ?? ''));
+    if ($personal_image && parse_url($personal_image, PHP_URL_HOST) !== parse_url(home_url(), PHP_URL_HOST)) {
+        $personal_image = '';
+    }
+
     $gift = [
-        'buyerEmail'     => sanitize_email($cart_item_data['buyerEmail'] ?? ''),
-        'recipientEmail' => sanitize_email($cart_item_data['recipientEmail']),
-        'message'        => sanitize_textarea_field(mb_substr($cart_item_data['message'] ?? '', 0, 300)),
-        'deliveryDate'   => $delivery_date,
+        'buyerEmail'      => sanitize_email($cart_item_data['buyerEmail'] ?? ''),
+        'recipientEmail'  => sanitize_email($cart_item_data['recipientEmail']),
+        'message'         => sanitize_textarea_field(mb_substr($cart_item_data['message'] ?? '', 0, 300)),
+        'deliveryDate'    => $delivery_date,
+        'personalImage'   => $personal_image,
     ];
-    unset($cart_item_data['buyerEmail'], $cart_item_data['recipientEmail'], $cart_item_data['message'], $cart_item_data['deliveryDate']);
+    unset($cart_item_data['buyerEmail'], $cart_item_data['recipientEmail'], $cart_item_data['message'], $cart_item_data['deliveryDate'], $cart_item_data['personalImageUrl']);
     if (!is_email($gift['recipientEmail'])) return $cart_item_data;
 
     $cart_item_data[MANDALA_GIFT_KEY] = $gift;
@@ -208,6 +238,7 @@ function mandala_gift_send_email($code, $gift, $item, $order) {
         'product_name'    => $parent ? $parent->get_name() : $item->get_name(),
         'variant'         => $variant,
         'image'           => $image,
+        'personal_image'  => $gift['personalImage'] ?? '',
         'message'         => $gift['message'] ?? '',
         'from_name'       => $from_name,
         'recipient_email' => $gift['recipientEmail'],

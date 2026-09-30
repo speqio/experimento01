@@ -8,6 +8,9 @@ interface Props {
   message: string;
   // Diseño de la tarjeta (wp-admin → Gift Cards → Ajustes); vacío = respaldo local.
   cardImageUrl?: string;
+  // Foto que sube el comprador (api/gift-photo-upload.ts): si viene, reemplaza
+  // todo el fondo de la tarjeta y se superpone el logo en una esquina.
+  personalImageUrl?: string;
 }
 
 const MAX_ROT = 18;
@@ -15,7 +18,7 @@ const REST_SHADOW = '0 15px 35px rgba(0,0,0,0.25), 0 5px 15px rgba(0,0,0,0.2)';
 
 // Tarjeta con efecto 3D (tilt + glare + sheen) y, debajo, el detalle del regalo en vivo.
 // En el correo se usa una imagen estática equivalente (public/gift-card-email.jpg).
-export default function GiftCardPreview({ image, productName, variant, recipient, message, cardImageUrl }: Props) {
+export default function GiftCardPreview({ image, productName, variant, recipient, message, cardImageUrl, personalImageUrl }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const glareRef = useRef<HTMLDivElement>(null);
@@ -107,7 +110,7 @@ export default function GiftCardPreview({ image, productName, variant, recipient
               transformStyle: 'preserve-3d',
               boxShadow: REST_SHADOW,
               transition: 'transform 0.6s cubic-bezier(0.23,1,0.32,1), box-shadow 0.6s cubic-bezier(0.23,1,0.32,1)',
-              backgroundImage: `url('${cardImageUrl || '/gift-card.webp'}')`,
+              backgroundImage: `url('${personalImageUrl || cardImageUrl || '/gift-card.webp'}')`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               overflow: 'hidden',
@@ -115,6 +118,17 @@ export default function GiftCardPreview({ image, productName, variant, recipient
             role="img"
             aria-label="Gift Card Mándala Spa"
           >
+            {personalImageUrl && (
+              // El diseño de fábrica ya trae el logo incorporado en el arte; la foto
+              // del comprador no, así que se superpone acá (con un fondo oscuro
+              // translúcido detrás para que se lea igual sobre fotos claras).
+              <div
+                className="absolute bottom-[5%] right-[5%] pointer-events-none rounded-lg px-2.5 py-1.5"
+                style={{ background: 'rgba(20,18,16,0.45)', backdropFilter: 'blur(2px)' }}
+              >
+                <img src="/gift-card-logo.png" alt="Mándala Spa" className="h-5 sm:h-6 w-auto object-contain" />
+              </div>
+            )}
             <div
               ref={glareRef}
               className="absolute inset-0 pointer-events-none"

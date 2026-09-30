@@ -74,13 +74,24 @@ function mandala_gift_email_html(array $d) {
     </td></tr>
     <tr><td align="center" style="padding:0 24px 24px 24px;font-family:<?php echo $sans; ?>;font-size:14px;line-height:1.6;color:#675647;"><?php echo $intro; ?></td></tr>
 
-    <!-- Tarjeta (imagen estática; el efecto 3D solo existe en el modal del sitio).
-         El arte se administra en wp-admin → Gift Cards → Ajustes; Outlook de
-         escritorio ignora border-radius/box-shadow y muestra la esquina cuadrada
-         (degradación aceptable, no rompe el layout). -->
+    <!-- Tarjeta (imagen estática; el efecto 3D solo existe en el modal del sitio). Si el
+         comprador subió su propia foto, esa reemplaza el arte y se superpone el logo
+         (position:absolute dentro de un td position:relative). El arte de fábrica se
+         administra en wp-admin → Gift Cards → Ajustes. Outlook de escritorio ignora
+         border-radius/box-shadow/position:absolute y muestra solo la imagen base,
+         sin logo superpuesto — degradación aceptable, no rompe el layout. -->
+    <?php if (!empty($d['personal_image'])) : ?>
+    <tr><td align="center" style="padding:0 0 22px 0;">
+      <div style="position:relative;display:inline-block;width:100%;max-width:480px;">
+        <img src="<?php echo esc_url($d['personal_image']); ?>" alt="Gift Card <?php echo esc_attr(MANDALA_BRAND); ?>" width="480" style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.18);">
+        <img src="<?php echo esc_url($site . '/gift-card-logo.png'); ?>" alt="" width="90" style="position:absolute;bottom:14px;right:14px;width:90px;height:auto;border:0;">
+      </div>
+    </td></tr>
+    <?php else : ?>
     <tr><td align="center" style="padding:0 0 22px 0;">
       <img src="<?php echo esc_url(mandala_gift_image_url()); ?>" alt="Gift Card <?php echo esc_attr(MANDALA_BRAND); ?>" width="480" style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.18);">
     </td></tr>
+    <?php endif; ?>
 
     <!-- Detalle del regalo -->
     <tr><td style="padding:0 0 26px 0;">

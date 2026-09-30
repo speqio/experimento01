@@ -43,6 +43,8 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   const [target, setTarget] = useState<Target | null>(null);
   const [form, setForm] = useState<GiftCardInput>(empty);
   const [error, setError] = useState('');
+  const [photoError, setPhotoError] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const loading = useStore(isCartLoading);
 
   useEffect(() => {
@@ -63,6 +65,26 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   }, []);
 
   if (!target) return null;
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite volver a elegir el mismo archivo si falla
+    if (!file) return;
+    setPhotoError('');
+    setUploadingPhoto(true);
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch('/api/gift-photo-upload', { method: 'POST', body });
+      const data: { url?: string; error?: string } = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error ?? 'No se pudo subir la foto.');
+      setForm((f) => ({ ...f, personalImageUrl: data.url }));
+    } catch (err) {
+      setPhotoError((err as Error).message);
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +124,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
               recipient={form.recipientEmail}
               message={form.message}
               cardImageUrl={cardImageUrl}
+              personalImageUrl={form.personalImageUrl}
             />
           </div>
 
@@ -129,6 +152,36 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
             </div>
 
             <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`${labelClass} mb-0`}>Personaliza el diseño con tu foto (opcional)</label>
+                {form.personalImageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, personalImageUrl: undefined }))}
+                    className="text-[11px] text-spa-taupe underline underline-offset-2"
+                  >
+                    Quitar
+                  </button>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={uploadingPhoto}
+                onChange={handlePhotoChange}
+                className="w-full text-xs text-spa-taupe file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-spa-cream file:text-spa-charcoal file:text-xs file:font-semibold file:uppercase file:tracking-wide"
+              />
+              <p className="text-[11px] text-spa-taupe mt-1.5">
+                {uploadingPhoto
+                  ? 'Subiendo tu foto…'
+                  : form.personalImageUrl
+                    ? 'Tu foto reemplaza el diseño de la tarjeta (el logo queda encima).'
+                    : 'JPEG, PNG o WebP, hasta 5MB. Si no subes nada, se usa el diseño de fábrica.'}
+              </p>
+              {photoError && <p className="text-sm text-red-600 mt-1">{photoError}</p>}
+            </div>
+
+            <div>
               <label className={labelClass}>Fecha de envío (opcional)</label>
               <input
                 type="date"
@@ -149,10 +202,10 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploadingPhoto}
               className="w-full bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all disabled:opacity-50"
             >
-              {loading ? 'Agregando…' : 'Continuar al pago'}
+              {uploadingPhoto ? 'Subiendo foto…' : loading ? 'Agregando…' : 'Continuar al pago'}
             </button>
             <p className="text-[11px] text-spa-taupe text-center">
               {form.deliveryDate

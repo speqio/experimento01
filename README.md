@@ -41,7 +41,13 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 
 **Envío programado:** en el modal, el comprador puede elegir una fecha de envío (opcional, hasta 180 días). El cupón se crea igual al confirmarse el pago, pero el correo se despacha ese día a las 09:00 (hora del sitio) vía `wp_schedule_single_event` (WP-Cron), en vez de salir de inmediato. Es idempotente (meta `_mandala_gift_sent`), así que no se duplica si WP-Cron corre varias veces. **Requiere que WP-Cron corra puntual**: si el sitio recibe poco tráfico, configura en cPanel un cron real que golpee `wp-cron.php` cada 15-30 min (ver comentario al inicio de `mandala-giftcards.php`).
 
-**Tarjeta 3D:** el modal muestra la tarjeta con inclinación, brillo y flotación (`src/components/giftcard/GiftCardPreview.tsx`, arte en `public/gift-card.webp`). Los correos no ejecutan JS/3D, por eso usan la imagen estática `public/gift-card-email.jpg` (servida en `<frontend>/gift-card-email.jpg`); si cambia el arte, hay que regenerarla.
+**Tarjeta 3D:** el modal muestra la tarjeta con inclinación, brillo y flotación (`src/components/giftcard/GiftCardPreview.tsx`, arte en `public/gift-card.webp`, o el que esté configurado en wp-admin → Gift Cards → Ajustes). Los correos no ejecutan JS/3D, por eso usan una imagen estática equivalente.
+
+**Foto personalizada del comprador:** en el modal, el comprador puede subir su propia foto (JPEG/PNG/WebP, hasta 5MB) para que sea el diseño completo de su gift card, con el logo (`public/gift-card-logo.png`) superpuesto en una esquina — tanto en la tarjeta 3D del modal como en el correo. Sin foto, se usa el diseño de fábrica de siempre.
+- `astro-frontend/src/pages/api/gift-photo-upload.ts` valida el archivo (tamaño + firma de bytes reales, no el `Content-Type` declarado — solo JPEG/PNG/WebP, SVG explícitamente rechazado por riesgo de script embebido) y lo reenvía a la Biblioteca de Medios de WordPress (`POST /wp-json/wp/v2/media`), que lo reprocesa con GD/Imagick (segunda validación real de que es una imagen).
+- Requiere un usuario de WordPress de **mínimo privilegio**, separado de las claves REST de WooCommerce: crear un usuario `giftcard-uploader` con rol Suscriptor (Usuarios → Añadir nuevo), generarle una *Application Password* en su perfil, y cargarla en Cloudflare como los secretos `WP_MEDIA_APP_USER`/`WP_MEDIA_APP_PASSWORD`. El mu-plugin (`mandala-giftcards.php`) le da el permiso de subir archivos a ese usuario puntual vía código (`user_has_cap`), sin subirle el rol completo.
+- El mu-plugin valida además que la URL que llega desde el frontend sea del propio WordPress antes de guardarla en la orden (defensa en profundidad).
+- Pendiente/no crítico dado el volumen del negocio: sin límite de tasa de subidas propio (se recomienda una regla de Rate Limiting en Cloudflare sobre `/api/gift-photo-upload`, igual que el pendiente ya anotado para `/api/webpay-*`); sin moderación automática de contenido (si alguien sube algo inapropiado, queda visible y revisable en la Biblioteca de Medios de wp-admin); pueden quedar fotos huérfanas en Medios si alguien sube una y abandona el pago.
 
 **Correo de regalo:** el template HTML vive en `wordpress/mu-plugins/mandala-giftcards-email.php` (subir junto a `mandala-giftcards.php` a `wp-content/mu-plugins/`). Incluye mockup de la tarjeta con la foto del producto, código, vigencia, pasos de canje y botón "Agenda tu hora" (`<frontend>/agenda`). Asunto y remitente usan la marca (`MANDALA_BRAND`, `MANDALA_FROM_EMAIL`), no el título del sitio WordPress. Para poner el logo, subirlo a Medios y definir `MANDALA_EMAIL_LOGO_URL` en ese archivo. Vista previa sin comprar (solo administradores): `https://cms.laboratorio.space/wp-admin/admin-post.php?action=mandala_gift_preview&product=<ID>` (añadir `&mode=buyer` para la copia del comprador, `&send=1` para enviarte una prueba).
 
@@ -60,7 +66,7 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 ## Variables de entorno
 
 No secretas (en `astro-frontend/wrangler.toml`, `[vars]`): `PUBLIC_SITE_URL` (dominio exacto que usa el cliente), `PUBLIC_WPGRAPHQL_URL`, `WEBPAY_ENVIRONMENT`, `WEBPAY_COMMERCE_CODE`.
-Secretas (panel de Cloudflare → Variables and Secrets; localmente en `.env`): `WEBPAY_API_KEY`, `WC_REST_KEY`, `WC_REST_SECRET`.
+Secretas (panel de Cloudflare → Variables and Secrets; localmente en `.env`): `WEBPAY_API_KEY`, `WC_REST_KEY`, `WC_REST_SECRET`, `WP_MEDIA_APP_USER`, `WP_MEDIA_APP_PASSWORD` (subida de fotos personalizadas de gift card, ver sección Gift cards).
 
 ## Estado / pendientes
 
