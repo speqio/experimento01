@@ -1,0 +1,41 @@
+---
+// SSR (no prerender): un artículo nuevo aparece sin esperar un deploy,
+// igual que /promociones y /tienda.
+export const prerender = false;
+
+import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+import BlogCard from '../../components/blog/BlogCard.astro';
+import { wpQuery } from '../../lib/wp-graphql';
+import { GET_POSTS } from '../../lib/queries/posts';
+import type { Post } from '../../types/blog';
+
+let posts: Post[] = [];
+try {
+  const data = await wpQuery<{ posts: { nodes: Post[] } }>({
+    query: GET_POSTS,
+    variables: { first: 24 },
+  });
+  posts = data.posts.nodes;
+} catch {
+  // WordPress aún no disponible — se muestra el aviso de abajo.
+}
+---
+<ECommerceLayout title="Blog" description="Consejos de bienestar, cuidado personal y novedades de Mándala Spa.">
+  <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto text-center">
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Bienestar &amp; autocuidado</span>
+      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal">Blog</h1>
+      <p class="mt-4 text-spa-taupe leading-relaxed">Notas y consejos para tu rutina de bienestar.</p>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+    {posts.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {posts.map((post) => <BlogCard post={post} />)}
+      </div>
+    ) : (
+      <p class="text-sm text-spa-taupe text-center">Todavía no hay artículos publicados.</p>
+    )}
+  </div>
+</ECommerceLayout>

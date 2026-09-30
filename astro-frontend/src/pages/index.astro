@@ -6,7 +6,9 @@ import { wpQuery } from '../lib/wp-graphql';
 import { GET_PRODUCTS } from '../lib/queries/products';
 import { SITE_INFO } from '../lib/siteInfo';
 import { getProductDuration, getProductBadge, extractDuration, getCardSummary, getPriceDisplay, formatPriceDisplay } from '../lib/parse';
+import { GET_SITE_BANNER } from '../lib/queries/banners';
 import type { SimpleProduct } from '../types/catalog';
+import type { SiteBanner } from '../types/banner';
 
 let products: SimpleProduct[] = [];
 try {
@@ -21,35 +23,68 @@ try {
 
 const featured = products.slice(0, 3);
 const rituals = products.slice(3, 6);
+
+// Banner del Hero (wp-admin → Banners → Home). Página estática: los cambios
+// requieren el próximo deploy para verse (ver README, mismo caveat que gift cards).
+let banner: Partial<SiteBanner> = {};
+try {
+  const data = await wpQuery<{ siteBanner: SiteBanner | null }>({
+    query: GET_SITE_BANNER,
+    variables: { key: 'home' },
+  });
+  banner = data.siteBanner ?? {};
+} catch {
+  // Sin WordPress en build time — se usa el contenido de fábrica de abajo.
+}
+
+const hero = {
+  eyebrow: banner.eyebrow || 'Un refugio de bienestar',
+  title: banner.title || 'Masajes, tratamientos faciales y corporales',
+  description:
+    banner.description ||
+    'Sesiones terapéuticas y experiencias de spa diseñadas para renovar tu cuerpo y tu calma en un ambiente sereno.',
+  image: banner.image || '',
+  primaryText: banner.primaryText || 'Ver servicios',
+  primaryLink: banner.primaryLink || '/tienda',
+  secondaryText: banner.secondaryText || 'Regalar Gift Card',
+  secondaryLink: banner.secondaryLink || '/gift-cards',
+};
 ---
 <ECommerceLayout title="Mándala Spa | Bienestar & Masajes">
   <div class="space-y-16 sm:space-y-24 pb-16">
-    <!-- 1. HERO -->
+    <!-- 1. HERO (wp-admin → Banners → Home) -->
     <section class="relative w-full h-[480px] sm:h-[560px] lg:h-[620px] bg-spa-charcoal overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-br from-[#3a332d] to-spa-charcoal" />
+      {hero.image ? (
+        <img src={hero.image} alt="" class="absolute inset-0 w-full h-full object-cover" />
+      ) : null}
+      <div class="absolute inset-0 bg-gradient-to-br from-[#3a332d] to-spa-charcoal" style={hero.image ? 'opacity:0.55' : undefined} />
       <div class="relative max-w-7xl mx-auto h-full px-6 sm:px-8 flex flex-col justify-center items-center text-center text-white">
         <span class="text-xs sm:text-sm font-semibold tracking-[0.25em] uppercase text-[#D4C3B3] mb-3">
-          Un refugio de bienestar
+          {hero.eyebrow}
         </span>
         <h1 class="font-editorial text-3xl sm:text-5xl lg:text-6xl font-light tracking-wide max-w-4xl leading-tight uppercase mb-4">
-          Masajes, tratamientos faciales y corporales
+          {hero.title}
         </h1>
         <p class="font-sans text-sm sm:text-base text-[#E5DFD7] max-w-2xl font-light leading-relaxed mb-8">
-          Sesiones terapéuticas y experiencias de spa diseñadas para renovar tu cuerpo y tu calma en un ambiente sereno.
+          {hero.description}
         </p>
         <div class="flex flex-col sm:flex-row items-center gap-4">
-          <a
-            href="/tienda"
-            class="bg-transparent hover:bg-white/10 text-spa-bg border border-[#E5DFD7] px-8 py-3.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300"
-          >
-            Ver servicios
-          </a>
-          <a
-            href="/gift-cards"
-            class="bg-[#D4C3B3] hover:bg-[#E5D7C9] text-spa-charcoal px-8 py-3.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md"
-          >
-            Regalar Gift Card
-          </a>
+          {hero.primaryText && (
+            <a
+              href={hero.primaryLink}
+              class="bg-transparent hover:bg-white/10 text-spa-bg border border-[#E5DFD7] px-8 py-3.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300"
+            >
+              {hero.primaryText}
+            </a>
+          )}
+          {hero.secondaryText && (
+            <a
+              href={hero.secondaryLink}
+              class="bg-[#D4C3B3] hover:bg-[#E5D7C9] text-spa-charcoal px-8 py-3.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md"
+            >
+              {hero.secondaryText}
+            </a>
+          )}
         </div>
       </div>
     </section>

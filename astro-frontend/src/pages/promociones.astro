@@ -8,7 +8,9 @@ import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ProductGrid from '../components/catalog/ProductGrid.astro';
 import { wpQuery } from '../lib/wp-graphql';
 import { GET_PRODUCTS } from '../lib/queries/products';
+import { GET_SITE_BANNER } from '../lib/queries/banners';
 import type { SimpleProduct } from '../types/catalog';
+import type { SiteBanner } from '../types/banner';
 
 let onSale: SimpleProduct[] = [];
 try {
@@ -22,14 +24,35 @@ try {
 } catch {
   // WordPress aún no configurado/disponible en build time.
 }
+
+// Banner (wp-admin → Banners → Promociones). Página SSR: los cambios se ven
+// al recargar, sin esperar un deploy (a diferencia del Hero del Home).
+let banner: Partial<SiteBanner> = {};
+try {
+  const data = await wpQuery<{ siteBanner: SiteBanner | null }>({
+    query: GET_SITE_BANNER,
+    variables: { key: 'promociones' },
+  });
+  banner = data.siteBanner ?? {};
+} catch {
+  // Sin WordPress — se usa el contenido de fábrica de abajo.
+}
+
+const hero = {
+  eyebrow: banner.eyebrow || 'Tarifas preferenciales',
+  title: banner.title || 'Promociones especiales',
+  description: banner.description || 'Tratamientos con descuento por tiempo limitado en Las Condes, Santiago de Chile.',
+  image: banner.image || '',
+};
 ---
 <ECommerceLayout title="Promociones">
-  <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-3xl mx-auto text-center">
-      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Tarifas preferenciales</span>
-      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal">Promociones especiales</h1>
+  <div class="relative bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    {hero.image && <img src={hero.image} alt="" class="absolute inset-0 w-full h-full object-cover opacity-25" />}
+    <div class="relative max-w-3xl mx-auto text-center">
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">{hero.eyebrow}</span>
+      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal">{hero.title}</h1>
       <p class="mt-4 text-spa-taupe leading-relaxed">
-        Tratamientos con descuento por tiempo limitado en Las Condes, Santiago de Chile.
+        {hero.description}
       </p>
     </div>
   </div>

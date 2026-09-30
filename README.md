@@ -65,6 +65,16 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 
 **Origen del comprador:** `astro-frontend/src/lib/attribution.ts` sigue capturando `utm_source`/`utm_medium`/`utm_campaign` de la URL y `document.referrer` la primera vez que alguien entra al sitio, y viaja como meta `_mandala_attribution` de la orden al pagar — pero ya no se muestra en el panel de Trazabilidad (se sacó por pedido explícito, quedaba innecesario ahí). El dato sigue disponible en la meta de cada orden en WooCommerce por si se retoma más adelante.
 
+## Banners
+
+`wp-admin → Banners` (`wordpress/mu-plugins/mandala-banners.php`), un menú propio con pestañas por banner (hoy **Home** y **Promociones**, se agregan más sumando una fila a `MANDALA_BANNER_KEYS` en ese archivo). Cada uno: imagen (biblioteca de medios), texto superior, título, descripción y hasta dos botones (texto + link). Se expone por GraphQL como `siteBanner(key: "home" | "promociones")`, y si un campo queda vacío la página usa el contenido de fábrica como respaldo (nunca se rompe el diseño por no configurar algo).
+
+**Home (`/`) es una página estática:** un cambio de banner ahí se guarda al instante en WordPress, pero el sitio ya desplegado no lo muestra hasta el próximo `git push`/deploy (mismo caveat que el resto del contenido estático de este proyecto). **Promociones (`/promociones`) es SSR:** los cambios se ven de inmediato al recargar la página, sin esperar un deploy.
+
+## Blog
+
+Usa las **Entradas** nativas de WordPress (Posts) — sin ACF ni tipo de contenido propio, WPGraphQL ya las expone de fábrica (`posts`/`post`). WordPress entrega título, contenido, extracto, imagen destacada y categoría; Astro (`src/pages/blog/index.astro`, `blog/[slug].astro`, `src/components/blog/BlogCard.astro`) decide el layout, igual que ya hace con los productos. Páginas SSR (no estáticas): un artículo nuevo aparece sin esperar un deploy. El contenido del artículo se sanitiza con `cleanHtml()` (`lib/sanitize.ts`), el mismo mecanismo que ya se usa para las descripciones de producto.
+
 ## Variables de entorno
 
 No secretas (en `astro-frontend/wrangler.toml`, `[vars]`): `PUBLIC_SITE_URL` (dominio exacto que usa el cliente), `PUBLIC_WPGRAPHQL_URL`, `WEBPAY_ENVIRONMENT`, `WEBPAY_COMMERCE_CODE`.
