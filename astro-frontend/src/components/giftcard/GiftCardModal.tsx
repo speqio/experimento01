@@ -77,7 +77,13 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
         variationId: btn.dataset.variationId ? Number(btn.dataset.variationId) : undefined,
         addons,
       });
-      setSelectedAddons([]);
+      // Si la persona ya marcó el complemento en la ficha de producto (checkbox
+      // [data-upsell-id] de "Complementa tu experiencia"), que abra premarcado acá
+      // también — no debería tener que repetir el click.
+      const checkedIds = new Set(
+        [...document.querySelectorAll<HTMLInputElement>('[data-upsell-id]:checked')].map((el) => Number(el.dataset.upsellId))
+      );
+      setSelectedAddons((addons ?? []).filter((a) => checkedIds.has(a.id)).map((a) => a.id));
       setError('');
     }
     document.addEventListener('click', onClick);
