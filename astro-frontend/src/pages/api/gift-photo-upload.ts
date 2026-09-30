@@ -68,15 +68,30 @@ export const POST: APIRoute = async ({ request, locals }) => {
         Authorization: `Basic ${auth}`,
         'Content-Type': signature.mime,
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'User-Agent': 'MandalaGiftUpload/1.0',
       },
       body: buffer,
     });
 
-    if (!res.ok) {
-      return json({ error: 'No se pudo subir la imagen. Inténtalo de nuevo.' }, 502);
+    // Se lee como texto primero (no .json() directo): si WordPress devuelve HTML
+    // (login, error 500, bloqueo de un firewall/plugin de seguridad) en vez de JSON,
+    // acá queda un mensaje diagnosticable en vez de un genérico "Unexpected token '<'".
+    const rawBody = await res.text();
+    let media: { source_url?: string; message?: string } = {};
+    try {
+      media = JSON.parse(rawBody);
+    } catch {
+      console.error(`gift-photo-upload: WP respondió ${res.status}, no-JSON: ${rawBody.slice(0, 300)}`);
+      return json(
+        { error: `WordPress no devolvió una respuesta válida (status ${res.status}). Puede ser un firewall/plugin de seguridad bloqueando la subida — revisa los logs.` },
+        502,
+      );
     }
-    const media = (await res.json()) as { source_url?: string };
-    if (!media.source_url) return json({ error: 'No se pudo subir la imagen. Inténtalo de nuevo.' }, 502);
+
+    if (!res.ok || !media.source_url) {
+      console.error(`gift-photo-upload: WP respondió ${res.status}: ${rawBody.slice(0, 300)}`);
+      return json({ error: media.message || 'No se pudo subir la imagen. Inténtalo de nuevo.' }, 502);
+    }
 
     return json({ url: media.source_url });
   } catch (e) {
