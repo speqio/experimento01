@@ -292,14 +292,23 @@ function mandala_gift_compose_card_image($photo_url) {
     // igual que en el mockup del sitio.
     $logo_path = __DIR__ . '/assets/gift-card-logo.png';
     if (file_exists($logo_path) && ($logo = @imagecreatefrompng($logo_path))) {
-        imagealphablending($card, true);
-        imagealphablending($logo, true);
-        imagesavealpha($logo, true);
-
         $logo_w = (int) round($target_w * 0.16);
         $lw = imagesx($logo);
         $lh = imagesy($logo);
         $logo_h = (int) round($lh * ($logo_w / $lw));
+
+        // Redimensiona el logo en su propio lienzo con alphablending apagado —
+        // hacerlo directo sobre $card con blending encendido produce un "fantasma"
+        // duplicado en los bordes semi-transparentes (bug conocido de GD al
+        // remuestrear PNGs con alpha con blending activo).
+        $logo_resized = imagecreatetruecolor($logo_w, $logo_h);
+        imagealphablending($logo_resized, false);
+        imagesavealpha($logo_resized, true);
+        $logo_transparent = imagecolorallocatealpha($logo_resized, 0, 0, 0, 127);
+        imagefill($logo_resized, 0, 0, $logo_transparent);
+        imagecopyresampled($logo_resized, $logo, 0, 0, 0, 0, $logo_w, $logo_h, $lw, $lh);
+        imagedestroy($logo);
+
         $margin = (int) round($target_w * 0.035);
         $pad = (int) round($margin * 0.6);
 
@@ -308,6 +317,8 @@ function mandala_gift_compose_card_image($photo_url) {
         $badge_x = $target_w - $margin - $badge_w;
         $badge_y = $target_h - $margin - $badge_h;
         $badge_r = (int) round($pad * 1.2);
+
+        imagealphablending($card, true);
         $badge_color = imagecolorallocatealpha($card, 20, 18, 16, 55); // ~45% opacidad
 
         imagefilledrectangle($card, $badge_x + $badge_r, $badge_y, $badge_x + $badge_w - $badge_r, $badge_y + $badge_h, $badge_color);
@@ -318,8 +329,9 @@ function mandala_gift_compose_card_image($photo_url) {
             imagefilledellipse($card, $cx, $cy, $badge_r * 2, $badge_r * 2, $badge_color);
         }
 
-        imagecopyresampled($card, $logo, $badge_x + $pad, $badge_y + $pad, 0, 0, $logo_w, $logo_h, $lw, $lh);
-        imagedestroy($logo);
+        // imagecopy (no resampled) preserva el alpha ya resuelto arriba sin volver a interpolar.
+        imagecopy($card, $logo_resized, $badge_x + $pad, $badge_y + $pad, 0, 0, $logo_w, $logo_h);
+        imagedestroy($logo_resized);
     }
 
     $upload = wp_upload_dir();
