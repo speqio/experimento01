@@ -4,18 +4,21 @@
 export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
-import { wpQuery } from '../../lib/wp-graphql';
+import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
+import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_POST_BY_SLUG } from '../../lib/queries/posts';
 import { cleanHtml, htmlToText, summarize } from '../../lib/sanitize';
 import type { Post } from '../../types/blog';
 
 const { slug } = Astro.params;
+const layoutDataPromise = fetchLayoutData(kvCacheFrom(Astro));
 
 let post: Post | null = null;
 try {
   const data = await wpQuery<{ post: Post | null }>({
     query: GET_POST_BY_SLUG,
     variables: { slug },
+    cache: kvCacheFrom(Astro),
   });
   post = data.post;
 } catch {
@@ -31,7 +34,7 @@ const category = post.categories?.nodes?.[0]?.name;
 const description = summarize(htmlToText(post.excerpt), 160);
 const content = cleanHtml(post.content);
 ---
-<ECommerceLayout title={post.title} description={description}>
+<ECommerceLayout title={post.title} description={description} layoutData={layoutDataPromise}>
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
     <nav class="flex items-center flex-wrap gap-1.5 text-xs text-spa-taupe" aria-label="Breadcrumb">
       <a href="/" class="hover:text-spa-charcoal transition-colors">Inicio</a>

@@ -7,6 +7,14 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./dist"
 binding = "ASSETS"
 
+# Cache de solo-lectura de respuestas WPGraphQL (ver kvCacheFrom en
+# src/lib/wp-graphql.ts). A diferencia de la Cache API (local a cada
+# datacenter), KV es global — por eso baja el TTFB incluso en la primera
+# visita desde una zona nueva.
+[[kv_namespaces]]
+binding = "WP_CACHE"
+id = "68794430f0cf4af390ff04244f1a31b2"
+
 # Variables no secretas: viven aquí para que cada deploy no las borre. Cualquier
 # variable agregada SOLO desde el panel de Cloudflare (sin declararla acá) se pierde
 # en el próximo deploy, porque Wrangler sincroniza [vars] contra lo que dice este

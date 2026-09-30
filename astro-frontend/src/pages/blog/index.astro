@@ -5,22 +5,26 @@ export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import BlogCard from '../../components/blog/BlogCard.astro';
-import { wpQuery } from '../../lib/wp-graphql';
+import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
+import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_POSTS } from '../../lib/queries/posts';
 import type { Post } from '../../types/blog';
+
+const layoutDataPromise = fetchLayoutData(kvCacheFrom(Astro));
 
 let posts: Post[] = [];
 try {
   const data = await wpQuery<{ posts: { nodes: Post[] } }>({
     query: GET_POSTS,
     variables: { first: 24 },
+    cache: kvCacheFrom(Astro),
   });
   posts = data.posts.nodes;
 } catch {
   // WordPress aún no disponible — se muestra el aviso de abajo.
 }
 ---
-<ECommerceLayout title="Blog" description="Consejos de bienestar, cuidado personal y novedades de Mándala Spa.">
+<ECommerceLayout title="Blog" description="Consejos de bienestar, cuidado personal y novedades de Mándala Spa." layoutData={layoutDataPromise}>
   <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8">
     <div class="max-w-3xl mx-auto text-center">
       <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Bienestar &amp; autocuidado</span>

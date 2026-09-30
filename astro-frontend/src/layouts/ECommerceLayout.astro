@@ -3,35 +3,26 @@ import BaseLayout from './BaseLayout.astro';
 import Header from '../components/common/Header.tsx';
 import GiftCardModal from '../components/giftcard/GiftCardModal.tsx';
 import Footer from '../components/common/Footer.astro';
-import { wpQuery } from '../lib/wp-graphql';
-import { GET_PRODUCT_CATEGORIES, GET_GIFT_CARD_SETTINGS } from '../lib/queries/products';
-import { groupCategories } from '../lib/categoryGroups';
-import type { ProductCategory, GiftCardSettings } from '../types/catalog';
+import { kvCacheFrom } from '../lib/wp-graphql';
+import { fetchLayoutData, type LayoutData } from '../lib/layoutData';
 
 interface Props {
   title: string;
   description?: string;
+  /**
+   * Opcional: si la página ya arrancó `fetchLayoutData(...)` al principio de
+   * su propio frontmatter (sin await), la pasa acá para que corra en
+   * paralelo con sus propias consultas en vez de arrancar recién ahora, ya
+   * en serie con lo que la página tardó. Si no se pasa, el layout la pide él
+   * mismo (páginas que aún no migraron a este patrón, o /nosotros /agenda
+   * que son estáticas y no llaman a ECommerceLayout con SSR).
+   */
+  layoutData?: Promise<LayoutData>;
 }
-const { title, description } = Astro.props;
+const { title, description, layoutData } = Astro.props;
 const currentPath = Astro.url.pathname;
 
-const [categoriesResult, giftSettingsResult] = await Promise.allSettled([
-  wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({ query: GET_PRODUCT_CATEGORIES }),
-  wpQuery<{ giftCardSettings: GiftCardSettings }>({ query: GET_GIFT_CARD_SETTINGS }),
-]);
-
-// WordPress aún no disponible en build time — el header cae al menú simple.
-let categoryGroups: ReturnType<typeof groupCategories> = [];
-if (categoriesResult.status === 'fulfilled') {
-  categoryGroups = groupCategories(categoriesResult.value.productCategories.nodes);
-}
-
-// Diseño de la tarjeta 3D, administrable en wp-admin → Gift Cards → Ajustes.
-// Sin conexión en build time — GiftCardPreview cae a su imagen local de respaldo.
-let giftCardImageUrl = '';
-if (giftSettingsResult.status === 'fulfilled') {
-  giftCardImageUrl = giftSettingsResult.value.giftCardSettings?.imageUrl ?? '';
-}
+const { categoryGroups, giftCardImageUrl } = await (layoutData ?? fetchLayoutData(kvCacheFrom(Astro)));
 ---
 <BaseLayout title={title} description={description}>
   <Header currentPath={currentPath} categoryGroups={categoryGroups} client:idle />

@@ -5,7 +5,8 @@
 export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
-import { wpQuery } from '../../lib/wp-graphql';
+import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
+import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_PRODUCT_BY_SLUG, GET_PRODUCTS_BY_CATEGORIES } from '../../lib/queries/products';
 import {
   getProductDuration,
@@ -21,11 +22,14 @@ import { getUpsellsFor } from '../../lib/queries/upsells';
 import type { SimpleProduct } from '../../types/catalog';
 
 const { slug } = Astro.params;
+const cache = kvCacheFrom(Astro);
+const layoutDataPromise = fetchLayoutData(cache);
 let product: SimpleProduct | null = null;
 try {
   const data = await wpQuery<{ product: SimpleProduct | null }>({
     query: GET_PRODUCT_BY_SLUG,
     variables: { slug },
+    cache,
   });
   product = data.product;
 } catch {
@@ -53,11 +57,12 @@ const variantAttrs = variations[0]
 const { intro, benefits, includes, indicatedFor, contraindications, extras } = parseProductSections(product.description ?? '');
 
 const [upsells, relatedResult] = await Promise.all([
-  getUpsellsFor(product.databaseId),
+  getUpsellsFor(product.databaseId, cache),
   categorySlug
     ? wpQuery<{ products: { nodes: SimpleProduct[] } }>({
         query: GET_PRODUCTS_BY_CATEGORIES,
         variables: { categoryIn: [categorySlug], first: 4 },
+        cache,
       }).catch(() => null)
     : Promise.resolve(null),
 ]);
@@ -66,7 +71,7 @@ const related: SimpleProduct[] = relatedResult
   : [];
 
 ---
-<ECommerceLayout title={product.name} description={getCardSummary(product.shortDescription ?? '', 160)}>
+<ECommerceLayout title={product.name} description={getCardSummary(product.shortDescription ?? '', 160)} layoutData={layoutDataPromise}>
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
     <nav class="flex items-center flex-wrap gap-1.5 text-xs text-spa-taupe" aria-label="Breadcrumb">
       <a href="/" class="hover:text-spa-charcoal transition-colors">Inicio</a>

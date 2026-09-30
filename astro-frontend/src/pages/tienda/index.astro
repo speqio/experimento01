@@ -5,20 +5,24 @@ export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import ProductGrid from '../../components/catalog/ProductGrid.astro';
-import { wpQuery } from '../../lib/wp-graphql';
+import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
+import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_PRODUCTS, GET_PRODUCT_CATEGORIES } from '../../lib/queries/products';
 import type { SimpleProduct, ProductCategory } from '../../types/catalog';
 
 const category = Astro.url.searchParams.get('cat');
 const search = Astro.url.searchParams.get('q')?.trim() || null;
 
+const cache = kvCacheFrom(Astro);
+const layoutDataPromise = fetchLayoutData(cache);
 const [productsResult, catsResult] = await Promise.allSettled([
   wpQuery<{ products: { nodes: SimpleProduct[] } }>({
     query: GET_PRODUCTS,
     variables: { first: 48, category, search },
+    cache,
   }),
   category
-    ? wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({ query: GET_PRODUCT_CATEGORIES })
+    ? wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({ query: GET_PRODUCT_CATEGORIES, cache })
     : Promise.resolve(null),
 ]);
 
@@ -29,7 +33,7 @@ const categoryName: string | null =
     ? catsResult.value.productCategories.nodes.find((c) => c.slug === category)?.name ?? category
     : category;
 ---
-<ECommerceLayout title={search ? `Tienda · ${search}` : categoryName ? `Tienda · ${categoryName}` : 'Tienda'}>
+<ECommerceLayout title={search ? `Tienda · ${search}` : categoryName ? `Tienda · ${categoryName}` : 'Tienda'} layoutData={layoutDataPromise}>
   <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 mb-10">
     <div class="max-w-6xl mx-auto text-center">
       <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Las Condes · Santiago de Chile</span>

@@ -1,5 +1,16 @@
 import { wpQuery } from '../wp-graphql';
 
+interface KVLike {
+  get(key: string, type: 'json'): Promise<any>;
+  put(key: string, value: string, opts?: { expirationTtl?: number }): Promise<void>;
+}
+interface UpsellCacheOptions {
+  kv: KVLike;
+  waitUntil?: (promise: Promise<unknown>) => void;
+  ttlSeconds?: number;
+}
+const UPSELLS_KV_KEY = 'upsells:all';
+
 // Complementos ("Complementa tu experiencia"): productos con el campo ACF
 // `productos_principales_ids` (relación hacia los productos donde se ofrecen).
 // GraphQL no permite filtrar por ese meta, así que se leen todos los productos
@@ -58,10 +69,27 @@ async function loadUpsells(): Promise<Upsell[]> {
   return found;
 }
 
-export async function getUpsellsFor(principalId: number): Promise<Upsell[]> {
+export async function getUpsellsFor(principalId: number, kvCache?: UpsellCacheOptions): Promise<Upsell[]> {
   try {
+    if (kvCache) {
+      try {
+        const cached = await kvCache.kv.get(UPSELLS_KV_KEY, 'json');
+        if (cached) return (cached as Upsell[]).filter((u) => u.principales.includes(principalId));
+      } catch {
+        // KV no disponible — sigue con el escaneo normal.
+      }
+    }
     cache ??= loadUpsells();
-    return (await cache).filter((u) => u.principales.includes(principalId));
+    const all = await cache;
+    if (kvCache) {
+      const ttlSeconds = Math.max(kvCache.ttlSeconds ?? 90, 60);
+      const putPromise = kvCache.kv
+        .put(UPSELLS_KV_KEY, JSON.stringify(all), { expirationTtl: ttlSeconds })
+        .catch(() => {});
+      if (kvCache.waitUntil) kvCache.waitUntil(putPromise);
+      else await putPromise;
+    }
+    return all.filter((u) => u.principales.includes(principalId));
   } catch {
     cache = null;
     return []; // WordPress no disponible o campo ACF aún no expuesto

@@ -6,17 +6,21 @@ export const prerender = false;
 import { hasAnyDiscount } from '../lib/parse';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ProductGrid from '../components/catalog/ProductGrid.astro';
-import { wpQuery } from '../lib/wp-graphql';
+import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
+import { fetchLayoutData } from '../lib/layoutData';
 import { GET_PRODUCTS } from '../lib/queries/products';
 import { GET_SITE_BANNER } from '../lib/queries/banners';
 import type { SimpleProduct } from '../types/catalog';
 import type { SiteBanner } from '../types/banner';
 
+const cache = kvCacheFrom(Astro);
+const layoutDataPromise = fetchLayoutData(cache);
 let onSale: SimpleProduct[] = [];
 try {
   const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
     query: GET_PRODUCTS,
     variables: { first: 48 },
+    cache,
   });
   onSale = data.products.nodes.filter(
     (p) => hasAnyDiscount(p.price, p.regularPrice)
@@ -32,6 +36,7 @@ try {
   const data = await wpQuery<{ siteBanner: SiteBanner | null }>({
     query: GET_SITE_BANNER,
     variables: { key: 'promociones' },
+    cache,
   });
   banner = data.siteBanner ?? {};
 } catch {
@@ -45,7 +50,7 @@ const hero = {
   image: banner.image || '',
 };
 ---
-<ECommerceLayout title="Promociones">
+<ECommerceLayout title="Promociones" layoutData={layoutDataPromise}>
   <div class="relative bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
     {hero.image && <img src={hero.image} alt="" class="absolute inset-0 w-full h-full object-cover opacity-25" />}
     <div class="relative max-w-3xl mx-auto text-center">

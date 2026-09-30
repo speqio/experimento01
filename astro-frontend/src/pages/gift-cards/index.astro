@@ -6,9 +6,12 @@ export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import ProductCard from '../../components/catalog/ProductCard.astro';
-import { wpQuery } from '../../lib/wp-graphql';
+import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
+import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_PRODUCTS } from '../../lib/queries/products';
 import type { SimpleProduct } from '../../types/catalog';
+
+const layoutDataPromise = fetchLayoutData(kvCacheFrom(Astro));
 
 const steps = [
   { title: 'Elige un regalo', text: 'Busca el tratamiento o producto que quieres regalar y presiona "Quiero mi giftcard".' },
@@ -23,6 +26,7 @@ try {
   const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
     query: GET_PRODUCTS,
     variables: { first: 200 },
+    cache: kvCacheFrom(Astro),
   });
   // Solo productos habilitados como gift card (wp-admin → Gift Cards → Productos).
   giftProducts = data.products.nodes.filter((p) => p.giftCardEnabled !== false);
@@ -30,7 +34,7 @@ try {
   // WordPress no disponible en build time — se muestra el aviso de "sin resultados".
 }
 ---
-<ECommerceLayout title="Gift Cards">
+<ECommerceLayout title="Gift Cards" layoutData={layoutDataPromise}>
   <div class="bg-spa-taupe-dark text-white py-16 px-4 sm:px-6 lg:px-8">
     <div class="max-w-2xl mx-auto text-center">
       <span class="text-xs font-semibold tracking-[0.2em] uppercase text-white/70 block mb-3">Un detalle que se transforma en experiencia</span>

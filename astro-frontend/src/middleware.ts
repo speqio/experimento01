@@ -24,7 +24,15 @@ const PROXIED_PREFIXES = [
 // completo de las consultas a WordPress/GraphQL en cada visita, que es lo
 // que más pesa en el LCP. Se excluyen checkout/carrito/api por las dudas
 // (formularios y estado de pago, aunque hoy tampoco leen cookies).
-const CACHE_TTL_SECONDS = 60;
+//
+// OJO: la Cache API de Cloudflare es local a cada datacenter (no global), así
+// que solo ayuda a visitas repetidas cerca del mismo PoP — no espera moverse
+// el resultado de un test de PageSpeed (corre desde datacenters de Google,
+// normalmente sin caché previo). El caché que sí baja el tiempo de forma
+// consistente para cualquier visita es el de datos en KV (ver kvCacheFrom en
+// src/lib/wp-graphql.ts), que es global. Este caché HTML queda como un
+// complemento adicional para tráfico real repetido.
+const CACHE_TTL_SECONDS = 120;
 const NOT_CACHEABLE_PREFIXES = ['/carrito', '/checkout', '/api'];
 
 export const onRequest = defineMiddleware(async (context, next) => {
