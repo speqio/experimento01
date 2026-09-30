@@ -52,11 +52,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return json({ error: 'Solo se aceptan imágenes JPEG, PNG o WebP.' }, 400);
     }
 
-    const wpOrigin = new URL(env.PUBLIC_WPGRAPHQL_URL ?? '').origin;
+    const wpOrigin = env.PUBLIC_WPGRAPHQL_URL ? new URL(env.PUBLIC_WPGRAPHQL_URL).origin : '';
     const user = env.WP_MEDIA_APP_USER;
     const pass = env.WP_MEDIA_APP_PASSWORD;
     if (!wpOrigin || !user || !pass) {
-      return json({ error: 'La subida de fotos no está configurada. Avisa al administrador.' }, 500);
+      // Temporal: dice cuál falta exactamente, para diagnosticar el binding de
+      // secretos en Cloudflare (Workers vs Pages, entorno Production/Preview, etc.).
+      const missing = [
+        !wpOrigin && 'PUBLIC_WPGRAPHQL_URL',
+        !user && 'WP_MEDIA_APP_USER',
+        !pass && 'WP_MEDIA_APP_PASSWORD',
+      ].filter(Boolean).join(', ');
+      return json({ error: `La subida de fotos no está configurada (falta: ${missing}). Avisa al administrador.` }, 500);
     }
 
     // Nombre generado por el servidor — nunca el nombre original del archivo.
