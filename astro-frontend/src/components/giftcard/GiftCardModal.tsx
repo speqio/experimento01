@@ -25,12 +25,21 @@ function maxDeliveryDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
+interface Addon {
+  id: number;
+  name: string;
+  price: string;
+}
+
 interface Target {
   id: number;
   name: string;
   image?: string;
   variant?: string;
   variationId?: number;
+  // Complementos ("Complementa tu experiencia") disponibles para este producto —
+  // mismos datos que la ficha de producto, ver tienda/[slug].astro.
+  addons?: Addon[];
 }
 
 interface ModalProps {
@@ -42,6 +51,7 @@ interface ModalProps {
 export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   const [target, setTarget] = useState<Target | null>(null);
   const [form, setForm] = useState<GiftCardInput>(empty);
+  const [selectedAddons, setSelectedAddons] = useState<number[]>([]);
   const [error, setError] = useState('');
   const [photoError, setPhotoError] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -51,13 +61,23 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
     function onClick(e: MouseEvent) {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-gift-product]');
       if (!btn) return;
+      let addons: Addon[] | undefined;
+      if (btn.dataset.giftAddons) {
+        try {
+          addons = JSON.parse(btn.dataset.giftAddons);
+        } catch {
+          addons = undefined;
+        }
+      }
       setTarget({
         id: Number(btn.dataset.giftProduct),
         name: btn.dataset.giftName ?? '',
         image: btn.dataset.giftImage || undefined,
         variant: btn.dataset.giftVariant || undefined,
         variationId: btn.dataset.variationId ? Number(btn.dataset.variationId) : undefined,
+        addons,
       });
+      setSelectedAddons([]);
       setError('');
     }
     document.addEventListener('click', onClick);
@@ -65,6 +85,10 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   }, []);
 
   if (!target) return null;
+
+  function toggleAddon(id: number) {
+    setSelectedAddons((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -89,7 +113,13 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await addGiftCardToCart(target!.id, form, target!.variationId);
+      // Con complementos seleccionados, todos los items comparten groupId: WordPress
+      // los agrupa para emitir UN solo cupón/correo en vez de uno por producto.
+      const payload: GiftCardInput = selectedAddons.length ? { ...form, groupId: crypto.randomUUID() } : form;
+      await addGiftCardToCart(target!.id, payload, target!.variationId);
+      for (const addonId of selectedAddons) {
+        await addGiftCardToCart(addonId, payload);
+      }
       window.location.href = '/checkout';
     } catch (err) {
       setError((err as Error).message.replace(/<[^>]*>/g, ''));
@@ -180,6 +210,31 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
               </p>
               {photoError && <p className="text-sm text-red-600 mt-1">{photoError}</p>}
             </div>
+
+            {target.addons && target.addons.length > 0 && (
+              <div className="rounded-xl border border-[#DDD5CA] bg-white p-4">
+                <span className={`${labelClass} mb-3`}>Agregar al regalo</span>
+                <div className="space-y-2.5">
+                  {target.addons.map((a) => (
+                    <label key={a.id} className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1 accent-[#2C2724]"
+                        checked={selectedAddons.includes(a.id)}
+                        onChange={() => toggleAddon(a.id)}
+                      />
+                      <span className="flex-1">
+                        <span className="block text-sm font-semibold text-spa-charcoal leading-snug">{a.name}</span>
+                        <span className="block text-sm font-bold text-spa-taupe-dark">{a.price}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[11px] text-spa-taupe mt-2.5">
+                  Se incluye en el mismo regalo: un solo código, un solo correo.
+                </p>
+              </div>
+            )}
 
             <div>
               <label className={labelClass}>Fecha de envío (opcional)</label>

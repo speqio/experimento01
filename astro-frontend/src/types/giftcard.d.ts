@@ -10,4 +10,8 @@ export interface GiftCardInput {
   // api/gift-photo-upload.ts). URL ya en el WordPress del sitio, nunca externa —
   // el mu-plugin valida el host igual antes de guardarla en la orden.
   personalImageUrl?: string;
+  // Presente solo cuando el regalo incluye un complemento agregado desde el modal
+  // (mismo id en los 2+ cart items): WordPress agrupa por esto para emitir UN
+  // cupón/correo que cubra todos los productos del grupo, en vez de uno por item.
+  groupId?: string;
 }

@@ -95,8 +95,13 @@ add_filter('woocommerce_add_cart_item_data', function ($cart_item_data, $product
         'message'         => sanitize_textarea_field(mb_substr($cart_item_data['message'] ?? '', 0, 300)),
         'deliveryDate'    => $delivery_date,
         'personalImage'   => $personal_image,
+        // Presente cuando el regalo incluye un complemento agregado desde el modal
+        // (GiftCardModal.tsx genera el mismo groupId para el producto principal y
+        // el/los complementos): agrupa los items al confirmar el pago para emitir
+        // UN solo cupón/correo en vez de uno por producto.
+        'group'           => sanitize_text_field((string) ($cart_item_data['groupId'] ?? '')),
     ];
-    unset($cart_item_data['buyerEmail'], $cart_item_data['recipientEmail'], $cart_item_data['message'], $cart_item_data['deliveryDate'], $cart_item_data['personalImageUrl']);
+    unset($cart_item_data['buyerEmail'], $cart_item_data['recipientEmail'], $cart_item_data['message'], $cart_item_data['deliveryDate'], $cart_item_data['personalImageUrl'], $cart_item_data['groupId']);
     if (!is_email($gift['recipientEmail'])) return $cart_item_data;
 
     $cart_item_data[MANDALA_GIFT_KEY] = $gift;
@@ -134,26 +139,46 @@ add_action('woocommerce_order_status_changed', function ($order_id, $from, $to) 
     $order = wc_get_order($order_id);
     if (!$order) return;
 
+    // Agrupa los items con gift data por `group` (mismo regalo con complementos,
+    // ver GiftCardModal.tsx). Sin `group` (caso normal: un solo producto regalado),
+    // cada item queda solo en su propio grupo — mismo comportamiento de antes.
+    $groups = [];
     foreach ($order->get_items() as $item) {
         $gift = $item->get_meta(MANDALA_GIFT_KEY);
         if (empty($gift) || $item->get_meta('_mandala_gift_code')) continue;
+        $group_key = !empty($gift['group']) ? $gift['group'] : 'item-' . $item->get_id();
+        $groups[$group_key][] = $item;
+    }
 
-        // Si es variable, el cupón queda atado a la variante exacta (p. ej. "5 sesiones, 1 hora").
-        $product_id = $item->get_variation_id() ?: $item->get_product_id();
-        $code = mandala_gift_create_coupon($product_id, $gift, $order_id);
+    foreach ($groups as $items) {
+        $first = $items[0];
+        $gift  = $first->get_meta(MANDALA_GIFT_KEY);
+
+        // Si algún item es variable, el cupón queda atado a la variante exacta.
+        $product_ids = [];
+        foreach ($items as $it) {
+            $product_ids[] = $it->get_variation_id() ?: $it->get_product_id();
+        }
+        $code = mandala_gift_create_coupon($product_ids, $gift, $order_id);
         if (!$code) continue;
 
-        $item->add_meta_data('_mandala_gift_code', $code, true);
-        $item->save();
+        $item_ids = [];
+        foreach ($items as $it) {
+            $it->add_meta_data('_mandala_gift_code', $code, true);
+            $it->save();
+            $item_ids[] = $it->get_id();
+        }
 
         $send_at = mandala_gift_scheduled_timestamp($gift['deliveryDate'] ?? '');
         if ($send_at) {
             // Envío programado: el correo se despacha en la fecha elegida (ver acción abajo).
-            wp_schedule_single_event($send_at, 'mandala_gift_send_scheduled', [$order_id, $item->get_id()]);
+            wp_schedule_single_event($send_at, 'mandala_gift_send_scheduled', [$order_id, $item_ids]);
         } else {
-            mandala_gift_send_email($code, $gift, $item, $order);
-            $item->add_meta_data('_mandala_gift_sent', 1, true);
-            $item->save();
+            mandala_gift_send_email($code, $gift, $items, $order);
+            foreach ($items as $it) {
+                $it->add_meta_data('_mandala_gift_sent', 1, true);
+                $it->save();
+            }
         }
     }
 }, 10, 3);
@@ -166,22 +191,31 @@ function mandala_gift_scheduled_timestamp($date) {
 }
 
 /** Despacha el email programado (WP-Cron). Idempotente: si ya se envió, no repite. */
-add_action('mandala_gift_send_scheduled', function ($order_id, $item_id) {
+add_action('mandala_gift_send_scheduled', function ($order_id, $item_ids) {
     $order = wc_get_order($order_id);
     if (!$order) return;
-    $item = $order->get_item($item_id);
-    if (!$item) return;
 
-    $gift = $item->get_meta(MANDALA_GIFT_KEY);
-    $code = $item->get_meta('_mandala_gift_code');
-    if (empty($gift) || empty($code) || $item->get_meta('_mandala_gift_sent')) return;
+    $items = [];
+    foreach ((array) $item_ids as $item_id) {
+        $it = $order->get_item($item_id);
+        if ($it) $items[] = $it;
+    }
+    if (!$items) return;
 
-    mandala_gift_send_email($code, $gift, $item, $order);
-    $item->add_meta_data('_mandala_gift_sent', 1, true);
-    $item->save();
+    $first = $items[0];
+    $gift = $first->get_meta(MANDALA_GIFT_KEY);
+    $code = $first->get_meta('_mandala_gift_code');
+    if (empty($gift) || empty($code) || $first->get_meta('_mandala_gift_sent')) return;
+
+    mandala_gift_send_email($code, $gift, $items, $order);
+    foreach ($items as $it) {
+        $it->add_meta_data('_mandala_gift_sent', 1, true);
+        $it->save();
+    }
 }, 10, 2);
 
-function mandala_gift_create_coupon($product_id, $gift, $order_id) {
+/** $product_ids: uno por producto regalado en el mismo grupo (ver arriba). */
+function mandala_gift_create_coupon($product_ids, $gift, $order_id) {
     do {
         $code = strtoupper(wp_generate_password(12, false, false));
     } while (wc_get_coupon_id_by_code($code));
@@ -190,7 +224,7 @@ function mandala_gift_create_coupon($product_id, $gift, $order_id) {
     $coupon->set_code($code);
     $coupon->set_discount_type('percent');
     $coupon->set_amount(100);
-    $coupon->set_product_ids([$product_id]);
+    $coupon->set_product_ids(array_values(array_unique(array_map('intval', (array) $product_ids))));
     $coupon->set_usage_limit(1);
     $coupon->set_usage_limit_per_user(1);
     $coupon->set_individual_use(false);
@@ -341,10 +375,14 @@ function mandala_gift_compose_card_image($photo_url) {
     return wp_get_attachment_url($attachment_id);
 }
 
-function mandala_gift_send_email($code, $gift, $item, $order) {
+/** $items: uno o más order items del mismo grupo (producto principal + complementos, si los hay). */
+function mandala_gift_send_email($code, $gift, $items, $order) {
+    $items = (array) $items;
+    $first = $items[0];
+
     $brand   = defined('MANDALA_BRAND') ? MANDALA_BRAND : 'Mándala Spa';
-    $product = $item->get_product();
-    $parent  = wc_get_product($item->get_product_id());
+    $product = $first->get_product();
+    $parent  = wc_get_product($first->get_product_id());
 
     // Foto: la de la variante o, si no tiene, la del producto padre.
     $image_id = $product ? $product->get_image_id() : 0;
@@ -354,6 +392,12 @@ function mandala_gift_send_email($code, $gift, $item, $order) {
     $variant = ($product && $product->is_type('variation'))
         ? wc_get_formatted_variation($product, true, false)
         : '';
+
+    // Complementos incluidos en el mismo regalo (el resto del grupo, ver GiftCardModal.tsx).
+    $addons = [];
+    foreach (array_slice($items, 1) as $it) {
+        $addons[] = $it->get_name();
+    }
 
     $coupon  = new WC_Coupon($code);
     $expires = $coupon->get_date_expires()
@@ -371,10 +415,11 @@ function mandala_gift_send_email($code, $gift, $item, $order) {
 
     $data = [
         'code'            => $code,
-        'product_name'    => $parent ? $parent->get_name() : $item->get_name(),
+        'product_name'    => $parent ? $parent->get_name() : $first->get_name(),
         'variant'         => $variant,
         'image'           => $image,
         'personal_image'  => $personal_image,
+        'addons'          => $addons,
         'message'         => $gift['message'] ?? '',
         'from_name'       => $from_name,
         'recipient_email' => $gift['recipientEmail'],

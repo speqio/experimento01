@@ -24,7 +24,8 @@ if (!defined('MANDALA_CONTACT_EMAIL')) define('MANDALA_CONTACT_EMAIL', 'contacto
 
 /**
  * $d: mode ('recipient'|'buyer'), code, product_name, variant, image, message,
- *     from_name, recipient_email, expires, product_url
+ *     from_name, recipient_email, expires, product_url, addons (nombres de
+ *     complementos incluidos en el mismo regalo, si los hay — ver mandala-giftcards.php)
  */
 function mandala_gift_email_html(array $d) {
     $site   = untrailingslashit(apply_filters('mandala_gift_site_url', MANDALA_FRONTEND_URL));
@@ -115,6 +116,11 @@ function mandala_gift_email_html(array $d) {
             </td>
           </tr></table>
         </td></tr>
+        <?php if (!empty($d['addons'])) : ?>
+        <tr><td style="padding:2px 20px 4px 20px;font-family:<?php echo $sans; ?>;font-size:13px;line-height:1.6;color:#675647;">
+          <strong style="color:<?php echo $brand_color; ?>;">Incluye también:</strong> <?php echo esc_html(implode(', ', $d['addons'])); ?>
+        </td></tr>
+        <?php endif; ?>
         <?php if (!empty($d['message'])) : ?>
         <tr><td style="padding:10px 20px 4px 20px;font-family:<?php echo $serif; ?>;font-style:italic;font-size:15px;line-height:1.55;color:#675647;">“<?php echo esc_html($d['message']); ?>”</td></tr>
         <?php endif; ?>
