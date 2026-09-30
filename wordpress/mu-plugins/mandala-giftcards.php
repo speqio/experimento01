@@ -212,6 +212,138 @@ function mandala_gift_create_coupon($product_id, $gift, $order_id) {
     return $coupon->get_id() ? $code : null;
 }
 
+/**
+ * Convierte la foto que subió el comprador en una única imagen ya compuesta como
+ * "tarjeta de regalo" (recortada al mismo aspecto que el mockup 3D del sitio,
+ * esquinas redondeadas y logo superpuesto), en vez de dejar que el correo intente
+ * lograr ese efecto con CSS (position:absolute/border-radius, que la mayoría de
+ * clientes de correo ignora y muestra la foto suelta). Se guarda como un adjunto
+ * nuevo en la Biblioteca de Medios; si algo falla (GD no disponible, descarga
+ * fallida), retorna la URL original sin componer.
+ */
+function mandala_gift_compose_card_image($photo_url) {
+    if (!function_exists('imagecreatetruecolor')) return $photo_url;
+
+    $attachment_id = attachment_url_to_postid($photo_url);
+    $path = $attachment_id ? get_attached_file($attachment_id) : null;
+    if (!$path || !file_exists($path)) {
+        if (!function_exists('download_url')) require_once ABSPATH . 'wp-admin/includes/file.php';
+        $tmp = download_url($photo_url);
+        $path = is_wp_error($tmp) ? null : $tmp;
+    }
+    if (!$path) return $photo_url;
+
+    $info = @getimagesize($path);
+    $src = null;
+    if ($info) {
+        if ($info['mime'] === 'image/jpeg') $src = @imagecreatefromjpeg($path);
+        elseif ($info['mime'] === 'image/png') $src = @imagecreatefrompng($path);
+        elseif ($info['mime'] === 'image/webp' && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($path);
+    }
+    if (!$src) return $photo_url;
+
+    $sw = imagesx($src);
+    $sh = imagesy($src);
+    $target_w = 1200;
+    $ratio = 1748 / 1240; // mismo aspecto que GiftCardPreview.tsx en el sitio
+    $target_h = (int) round($target_w / $ratio);
+
+    // Recorte centrado al aspecto de la tarjeta (evita deformar la foto).
+    if (($sw / $sh) > $ratio) {
+        $crop_h = $sh;
+        $crop_w = (int) round($sh * $ratio);
+        $crop_x = (int) round(($sw - $crop_w) / 2);
+        $crop_y = 0;
+    } else {
+        $crop_w = $sw;
+        $crop_h = (int) round($sw / $ratio);
+        $crop_x = 0;
+        $crop_y = (int) round(($sh - $crop_h) / 2);
+    }
+
+    $card = imagecreatetruecolor($target_w, $target_h);
+    imagealphablending($card, false);
+    imagesavealpha($card, true);
+    $transparent = imagecolorallocatealpha($card, 0, 0, 0, 127);
+    imagefill($card, 0, 0, $transparent);
+    imagecopyresampled($card, $src, 0, 0, $crop_x, $crop_y, $target_w, $target_h, $crop_w, $crop_h);
+    imagedestroy($src);
+
+    // Esquinas redondeadas: solo recorre los 4 cuadrados de esquina (barato), no toda la imagen.
+    $radius = (int) round($target_w * 0.045);
+    $corners = [[0, 0], [1, 0], [0, 1], [1, 1]];
+    foreach ($corners as [$right, $bottom]) {
+        $ox = $right ? ($target_w - $radius) : $radius;
+        $oy = $bottom ? ($target_h - $radius) : $radius;
+        for ($x = 0; $x < $radius; $x++) {
+            for ($y = 0; $y < $radius; $y++) {
+                $px = $right ? ($target_w - 1 - $x) : $x;
+                $py = $bottom ? ($target_h - 1 - $y) : $y;
+                $dx = $px - $ox;
+                $dy = $py - $oy;
+                if (($dx * $dx + $dy * $dy) > ($radius * $radius)) {
+                    imagesetpixel($card, $px, $py, $transparent);
+                }
+            }
+        }
+    }
+
+    // Logo superpuesto (esquina inferior derecha) sobre una placa oscura translúcida,
+    // igual que en el mockup del sitio.
+    $logo_path = __DIR__ . '/assets/gift-card-logo.png';
+    if (file_exists($logo_path) && ($logo = @imagecreatefrompng($logo_path))) {
+        imagealphablending($card, true);
+        imagealphablending($logo, true);
+        imagesavealpha($logo, true);
+
+        $logo_w = (int) round($target_w * 0.16);
+        $lw = imagesx($logo);
+        $lh = imagesy($logo);
+        $logo_h = (int) round($lh * ($logo_w / $lw));
+        $margin = (int) round($target_w * 0.035);
+        $pad = (int) round($margin * 0.6);
+
+        $badge_w = $logo_w + $pad * 2;
+        $badge_h = $logo_h + $pad * 2;
+        $badge_x = $target_w - $margin - $badge_w;
+        $badge_y = $target_h - $margin - $badge_h;
+        $badge_r = (int) round($pad * 1.2);
+        $badge_color = imagecolorallocatealpha($card, 20, 18, 16, 55); // ~45% opacidad
+
+        imagefilledrectangle($card, $badge_x + $badge_r, $badge_y, $badge_x + $badge_w - $badge_r, $badge_y + $badge_h, $badge_color);
+        imagefilledrectangle($card, $badge_x, $badge_y + $badge_r, $badge_x + $badge_w, $badge_y + $badge_h - $badge_r, $badge_color);
+        foreach ([[0, 0], [1, 0], [0, 1], [1, 1]] as [$right, $bottom]) {
+            $cx = $badge_x + ($right ? $badge_w - $badge_r : $badge_r);
+            $cy = $badge_y + ($bottom ? $badge_h - $badge_r : $badge_r);
+            imagefilledellipse($card, $cx, $cy, $badge_r * 2, $badge_r * 2, $badge_color);
+        }
+
+        imagecopyresampled($card, $logo, $badge_x + $pad, $badge_y + $pad, 0, 0, $logo_w, $logo_h, $lw, $lh);
+        imagedestroy($logo);
+    }
+
+    $upload = wp_upload_dir();
+    $filename = 'gift-card-mockup-' . uniqid() . '.png';
+    $filepath = trailingslashit($upload['path']) . $filename;
+    if (!imagepng($card, $filepath, 6)) {
+        imagedestroy($card);
+        return $photo_url;
+    }
+    imagedestroy($card);
+
+    $filetype = wp_check_filetype($filename, null);
+    $attachment_id = wp_insert_attachment([
+        'post_mime_type' => $filetype['type'],
+        'post_title'     => 'Gift card personalizada',
+        'post_status'    => 'inherit',
+    ], $filepath);
+    if (is_wp_error($attachment_id) || !$attachment_id) return $photo_url;
+
+    if (!function_exists('wp_generate_attachment_metadata')) require_once ABSPATH . 'wp-admin/includes/image.php';
+    wp_update_attachment_metadata($attachment_id, wp_generate_attachment_metadata($attachment_id, $filepath));
+    return wp_get_attachment_url($attachment_id);
+}
+
 function mandala_gift_send_email($code, $gift, $item, $order) {
     $brand   = defined('MANDALA_BRAND') ? MANDALA_BRAND : 'Mándala Spa';
     $product = $item->get_product();
@@ -233,12 +365,19 @@ function mandala_gift_send_email($code, $gift, $item, $order) {
 
     $from_name = trim($order->get_billing_first_name());
 
+    // Se compone UNA sola vez y se reusa para el correo del destinatario y la
+    // copia del comprador — así se ve igual en ambos y no se duplica el trabajo.
+    $personal_image = $gift['personalImage'] ?? '';
+    if ($personal_image) {
+        $personal_image = mandala_gift_compose_card_image($personal_image);
+    }
+
     $data = [
         'code'            => $code,
         'product_name'    => $parent ? $parent->get_name() : $item->get_name(),
         'variant'         => $variant,
         'image'           => $image,
-        'personal_image'  => $gift['personalImage'] ?? '',
+        'personal_image'  => $personal_image,
         'message'         => $gift['message'] ?? '',
         'from_name'       => $from_name,
         'recipient_email' => $gift['recipientEmail'],
