@@ -10,7 +10,7 @@ const PRODUCT_CARD_FIELDS = /* GraphQL */ `
   slug
   shortDescription
   giftCardEnabled
-  image { sourceUrl altText }
+  image { sourceUrl(size: MEDIUM_LARGE) altText }
   ... on InventoriedProduct { stockStatus }
   ... on SimpleProduct { price regularPrice }
   ... on VariableProduct { price regularPrice }
@@ -34,7 +34,7 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       description
       shortDescription
       giftCardEnabled
-      image { sourceUrl altText }
+      image { sourceUrl(size: LARGE) altText }
       productCategories { nodes { name slug } }
       ... on InventoriedProduct { stockStatus }
       ... on SimpleProduct { price regularPrice }
@@ -100,7 +100,7 @@ export const SEARCH_PRODUCTS = /* GraphQL */ `
         id
         name
         slug
-        image { sourceUrl altText }
+        image { sourceUrl(size: THUMBNAIL) altText }
         ... on SimpleProduct { price }
         ... on VariableProduct { price }
       }

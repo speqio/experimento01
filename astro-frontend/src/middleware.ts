@@ -17,6 +17,16 @@ const PROXIED_PREFIXES = [
   '/graphql',
 ];
 
+// Páginas SSR (home, tienda, fichas de producto, blog, gift-cards, etc.) no
+// dependen de cookies/sesión — el carrito vive en localStorage del lado del
+// cliente — así que se pueden cachear en el borde de Cloudflare por un rato
+// corto sin mostrar contenido de otro usuario. Esto evita pagar el costo
+// completo de las consultas a WordPress/GraphQL en cada visita, que es lo
+// que más pesa en el LCP. Se excluyen checkout/carrito/api por las dudas
+// (formularios y estado de pago, aunque hoy tampoco leen cookies).
+const CACHE_TTL_SECONDS = 60;
+const NOT_CACHEABLE_PREFIXES = ['/carrito', '/checkout', '/api'];
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname, search } = context.url;
   const shouldProxy = PROXIED_PREFIXES.some(
@@ -24,7 +34,33 @@ export const onRequest = defineMiddleware(async (context, next) => {
   );
 
   if (!shouldProxy) {
-    return next();
+    const isCacheable =
+      context.request.method === 'GET' &&
+      typeof caches !== 'undefined' &&
+      'default' in caches &&
+      !NOT_CACHEABLE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+
+    if (!isCacheable) {
+      return next();
+    }
+
+    const cache = (caches as any).default;
+    const cacheKey = new Request(context.url.toString(), context.request);
+    const cached = await cache.match(cacheKey);
+    if (cached) return cached;
+
+    const response = await next();
+    if (response.ok) {
+      const toCache = response.clone();
+      const headers = new Headers(toCache.headers);
+      headers.set('Cache-Control', `public, max-age=${CACHE_TTL_SECONDS}`);
+      const cacheable = new Response(toCache.body, { status: toCache.status, headers });
+      const ctx = (context.locals as any).runtime?.ctx;
+      const putPromise = cache.put(cacheKey, cacheable);
+      if (ctx?.waitUntil) ctx.waitUntil(putPromise);
+      else await putPromise;
+    }
+    return response;
   }
 
   const env = (context.locals as any).runtime?.env ?? process.env;
