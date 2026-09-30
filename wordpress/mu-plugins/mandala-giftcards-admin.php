@@ -63,8 +63,13 @@ function mandala_gift_format_origin($order) {
     return esc_html(ucfirst($source));
 }
 
-/** Trae todas las órdenes con al menos un ítem regalado, más recientes primero. */
-function mandala_gift_query_orders($page = 1, $per_page = 20) {
+/**
+ * Trae todas las órdenes con al menos un ítem regalado, más recientes primero.
+ * $estado: 'todos' | 'usados' | 'no-usados' — filtra por si el código ya se canjeó.
+ * Resuelve todo antes de paginar (el filtro depende del estado del cupón, que solo
+ * se sabe al resolver cada ítem); volumen bajo, sin impacto real de performance.
+ */
+function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos') {
     global $wpdb;
     // wc_get_orders no filtra por meta de line item directamente; se busca por los
     // ítems (_mandala_gift) y se resuelve a la orden dueña de cada ítem.
@@ -76,10 +81,6 @@ function mandala_gift_query_orders($page = 1, $per_page = 20) {
          ORDER BY oi.order_item_id DESC",
         MANDALA_GIFT_KEY
     ));
-
-    $total = count($rows);
-    $offset = ($page - 1) * $per_page;
-    $rows = array_slice($rows, $offset, $per_page);
 
     $items = [];
     foreach ($rows as $row) {
@@ -93,6 +94,7 @@ function mandala_gift_query_orders($page = 1, $per_page = 20) {
         $code = $item->get_meta('_mandala_gift_code');
         $sent = $item->get_meta('_mandala_gift_sent');
         $status = 'Pendiente de pago';
+        $used = false;
         if ($code) {
             if ($sent) {
                 $status = 'Enviado';
@@ -101,12 +103,14 @@ function mandala_gift_query_orders($page = 1, $per_page = 20) {
             } else {
                 $status = 'Por enviar';
             }
-            if ($code) {
-                $coupon_id = wc_get_coupon_id_by_code($code);
-                if ($coupon_id) {
-                    $coupon = new WC_Coupon($coupon_id);
-                    if ($coupon->get_usage_count() > 0) $status = 'Canjeado';
-                    elseif ($coupon->get_date_expires() && $coupon->get_date_expires()->getTimestamp() < time()) $status = 'Expirado';
+            $coupon_id = wc_get_coupon_id_by_code($code);
+            if ($coupon_id) {
+                $coupon = new WC_Coupon($coupon_id);
+                if ($coupon->get_usage_count() > 0) {
+                    $status = 'Canjeado';
+                    $used = true;
+                } elseif ($coupon->get_date_expires() && $coupon->get_date_expires()->getTimestamp() < time()) {
+                    $status = 'Expirado';
                 }
             }
         }
@@ -117,10 +121,21 @@ function mandala_gift_query_orders($page = 1, $per_page = 20) {
             'gift'      => $gift,
             'code'      => $code,
             'status'    => $status,
+            'used'      => $used,
             'origin'    => mandala_gift_format_origin($order),
             'total'     => $order->get_formatted_order_total(),
         ];
     }
+
+    if ($estado === 'usados') {
+        $items = array_values(array_filter($items, fn($row) => $row['used']));
+    } elseif ($estado === 'no-usados') {
+        $items = array_values(array_filter($items, fn($row) => !$row['used']));
+    }
+
+    $total = count($items);
+    $offset = ($page - 1) * $per_page;
+    $items = array_slice($items, $offset, $per_page);
 
     return ['items' => $items, 'total' => $total, 'pages' => (int) ceil($total / $per_page)];
 }
@@ -154,16 +169,28 @@ function mandala_gift_admin_render() {
 
 function mandala_gift_admin_tab_trazabilidad() {
     $page = max(1, (int) ($_GET['paged'] ?? 1));
-    $result = mandala_gift_query_orders($page);
+    $estado = isset($_GET['estado']) ? sanitize_key($_GET['estado']) : 'todos';
+    $result = mandala_gift_query_orders($page, 20, $estado);
     ?>
-    <p>Todas las compras hechas "como regalo". El origen se completa solo cuando el frontend detecta utm_source/referencia (ver README).</p>
+    <p>Todas las compras hechas "como regalo", con su código, para saber cuáles ya se canjearon y cuáles siguen disponibles. El origen se completa solo cuando el frontend detecta utm_source/referencia (ver README).</p>
+    <form method="get" style="margin-bottom:12px;">
+      <input type="hidden" name="page" value="<?php echo esc_attr(MANDALA_GIFT_ADMIN_SLUG); ?>">
+      <input type="hidden" name="tab" value="trazabilidad">
+      <label for="mandala-gift-estado-filter">Estado:</label>
+      <select name="estado" id="mandala-gift-estado-filter" onchange="this.form.submit()">
+        <option value="todos" <?php selected($estado, 'todos'); ?>>Todos</option>
+        <option value="usados" <?php selected($estado, 'usados'); ?>>Usados</option>
+        <option value="no-usados" <?php selected($estado, 'no-usados'); ?>>No usados</option>
+      </select>
+      <noscript><button type="submit" class="button">Filtrar</button></noscript>
+    </form>
     <table class="widefat striped">
       <thead><tr>
-        <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Estado</th><th>Origen</th>
+        <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Código</th><th>Usado</th><th>Estado</th><th>Origen</th>
       </tr></thead>
       <tbody>
         <?php if (empty($result['items'])) : ?>
-          <tr><td colspan="8">Aún no hay gift cards vendidas.</td></tr>
+          <tr><td colspan="10">No hay gift cards que coincidan con este filtro.</td></tr>
         <?php endif; ?>
         <?php foreach ($result['items'] as $row) :
           $order = $row['order']; $item = $row['item']; $gift = $row['gift']; ?>
@@ -174,6 +201,8 @@ function mandala_gift_admin_tab_trazabilidad() {
             <td><?php echo esc_html($gift['recipientEmail'] ?? '—'); ?></td>
             <td><?php echo esc_html($item->get_name()); ?></td>
             <td><?php echo wp_kses_post($row['total']); ?></td>
+            <td><code><?php echo esc_html($row['code'] ?: '—'); ?></code></td>
+            <td><?php echo $row['code'] ? ($row['used'] ? 'Sí' : 'No') : '—'; ?></td>
             <td><?php echo esc_html($row['status']); ?></td>
             <td><?php echo esc_html($row['origin']); ?></td>
           </tr>
@@ -184,7 +213,7 @@ function mandala_gift_admin_tab_trazabilidad() {
       <div class="tablenav"><div class="tablenav-pages">
         <?php for ($p = 1; $p <= $result['pages']; $p++) : ?>
           <a class="button <?php echo $p === $page ? 'button-primary' : ''; ?>" style="margin:2px;"
-             href="<?php echo esc_url(add_query_arg(['page' => MANDALA_GIFT_ADMIN_SLUG, 'tab' => 'trazabilidad', 'paged' => $p], admin_url('admin.php'))); ?>"><?php echo $p; ?></a>
+             href="<?php echo esc_url(add_query_arg(['page' => MANDALA_GIFT_ADMIN_SLUG, 'tab' => 'trazabilidad', 'estado' => $estado, 'paged' => $p], admin_url('admin.php'))); ?>"><?php echo $p; ?></a>
         <?php endfor; ?>
       </div></div>
     <?php endif; ?>
