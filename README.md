@@ -63,7 +63,7 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 - **Productos:** checkbox por producto para permitir o no regalarlo. Guarda `_mandala_gift_enabled` en el producto. El link "Editar precio →" abre el producto en WooCommerce (el precio de la gift card siempre es el de la variante elegida, no hay un precio aparte que mantener).
 - **Ajustes:** interruptor global (`mandala_gift_enabled`, apaga todas las gift cards del sitio) y selector de imagen de la tarjeta (biblioteca de medios de WordPress) — se usa tanto en la tarjeta 3D del modal como en el correo.
 
-**Importante — caché del sitio:** las fichas de producto (`/tienda/[slug]`) son páginas estáticas generadas en el build. Desactivar un producto u ocultar el botón "Regalar" en el panel no lo hace desaparecer del sitio ya desplegado hasta el próximo `git push`/deploy. Por eso WordPress igual **rechaza la compra en el servidor** de inmediato aunque el botón siga visible — nunca se vende una gift card inválida.
+**Sin espera de deploy:** las fichas de producto (`/tienda/[slug]`) y `/gift-cards` son SSR — desactivar un producto u ocultar el botón "Regalar" en el panel se ve de inmediato al recargar, sin esperar un `git push`/deploy. De todas formas WordPress **rechaza la compra en el servidor** por si acaso (ej. alguien tenía la página vieja abierta en el navegador) — nunca se vende una gift card inválida solo por confiar en lo que muestra el frontend.
 
 **Origen del comprador:** `astro-frontend/src/lib/attribution.ts` sigue capturando `utm_source`/`utm_medium`/`utm_campaign` de la URL y `document.referrer` la primera vez que alguien entra al sitio, y viaja como meta `_mandala_attribution` de la orden al pagar — pero ya no se muestra en el panel de Trazabilidad (se sacó por pedido explícito, quedaba innecesario ahí). El dato sigue disponible en la meta de cada orden en WooCommerce por si se retoma más adelante.
 
@@ -75,7 +75,7 @@ Cualquier producto puede comprarse "como regalo" (botón *Quiero mi giftcard*, m
 
 Gift Cards y Banners viven bajo un solo menú, **Marketing** (`wordpress/mu-plugins/mandala-admin-ui.php`), con una página de aterrizaje de accesos directos a cada sección. Este archivo no tiene lógica de negocio propia — solo registra el menú padre y encola el CSS de marca compartido (`assets/admin-ui.css`) que le da a ambos paneles la misma identidad visual del sitio (tabs redondeados, tarjetas, colores de marca) en vez de los estilos genéricos de WordPress. Subir junto a los demás mu-plugins, incluida la carpeta `assets/`.
 
-**Home (`/`) es una página estática:** un cambio de banner ahí se guarda al instante en WordPress, pero el sitio ya desplegado no lo muestra hasta el próximo `git push`/deploy (mismo caveat que el resto del contenido estático de este proyecto). **Promociones (`/promociones`) es SSR:** los cambios se ven de inmediato al recargar la página, sin esperar un deploy.
+**Home (`/`) y Promociones (`/promociones`) son SSR:** un cambio de banner en wp-admin se ve de inmediato al recargar la página, sin esperar un deploy.
 
 ## Blog
 

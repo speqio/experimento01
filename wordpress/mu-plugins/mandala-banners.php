@@ -123,9 +123,7 @@ function mandala_banners_admin_render() {
       </h2>
 
       <div style="max-width:760px;">
-        <p>Deja un campo vacío para que el sitio use el texto/imagen de fábrica.
-           <?php echo $tab === 'home' ? 'Este banner es parte de una página estática: los cambios se ven recién en el próximo despliegue.' : 'Esta página no es estática: los cambios se ven de inmediato al recargar.'; ?>
-        </p>
+        <p>Deja un campo vacío para que el sitio use el texto/imagen de fábrica. Los cambios se ven de inmediato al recargar la página, sin esperar un despliegue.</p>
         <form method="post">
           <?php wp_nonce_field('mandala_banner_save', 'mandala_banner_nonce'); ?>
           <input type="hidden" name="mandala_banner_key" value="<?php echo esc_attr($tab); ?>">

@@ -1,9 +1,12 @@
 ---
-export const prerender = true;
+// SSR (no prerender): así los cambios de wp-admin (gift card activa/inactiva,
+// precio, descripción, etc.) se ven al instante, sin esperar un deploy — mismo
+// criterio que /tienda, /promociones y /blog.
+export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import { wpQuery } from '../../lib/wp-graphql';
-import { GET_PRODUCTS, GET_PRODUCT_BY_SLUG, GET_PRODUCTS_BY_CATEGORIES } from '../../lib/queries/products';
+import { GET_PRODUCT_BY_SLUG, GET_PRODUCTS_BY_CATEGORIES } from '../../lib/queries/products';
 import {
   getProductDuration,
   getProductBadge,
@@ -17,26 +20,21 @@ import {
 import { getUpsellsFor } from '../../lib/queries/upsells';
 import type { SimpleProduct } from '../../types/catalog';
 
-export async function getStaticPaths() {
-  try {
-    // Sin `first` explícito, GET_PRODUCTS usa su default (24) y deja fuera
-    // productos del catálogo completo (~100), causando 404 en producción.
-    const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
-      query: GET_PRODUCTS,
-      variables: { first: 200 },
-    });
-    return data.products.nodes.map((product) => ({ params: { slug: product.slug } }));
-  } catch {
-    return [];
-  }
+const { slug } = Astro.params;
+let product: SimpleProduct | null = null;
+try {
+  const data = await wpQuery<{ product: SimpleProduct | null }>({
+    query: GET_PRODUCT_BY_SLUG,
+    variables: { slug },
+  });
+  product = data.product;
+} catch {
+  product = null;
 }
 
-const { slug } = Astro.params;
-const data = await wpQuery<{ product: SimpleProduct }>({
-  query: GET_PRODUCT_BY_SLUG,
-  variables: { slug },
-});
-const product = data.product;
+if (!product) {
+  return Astro.redirect('/tienda');
+}
 
 const duration = getProductDuration(product.attributes) ?? extractDuration(product.shortDescription ?? '').duration;
 const tagline = getProductTagline(product.shortDescription ?? '');

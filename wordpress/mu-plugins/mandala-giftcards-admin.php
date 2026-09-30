@@ -277,7 +277,7 @@ function mandala_gift_admin_tab_trazabilidad() {
 function mandala_gift_admin_tab_productos() {
     $products = wc_get_products(['status' => 'publish', 'limit' => 300, 'orderby' => 'title', 'order' => 'ASC']);
     ?>
-    <p>Desmarca un producto para que no se pueda regalar como gift card. WordPress lo bloquea de inmediato aunque el botón siga visible en el sitio hasta el próximo despliegue.</p>
+    <p>Desmarca un producto para que no se pueda regalar como gift card. El botón "Regalar" desaparece del sitio al instante (sin esperar un despliegue), y WordPress igual bloquea la compra del lado del servidor por si acaso.</p>
     <form method="post">
       <?php wp_nonce_field('mandala_gift_admin', 'mandala_gift_admin_nonce'); ?>
       <div class="mandala-card">

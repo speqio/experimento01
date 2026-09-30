@@ -1,6 +1,8 @@
 ---
 // Las gift cards se compran desde cada producto ("Quiero mi giftcard").
-export const prerender = true;
+// SSR (no prerender): así activar/desactivar un producto como gift card
+// (wp-admin → Marketing → Gift Cards → Productos) se ve al instante, sin deploy.
+export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import ProductCard from '../../components/catalog/ProductCard.astro';
@@ -15,8 +17,7 @@ const steps = [
   { title: 'Canjea', text: 'Al comprar ese producto, ingresa el código en el checkout y queda sin costo.' },
 ];
 
-// Mismo patrón que tienda/[slug].astro (getStaticPaths): sin `first` explícito
-// GET_PRODUCTS usa 24 y deja fuera la mayor parte del catálogo.
+// Sin `first` explícito GET_PRODUCTS usa 24 y deja fuera la mayor parte del catálogo.
 let giftProducts: SimpleProduct[] = [];
 try {
   const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({

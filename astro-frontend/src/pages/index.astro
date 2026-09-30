@@ -1,5 +1,8 @@
 ---
-export const prerender = true;
+// SSR (no prerender): así los cambios de wp-admin (banner del Home, catálogo
+// destacado, gift cards activas/inactivas) se ven al instante, sin deploy —
+// mismo criterio que /tienda, /promociones y /blog.
+export const prerender = false;
 
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import { wpQuery } from '../lib/wp-graphql';
@@ -24,8 +27,7 @@ try {
 const featured = products.slice(0, 3);
 const rituals = products.slice(3, 6);
 
-// Banner del Hero (wp-admin → Banners → Home). Página estática: los cambios
-// requieren el próximo deploy para verse (ver README, mismo caveat que gift cards).
+// Banner del Hero (wp-admin → Marketing → Banners → Home). SSR: se ve al instante.
 let banner: Partial<SiteBanner> = {};
 try {
   const data = await wpQuery<{ siteBanner: SiteBanner | null }>({
