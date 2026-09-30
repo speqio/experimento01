@@ -15,30 +15,29 @@ interface Props {
 const { title, description } = Astro.props;
 const currentPath = Astro.url.pathname;
 
+const [categoriesResult, giftSettingsResult] = await Promise.allSettled([
+  wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({ query: GET_PRODUCT_CATEGORIES }),
+  wpQuery<{ giftCardSettings: GiftCardSettings }>({ query: GET_GIFT_CARD_SETTINGS }),
+]);
+
+// WordPress aún no disponible en build time — el header cae al menú simple.
 let categoryGroups: ReturnType<typeof groupCategories> = [];
-try {
-  const data = await wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({
-    query: GET_PRODUCT_CATEGORIES,
-  });
-  categoryGroups = groupCategories(data.productCategories.nodes);
-} catch {
-  // WordPress aún no disponible en build time — el header cae al menú simple.
+if (categoriesResult.status === 'fulfilled') {
+  categoryGroups = groupCategories(categoriesResult.value.productCategories.nodes);
 }
 
 // Diseño de la tarjeta 3D, administrable en wp-admin → Gift Cards → Ajustes.
+// Sin conexión en build time — GiftCardPreview cae a su imagen local de respaldo.
 let giftCardImageUrl = '';
-try {
-  const settings = await wpQuery<{ giftCardSettings: GiftCardSettings }>({ query: GET_GIFT_CARD_SETTINGS });
-  giftCardImageUrl = settings.giftCardSettings?.imageUrl ?? '';
-} catch {
-  // Sin conexión en build time — GiftCardPreview cae a su imagen local de respaldo.
+if (giftSettingsResult.status === 'fulfilled') {
+  giftCardImageUrl = giftSettingsResult.value.giftCardSettings?.imageUrl ?? '';
 }
 ---
 <BaseLayout title={title} description={description}>
-  <Header currentPath={currentPath} categoryGroups={categoryGroups} client:load />
+  <Header currentPath={currentPath} categoryGroups={categoryGroups} client:idle />
   <main class="flex-grow">
     <slot />
   </main>
   <Footer />
-  <GiftCardModal cardImageUrl={giftCardImageUrl} client:load />
+  <GiftCardModal cardImageUrl={giftCardImageUrl} client:idle />
 </BaseLayout>

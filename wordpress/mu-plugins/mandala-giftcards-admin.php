@@ -25,8 +25,8 @@ add_action('admin_menu', function () {
     );
 }, 10);
 
-add_action('admin_enqueue_scripts', function ($hook) {
-    if (strpos($hook, MANDALA_GIFT_ADMIN_SLUG) === false) return;
+add_action('admin_enqueue_scripts', function () {
+    if (empty($_GET['page']) || $_GET['page'] !== MANDALA_GIFT_ADMIN_SLUG) return;
     wp_enqueue_media();
 });
 
@@ -338,9 +338,10 @@ function mandala_gift_admin_tab_ajustes() {
       var pickBtn = document.getElementById('mandala-gift-image-pick');
       var input = document.getElementById('mandala-gift-image-url');
       var preview = document.getElementById('mandala-gift-image-preview');
-      if (!pickBtn || !window.wp || !wp.media) return;
+      if (!pickBtn) { console.error('Mandala: no se encontró el botón mandala-gift-image-pick'); return; }
       pickBtn.addEventListener('click', function (e) {
         e.preventDefault();
+        if (!window.wp || !wp.media) { console.error('Mandala: wp.media no está cargado (falta wp_enqueue_media())'); return; }
         var frame = wp.media({ title: 'Elegir imagen de la gift card', multiple: false, library: { type: 'image' } });
         frame.on('select', function () {
           var att = frame.state().get('selection').first().toJSON();

@@ -12,24 +12,22 @@ import type { SimpleProduct, ProductCategory } from '../../types/catalog';
 const category = Astro.url.searchParams.get('cat');
 const search = Astro.url.searchParams.get('q')?.trim() || null;
 
-let products: SimpleProduct[] = [];
-let categoryName: string | null = null;
-try {
-  const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
+const [productsResult, catsResult] = await Promise.allSettled([
+  wpQuery<{ products: { nodes: SimpleProduct[] } }>({
     query: GET_PRODUCTS,
     variables: { first: 48, category, search },
-  });
-  products = data.products.nodes;
+  }),
+  category
+    ? wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({ query: GET_PRODUCT_CATEGORIES })
+    : Promise.resolve(null),
+]);
 
-  if (category) {
-    const catData = await wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({
-      query: GET_PRODUCT_CATEGORIES,
-    });
-    categoryName = catData.productCategories.nodes.find((c) => c.slug === category)?.name ?? category;
-  }
-} catch {
-  // WordPress aún no configurado/disponible en build time.
-}
+// WordPress aún no configurado/disponible en build time.
+const products: SimpleProduct[] = productsResult.status === 'fulfilled' ? productsResult.value.products.nodes : [];
+const categoryName: string | null =
+  category && catsResult.status === 'fulfilled' && catsResult.value
+    ? catsResult.value.productCategories.nodes.find((c) => c.slug === category)?.name ?? category
+    : category;
 ---
 <ECommerceLayout title={search ? `Tienda · ${search}` : categoryName ? `Tienda · ${categoryName}` : 'Tienda'}>
   <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 mb-10">

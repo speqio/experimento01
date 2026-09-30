@@ -50,21 +50,20 @@ const variantAttrs = variations[0]
       options: [...new Set(variations.map((v) => v.attributes.nodes.find((x) => x.name === a.name)?.value ?? ''))].filter(Boolean),
     }))
   : [];
-const upsells = await getUpsellsFor(product.databaseId);
 const { intro, benefits, includes, indicatedFor, contraindications, extras } = parseProductSections(product.description ?? '');
 
-let related: SimpleProduct[] = [];
-if (categorySlug) {
-  try {
-    const relatedData = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
-      query: GET_PRODUCTS_BY_CATEGORIES,
-      variables: { categoryIn: [categorySlug], first: 4 },
-    });
-    related = relatedData.products.nodes.filter((p) => p.slug !== product.slug).slice(0, 3);
-  } catch {
-    // sin relacionados si falla la consulta
-  }
-}
+const [upsells, relatedResult] = await Promise.all([
+  getUpsellsFor(product.databaseId),
+  categorySlug
+    ? wpQuery<{ products: { nodes: SimpleProduct[] } }>({
+        query: GET_PRODUCTS_BY_CATEGORIES,
+        variables: { categoryIn: [categorySlug], first: 4 },
+      }).catch(() => null)
+    : Promise.resolve(null),
+]);
+const related: SimpleProduct[] = relatedResult
+  ? relatedResult.products.nodes.filter((p) => p.slug !== product.slug).slice(0, 3)
+  : [];
 
 ---
 <ECommerceLayout title={product.name} description={getCardSummary(product.shortDescription ?? '', 160)}>
@@ -89,6 +88,8 @@ if (categorySlug) {
       <img
         src={product.image.sourceUrl}
         alt={product.image.altText ?? product.name}
+        loading="eager"
+        fetchpriority="high"
         class="absolute inset-0 w-full h-full object-cover scale-105"
       />
     )}
@@ -308,7 +309,7 @@ if (categorySlug) {
               >
                 <div class="relative h-44 overflow-hidden">
                   {item.image?.sourceUrl ? (
-                    <img src={item.image.sourceUrl} alt={item.image.altText ?? item.name} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={item.image.sourceUrl} alt={item.image.altText ?? item.name} width="320" height="176" loading="lazy" decoding="async" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div class="w-full h-full bg-spa-sand" />
                   )}

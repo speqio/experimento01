@@ -44,8 +44,8 @@ add_action('admin_menu', function () {
     );
 }, 10);
 
-add_action('admin_enqueue_scripts', function ($hook) {
-    if (strpos($hook, MANDALA_BANNERS_SLUG) === false) return;
+add_action('admin_enqueue_scripts', function () {
+    if (empty($_GET['page']) || $_GET['page'] !== MANDALA_BANNERS_SLUG) return;
     wp_enqueue_media();
 });
 
@@ -168,9 +168,11 @@ function mandala_banners_admin_render() {
       var clearBtn = document.getElementById('mandala-banner-image-clear');
       var input = document.getElementById('mandala-banner-image-url');
       var preview = document.getElementById('mandala-banner-image-preview');
-      if (pickBtn && window.wp && wp.media) {
+      if (!pickBtn) { console.error('Mandala: no se encontró el botón mandala-banner-image-pick'); }
+      if (pickBtn) {
         pickBtn.addEventListener('click', function (e) {
           e.preventDefault();
+          if (!window.wp || !wp.media) { console.error('Mandala: wp.media no está cargado (falta wp_enqueue_media())'); return; }
           var frame = wp.media({ title: 'Elegir imagen del banner', multiple: false, library: { type: 'image' } });
           frame.on('select', function () {
             var att = frame.state().get('selection').first().toJSON();
