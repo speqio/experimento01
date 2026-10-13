@@ -473,8 +473,16 @@ function mandala_gift_send_scheduled_confirmation($gift, $item, $order) {
     $date = date_i18n('j \d\e F \d\e Y', strtotime($gift['deliveryDate']));
     $headers = function_exists('mandala_gift_email_headers') ? mandala_gift_email_headers() : ['Content-Type: text/html; charset=UTF-8'];
 
+    // Muestra la tarjeta (con la foto personalizada, si subió una) y su mensaje tal como
+    // quedaron guardados — así ve que su compra se registró completa, aunque el código
+    // todavía no se emite (eso llega en el siguiente correo, el día del envío).
+    $personal_image = $gift['personalImage'] ?? '';
+    if ($personal_image) $personal_image = mandala_gift_compose_card_image($personal_image);
+
     $data = array_merge(mandala_gift_item_display_data($item), [
         'summary'         => $gift['summary'] ?? '',
+        'personal_image'  => $personal_image,
+        'message'         => $gift['message'] ?? '',
         'recipient_email' => $gift['recipientEmail'],
         'expires_text'    => $date,
         'mode'            => 'scheduled_confirmation',
