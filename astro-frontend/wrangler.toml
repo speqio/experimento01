@@ -7,6 +7,13 @@ compatibility_flags = ["nodejs_compat"]
 directory = "./dist"
 binding = "ASSETS"
 
+# Logs de invocación (request/response/excepciones) en el dashboard de Cloudflare
+# y vía `wrangler tail` — declarado acá para que el panel no lo pierda en el
+# próximo deploy automático (mismo motivo que [vars] arriba).
+[observability.logs]
+enabled = true
+invocation_logs = true
+
 # Cache de solo-lectura de respuestas WPGraphQL (ver kvCacheFrom en
 # src/lib/wp-graphql.ts). A diferencia de la Cache API (local a cada
 # datacenter), KV es global — por eso baja el TTFB incluso en la primera
