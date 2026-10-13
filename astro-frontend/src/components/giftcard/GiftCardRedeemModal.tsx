@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { SITE_INFO } from '../../lib/siteInfo';
 import { useCardTilt, REST_SHADOW } from '../../lib/useCardTilt';
+
+// ponytail: número de prueba para validar el flujo de verificación — volver a
+// SITE_INFO.whatsapp cuando termine la prueba.
+const TEST_WHATSAPP = '56961853899';
 
 interface Props {
   // Diseño de la tarjeta (wp-admin → Gift Cards → Ajustes) — mismo arte que GiftCardPreview.
@@ -40,7 +43,7 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
         return;
       }
       const text = `Hola, quiero agendar mi gift card.\nNombre: ${name}\nCorreo: ${email}\nCódigo: ${code.trim()}`;
-      window.location.href = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURIComponent(text)}`;
+      window.location.href = `https://wa.me/${TEST_WHATSAPP}?text=${encodeURIComponent(text)}`;
     } catch {
       setError('No se pudo verificar el código. Inténtalo de nuevo.');
     } finally {
