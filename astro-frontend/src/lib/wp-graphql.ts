@@ -9,6 +9,11 @@ interface QueryCacheOptions {
   kv: KVLike;
   waitUntil?: (promise: Promise<unknown>) => void;
   ttlSeconds?: number;
+  // URL de WPGraphQL leída del binding del Worker (wrangler.toml [vars]), no del
+  // valor embebido en el build por Vite (import.meta.env) — si la variable de
+  // repo de GitHub Actions que arma el build queda mal configurada, esta sigue
+  // siendo la correcta en runtime. Ver kvCacheFrom().
+  graphqlUrl?: string;
 }
 
 interface WpQueryArgs {
@@ -57,7 +62,8 @@ export async function wpQuery<T>({ query, variables = {}, cache }: WpQueryArgs):
   // por el header `woocommerce-session` (JWT), no por cookies, y el CORS de
   // WPGraphQL responde con Access-Control-Allow-Origin: * — combinar eso con
   // `include` es justamente lo que el navegador bloquea.
-  const res = await fetch(import.meta.env.PUBLIC_WPGRAPHQL_URL, {
+  const graphqlUrl = cache?.graphqlUrl || import.meta.env.PUBLIC_WPGRAPHQL_URL;
+  const res = await fetch(graphqlUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -100,5 +106,6 @@ export function kvCacheFrom(Astro: { locals: any }, ttlSeconds = 90): QueryCache
     kv,
     waitUntil: ctx?.waitUntil ? ctx.waitUntil.bind(ctx) : undefined,
     ttlSeconds,
+    graphqlUrl: runtime?.env?.PUBLIC_WPGRAPHQL_URL,
   };
 }
