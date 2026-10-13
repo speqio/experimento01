@@ -42,11 +42,17 @@ export const onRequest = defineMiddleware(async (context, next) => {
   );
 
   if (!shouldProxy) {
-    const isCacheable =
-      context.request.method === 'GET' &&
-      typeof caches !== 'undefined' &&
-      'default' in caches &&
-      !NOT_CACHEABLE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+    // ponytail: capa de caché HTML desactivada — servir un cache HIT (`cache.match`)
+    // está devolviendo 500 en producción (confirmado: la primera visita a una URL
+    // responde bien, toda visita siguiente a la misma URL falla; con un query param
+    // que fuerza cache-miss siempre responde bien). El try/catch de abajo protege
+    // cache.match()/cache.put() en sí, pero no cubre lo que pasa al transmitir el
+    // Response ya devuelto — de ahí que el fix anterior (86f34a2) no alcanzara.
+    // El caché de datos en KV (kvCacheFrom, ver lib/wp-graphql.ts) sigue activo y es
+    // la parte que más baja el TTFB; esta capa era solo un complemento. Reactivar
+    // cuando se entienda la causa raíz (headers no replayables, body ya consumido, etc.)
+    // idealmente viendo los logs del Worker en el dashboard de Cloudflare.
+    const isCacheable = false;
 
     if (!isCacheable) {
       return next();
