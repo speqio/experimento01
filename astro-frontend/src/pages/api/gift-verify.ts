@@ -9,8 +9,32 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-export const POST: APIRoute = async ({ request }) => {
+// Rate limit simple por IP: evita automatizar pruebas de códigos al azar.
+// Reusa el mismo KV de caché de GraphQL (WP_CACHE) con otro prefijo de clave
+// — no hace falta un namespace nuevo para un contador tan chico. Conteo no
+// atómico (get+put): en el peor caso dos requests simultáneos cuentan de más
+// una vez, aceptable para esto (no es un límite de seguridad crítico, solo
+// anti-abuso).
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_SECONDS = 600; // 10 minutos
+
+async function isRateLimited(locals: any, ip: string): Promise<boolean> {
+  const kv = (locals as any)?.runtime?.env?.WP_CACHE;
+  if (!kv) return false; // sin KV (ej. dev local): no bloquea
+  const key = `ratelimit:gift-verify:${ip}`;
+  const count = Number((await kv.get(key)) ?? '0');
+  if (count >= RATE_LIMIT_MAX) return true;
+  await kv.put(key, String(count + 1), { expirationTtl: RATE_LIMIT_WINDOW_SECONDS }).catch(() => {});
+  return false;
+}
+
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
+    const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
+    if (await isRateLimited(locals, ip)) {
+      return json({ valid: false, reason: 'Demasiados intentos. Prueba de nuevo en unos minutos.' }, 429);
+    }
+
     const { code, email } = (await request.json()) as { code?: string; email?: string };
     if (!code) return json({ valid: false, reason: 'Falta el código.' });
 
