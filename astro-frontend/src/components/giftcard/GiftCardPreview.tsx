@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 interface Props {
   image?: string;
   productName: string;
+  summary?: string;
   variant?: string;
   recipient: string;
   message: string;
@@ -18,7 +19,7 @@ const REST_SHADOW = '0 15px 35px rgba(0,0,0,0.25), 0 5px 15px rgba(0,0,0,0.2)';
 
 // Tarjeta con efecto 3D (tilt + glare + sheen) y, debajo, el detalle del regalo en vivo.
 // En el correo se usa una imagen estática equivalente (public/gift-card-email.jpg).
-export default function GiftCardPreview({ image, productName, variant, recipient, message, cardImageUrl, personalImageUrl }: Props) {
+export default function GiftCardPreview({ image, productName, summary, variant, recipient, message, cardImageUrl, personalImageUrl }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const glareRef = useRef<HTMLDivElement>(null);
@@ -155,6 +156,7 @@ export default function GiftCardPreview({ image, productName, variant, recipient
             {variant && <p className="text-xs text-spa-taupe mt-0.5">{variant}</p>}
           </div>
         </div>
+        {summary && <p className="text-xs text-spa-taupe-dark leading-relaxed">{summary}</p>}
         <p className="text-sm italic text-spa-taupe-dark leading-relaxed break-words min-h-[2.5rem]">
           {message ? `“${message}”` : '“Tu mensaje aparecerá aquí”'}
         </p>

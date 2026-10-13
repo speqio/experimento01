@@ -274,6 +274,7 @@ const related: SimpleProduct[] = relatedResult
                 data-gift-product={product.databaseId}
                 data-needs-variation={variantAttrs.length > 0 ? "1" : undefined}
                 data-gift-name={product.name}
+                data-gift-summary={getCardSummary(product.shortDescription ?? '', 100)}
                 data-gift-image={product.image?.sourceUrl}
                 data-gift-addons={upsells.length > 0 ? JSON.stringify(upsells.map((u) => ({ id: u.databaseId, name: u.name, price: formatPriceDisplay(u.price) }))) : undefined}
                 class="group w-full bg-spa-cream hover:bg-spa-taupe text-spa-charcoal hover:text-white py-3.5 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase flex items-center justify-center gap-2 transition-colors"

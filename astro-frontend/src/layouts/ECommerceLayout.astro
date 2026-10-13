@@ -2,6 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import Header from '../components/common/Header.tsx';
 import GiftCardModal from '../components/giftcard/GiftCardModal.tsx';
+import GiftCardRedeemModal from '../components/giftcard/GiftCardRedeemModal.tsx';
 import Footer from '../components/common/Footer.astro';
 import { kvCacheFrom } from '../lib/wp-graphql';
 import { fetchLayoutData, type LayoutData } from '../lib/layoutData';
@@ -31,4 +32,5 @@ const { categoryGroups, giftCardImageUrl } = await (layoutData ?? fetchLayoutDat
   </main>
   <Footer />
   <GiftCardModal cardImageUrl={giftCardImageUrl} client:idle />
+  <GiftCardRedeemModal client:idle />
 </BaseLayout>

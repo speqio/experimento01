@@ -93,13 +93,47 @@ add_action('admin_post_mandala_gift_mark_used', function () {
     exit;
 });
 
+/** Exporta la trazabilidad (con los mismos filtros de la URL) como CSV. */
+add_action('admin_post_mandala_gift_export_csv', function () {
+    if (!current_user_can('manage_woocommerce')) wp_die('No autorizado', 403);
+
+    $estado = isset($_GET['estado']) ? sanitize_key($_GET['estado']) : 'todos';
+    $buyer = isset($_GET['comprador']) ? sanitize_text_field($_GET['comprador']) : '';
+    $producto = isset($_GET['producto']) ? sanitize_text_field($_GET['producto']) : '';
+    $campania = isset($_GET['campania']) ? sanitize_text_field($_GET['campania']) : '';
+    $result = mandala_gift_query_orders(1, 100000, $estado, $buyer, $producto, $campania);
+
+    header('Content-Type: text/csv; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="gift-cards.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Fecha', 'Orden', 'Comprador', 'Destinatario', 'Producto', 'Monto', 'Código', 'Usado', 'Estado', 'Origen', 'Campaña']);
+    foreach ($result['items'] as $row) {
+        $order = $row['order']; $item = $row['item']; $gift = $row['gift'];
+        fputcsv($out, [
+            $order->get_date_created() ? $order->get_date_created()->date('d-m-Y H:i') : '',
+            $order->get_id(),
+            $gift['buyerEmail'] ?? '',
+            $gift['recipientEmail'] ?? '',
+            $item->get_name(),
+            $order->get_total(),
+            $row['code'] ?: '',
+            $row['code'] ? ($row['used'] ? 'Sí' : 'No') : '',
+            $row['status'],
+            $row['source'],
+            $row['campaign'],
+        ]);
+    }
+    fclose($out);
+    exit;
+});
+
 /**
  * Trae todas las órdenes con al menos un ítem regalado, más recientes primero.
  * $estado: 'todos' | 'usados' | 'no-usados' — filtra por si el código ya se canjeó.
  * Resuelve todo antes de paginar (el filtro depende del estado del cupón, que solo
  * se sabe al resolver cada ítem); volumen bajo, sin impacto real de performance.
  */
-function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos') {
+function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos', $buyer = '', $producto = '', $campania = '') {
     global $wpdb;
     // wc_get_orders no filtra por meta de line item directamente; se busca por los
     // ítems (_mandala_gift) y se resuelve a la orden dueña de cada ítem.
@@ -120,6 +154,10 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos')
         if (!$item) continue;
         $gift = $item->get_meta(MANDALA_GIFT_KEY);
         if (empty($gift)) continue;
+
+        $attribution = json_decode((string) $order->get_meta('_mandala_attribution'), true);
+        $source = $attribution['source'] ?? '';
+        $campaign = $attribution['campaign'] ?? '';
 
         $code = $item->get_meta('_mandala_gift_code');
         $sent = $item->get_meta('_mandala_gift_sent');
@@ -155,13 +193,15 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos')
         }
 
         $items[] = [
-            'order'  => $order,
-            'item'   => $item,
-            'gift'   => $gift,
-            'code'   => $code,
-            'status' => $status,
-            'used'   => $used,
-            'total'  => $order->get_formatted_order_total(),
+            'order'    => $order,
+            'item'     => $item,
+            'gift'     => $gift,
+            'code'     => $code,
+            'status'   => $status,
+            'used'     => $used,
+            'total'    => $order->get_formatted_order_total(),
+            'source'   => $source,
+            'campaign' => $campaign,
         ];
     }
 
@@ -169,6 +209,15 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos')
         $items = array_values(array_filter($items, fn($row) => $row['used']));
     } elseif ($estado === 'no-usados') {
         $items = array_values(array_filter($items, fn($row) => !$row['used']));
+    }
+    if ($buyer !== '') {
+        $items = array_values(array_filter($items, fn($row) => stripos($row['gift']['buyerEmail'] ?? '', $buyer) !== false));
+    }
+    if ($producto !== '') {
+        $items = array_values(array_filter($items, fn($row) => $row['item']->get_name() === $producto));
+    }
+    if ($campania !== '') {
+        $items = array_values(array_filter($items, fn($row) => $row['campaign'] === $campania));
     }
 
     $total = count($items);
@@ -208,31 +257,58 @@ function mandala_gift_admin_render() {
 function mandala_gift_admin_tab_trazabilidad() {
     $page = max(1, (int) ($_GET['paged'] ?? 1));
     $estado = isset($_GET['estado']) ? sanitize_key($_GET['estado']) : 'todos';
-    $result = mandala_gift_query_orders($page, 20, $estado);
+    $buyer = isset($_GET['comprador']) ? sanitize_text_field($_GET['comprador']) : '';
+    $producto = isset($_GET['producto']) ? sanitize_text_field($_GET['producto']) : '';
+    $campania = isset($_GET['campania']) ? sanitize_text_field($_GET['campania']) : '';
+    $result = mandala_gift_query_orders($page, 20, $estado, $buyer, $producto, $campania);
+    // Opciones de los selects: se sacan de todos los resultados sin filtrar (volumen bajo).
+    $all = mandala_gift_query_orders(1, 100000, 'todos');
+    $productos_opts = array_unique(array_map(fn($r) => $r['item']->get_name(), $all['items']));
+    $campanias_opts = array_unique(array_filter(array_map(fn($r) => $r['campaign'], $all['items'])));
+    sort($productos_opts); sort($campanias_opts);
     ?>
     <?php if (!empty($_GET['marked'])) : ?>
       <div class="notice notice-success is-dismissible"><p>Código marcado como usado.</p></div>
     <?php endif; ?>
     <p>Todas las compras hechas "como regalo", con su código, para saber cuáles ya se canjearon y cuáles siguen disponibles. Si alguien reservó por teléfono o correo, márcalo manualmente para que no se pueda canjear de nuevo online.</p>
-    <form method="get" style="margin-bottom:12px;">
+    <form method="get" style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
       <input type="hidden" name="page" value="<?php echo esc_attr(MANDALA_GIFT_ADMIN_SLUG); ?>">
       <input type="hidden" name="tab" value="trazabilidad">
-      <label for="mandala-gift-estado-filter">Estado:</label>
-      <select name="estado" id="mandala-gift-estado-filter" onchange="this.form.submit()">
-        <option value="todos" <?php selected($estado, 'todos'); ?>>Todos</option>
-        <option value="usados" <?php selected($estado, 'usados'); ?>>Usados</option>
-        <option value="no-usados" <?php selected($estado, 'no-usados'); ?>>No usados</option>
-      </select>
-      <noscript><button type="submit" class="button">Filtrar</button></noscript>
+      <label>Estado:
+        <select name="estado" onchange="this.form.submit()">
+          <option value="todos" <?php selected($estado, 'todos'); ?>>Todos</option>
+          <option value="usados" <?php selected($estado, 'usados'); ?>>Usados</option>
+          <option value="no-usados" <?php selected($estado, 'no-usados'); ?>>No usados</option>
+        </select>
+      </label>
+      <label>Comprador: <input type="text" name="comprador" value="<?php echo esc_attr($buyer); ?>" placeholder="email"></label>
+      <label>Producto:
+        <select name="producto" onchange="this.form.submit()">
+          <option value="">Todos</option>
+          <?php foreach ($productos_opts as $p) : ?>
+            <option value="<?php echo esc_attr($p); ?>" <?php selected($producto, $p); ?>><?php echo esc_html($p); ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <label>Campaña:
+        <select name="campania" onchange="this.form.submit()">
+          <option value="">Todas</option>
+          <?php foreach ($campanias_opts as $c) : ?>
+            <option value="<?php echo esc_attr($c); ?>" <?php selected($campania, $c); ?>><?php echo esc_html($c); ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <button type="submit" class="button">Filtrar</button>
+      <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($_GET, ['action' => 'mandala_gift_export_csv']), admin_url('admin-post.php'))); ?>">Exportar CSV</a>
     </form>
     <div class="mandala-card">
     <table class="widefat striped">
       <thead><tr>
-        <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Código</th><th>Usado</th><th>Estado</th><th></th>
+        <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Código</th><th>Usado</th><th>Estado</th><th>Origen</th><th>Campaña</th><th></th>
       </tr></thead>
       <tbody>
         <?php if (empty($result['items'])) : ?>
-          <tr><td colspan="10">No hay gift cards que coincidan con este filtro.</td></tr>
+          <tr><td colspan="12">No hay gift cards que coincidan con este filtro.</td></tr>
         <?php endif; ?>
         <?php foreach ($result['items'] as $row) :
           $order = $row['order']; $item = $row['item']; $gift = $row['gift']; ?>
@@ -246,6 +322,8 @@ function mandala_gift_admin_tab_trazabilidad() {
             <td><code><?php echo esc_html($row['code'] ?: '—'); ?></code></td>
             <td><?php echo $row['code'] ? ($row['used'] ? 'Sí' : 'No') : '—'; ?></td>
             <td><?php echo esc_html($row['status']); ?></td>
+            <td><?php echo esc_html($row['source'] ?: '—'); ?></td>
+            <td><?php echo esc_html($row['campaign'] ?: '—'); ?></td>
             <td>
               <?php if ($row['code'] && !$row['used']) : ?>
                 <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" onsubmit="return confirm('¿Marcar <?php echo esc_js($row['code']); ?> como usado? No se podrá canjear online después.');">

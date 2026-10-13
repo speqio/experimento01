@@ -11,6 +11,27 @@ const labelClass = 'block text-xs font-semibold tracking-wide uppercase text-spa
 
 const empty: GiftCardInput = { buyerEmail: '', recipientEmail: '', message: '', deliveryDate: '' };
 
+// Frases de partida para quienes no saben qué escribir — solo autocompletan el
+// textarea, siguen siendo editables antes de enviar.
+const OCCASION_MESSAGES: Record<string, string[]> = {
+  Cumpleaños: [
+    'Conozco tu ritmo y sé que mereces una pausa. Pon el mundo en silencio y disfruta este momento solo para ti.',
+    'Por todo lo que siempre haces por los demás, hoy te toca recibir. Déjate cuidar.',
+  ],
+  Matrimonio: [
+    'Un abrazo en forma de spa para agradecer todo lo que vales.',
+    'Que este momento de calma sea el comienzo de una vida llena de bienestar juntos.',
+  ],
+  Aniversario: [
+    'Un paréntesis en tu semana para soltar la tensión y volver a conectar contigo. ¡Disfrútalo!',
+    'Cuidar de ti es mi forma favorita de quererte. Disfruta esta experiencia de paz.',
+  ],
+  Graduación: [
+    'Lo lograste. Regálate esta pausa para celebrar tu esfuerzo y empezar liviana esta nueva etapa.',
+    'Por cada noche de esfuerzo, hoy te mereces relajarte y disfrutar.',
+  ],
+};
+
 // YYYY-MM-DD en la zona horaria local, para el min del selector de fecha.
 function todayLocal(): string {
   const d = new Date();
@@ -35,6 +56,7 @@ interface Target {
   id: number;
   name: string;
   image?: string;
+  summary?: string;
   variant?: string;
   variationId?: number;
   // Complementos ("Complementa tu experiencia") disponibles para este producto —
@@ -52,6 +74,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   const [target, setTarget] = useState<Target | null>(null);
   const [form, setForm] = useState<GiftCardInput>(empty);
   const [selectedAddons, setSelectedAddons] = useState<number[]>([]);
+  const [occasion, setOccasion] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [photoError, setPhotoError] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
@@ -73,6 +96,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
         id: Number(btn.dataset.giftProduct),
         name: btn.dataset.giftName ?? '',
         image: btn.dataset.giftImage || undefined,
+        summary: btn.dataset.giftSummary || undefined,
         variant: btn.dataset.giftVariant || undefined,
         variationId: btn.dataset.variationId ? Number(btn.dataset.variationId) : undefined,
         addons,
@@ -121,7 +145,8 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
     try {
       // Con complementos seleccionados, todos los items comparten groupId: WordPress
       // los agrupa para emitir UN solo cupón/correo en vez de uno por producto.
-      const payload: GiftCardInput = selectedAddons.length ? { ...form, groupId: crypto.randomUUID() } : form;
+      const base: GiftCardInput = { ...form, summary: target!.summary };
+      const payload: GiftCardInput = selectedAddons.length ? { ...base, groupId: crypto.randomUUID() } : base;
       await addGiftCardToCart(target!.id, payload, target!.variationId);
       for (const addonId of selectedAddons) {
         await addGiftCardToCart(addonId, payload);
@@ -156,6 +181,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
             <GiftCardPreview
               image={target.image}
               productName={target.name}
+              summary={target.summary}
               variant={target.variant}
               recipient={form.recipientEmail}
               message={form.message}
@@ -178,6 +204,34 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
                 <label className={`${labelClass} mb-0`}>Mensaje personalizado</label>
                 <span className="text-[11px] text-spa-taupe">{form.message.length}/{MESSAGE_LIMIT}</span>
               </div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {Object.keys(OCCASION_MESSAGES).map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => setOccasion(occasion === name ? null : name)}
+                    className={`text-[11px] px-3 py-1 rounded-full border transition-colors ${
+                      occasion === name ? 'bg-spa-charcoal text-white border-spa-charcoal' : 'bg-spa-sand text-[#4A4036] border-[#E2DBCE]'
+                    }`}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+              {occasion && (
+                <div className="flex flex-col gap-1.5 mb-2">
+                  {OCCASION_MESSAGES[occasion].map((phrase) => (
+                    <button
+                      key={phrase}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, message: phrase.slice(0, MESSAGE_LIMIT) }))}
+                      className="text-left text-xs px-3 py-2 rounded-xl bg-white border border-[#E2DBCE] hover:border-spa-taupe transition-colors"
+                    >
+                      {phrase}
+                    </button>
+                  ))}
+                </div>
+              )}
               <textarea
                 value={form.message}
                 maxLength={MESSAGE_LIMIT}

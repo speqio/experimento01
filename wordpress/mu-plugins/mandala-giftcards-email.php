@@ -37,7 +37,7 @@ function mandala_gift_email_html(array $d) {
         ? 'Tu regalo fue enviado'
         : esc_html($from) . ' te regaló una experiencia';
     $intro = $mode === 'buyer'
-        ? 'Enviamos la gift card a <strong>' . esc_html($d['recipient_email']) . '</strong>. Te dejamos una copia con el código.'
+        ? 'Tu regalo ya fue recibido: le acabamos de enviar la gift card a <strong>' . esc_html($d['recipient_email']) . '</strong>. Te dejamos una copia con el código.'
         : 'Preparamos este regalo para que te tomes un momento solo para ti.';
     $preheader = $mode === 'buyer'
         ? 'Copia de la gift card que enviaste'
@@ -112,6 +112,9 @@ function mandala_gift_email_html(array $d) {
               <div style="font-family:<?php echo $serif; ?>;font-size:19px;line-height:1.3;color:<?php echo $brand_color; ?>;"><?php echo esc_html($d['product_name']); ?></div>
               <?php if (!empty($d['variant'])) : ?>
               <div style="font-family:<?php echo $sans; ?>;font-size:13px;color:<?php echo $taupe; ?>;padding-top:3px;"><?php echo esc_html($d['variant']); ?></div>
+              <?php endif; ?>
+              <?php if (!empty($d['summary'])) : ?>
+              <div style="font-family:<?php echo $sans; ?>;font-size:12px;color:#675647;padding-top:4px;line-height:1.5;"><?php echo esc_html($d['summary']); ?></div>
               <?php endif; ?>
             </td>
           </tr></table>

@@ -93,6 +93,7 @@ add_filter('woocommerce_add_cart_item_data', function ($cart_item_data, $product
         'buyerEmail'      => sanitize_email($cart_item_data['buyerEmail'] ?? ''),
         'recipientEmail'  => sanitize_email($cart_item_data['recipientEmail']),
         'message'         => sanitize_textarea_field(mb_substr($cart_item_data['message'] ?? '', 0, 300)),
+        'summary'         => sanitize_text_field(mb_substr($cart_item_data['summary'] ?? '', 0, 150)),
         'deliveryDate'    => $delivery_date,
         'personalImage'   => $personal_image,
         // Presente cuando el regalo incluye un complemento agregado desde el modal
@@ -101,7 +102,7 @@ add_filter('woocommerce_add_cart_item_data', function ($cart_item_data, $product
         // UN solo cupón/correo en vez de uno por producto.
         'group'           => sanitize_text_field((string) ($cart_item_data['groupId'] ?? '')),
     ];
-    unset($cart_item_data['buyerEmail'], $cart_item_data['recipientEmail'], $cart_item_data['message'], $cart_item_data['deliveryDate'], $cart_item_data['personalImageUrl'], $cart_item_data['groupId']);
+    unset($cart_item_data['buyerEmail'], $cart_item_data['recipientEmail'], $cart_item_data['message'], $cart_item_data['summary'], $cart_item_data['deliveryDate'], $cart_item_data['personalImageUrl'], $cart_item_data['groupId']);
     if (!is_email($gift['recipientEmail'])) return $cart_item_data;
 
     $cart_item_data[MANDALA_GIFT_KEY] = $gift;
@@ -169,9 +170,14 @@ add_action('woocommerce_order_status_changed', function ($order_id, $from, $to) 
             $item_ids[] = $it->get_id();
         }
 
+        mandala_gift_notify_admin($gift, $first, $order);
+
         $send_at = mandala_gift_scheduled_timestamp($gift['deliveryDate'] ?? '');
         if ($send_at) {
             // Envío programado: el correo se despacha en la fecha elegida (ver acción abajo).
+            // Aparte, se confirma la compra de inmediato (sin código) para que el comprador
+            // no quede sin noticias hasta el día del envío.
+            mandala_gift_send_scheduled_confirmation($gift, $first, $order);
             wp_schedule_single_event($send_at, 'mandala_gift_send_scheduled', [$order_id, $item_ids]);
         } else {
             mandala_gift_send_email($code, $gift, $items, $order);
@@ -421,6 +427,7 @@ function mandala_gift_send_email($code, $gift, $items, $order) {
         'personal_image'  => $personal_image,
         'addons'          => $addons,
         'message'         => $gift['message'] ?? '',
+        'summary'         => $gift['summary'] ?? '',
         'from_name'       => $from_name,
         'recipient_email' => $gift['recipientEmail'],
         'expires'         => $expires,
@@ -444,6 +451,46 @@ function mandala_gift_send_email($code, $gift, $items, $order) {
             $headers
         );
     }
+}
+
+/** Avisa al comprador, al confirmarse el pago, que su gift card se enviará en la fecha elegida (sin código todavía). */
+function mandala_gift_send_scheduled_confirmation($gift, $item, $order) {
+    if (empty($gift['buyerEmail'])) return;
+    $brand = defined('MANDALA_BRAND') ? MANDALA_BRAND : 'Mándala Spa';
+    $date = date_i18n('j \d\e F \d\e Y', strtotime($gift['deliveryDate']));
+    $product_name = ($item->get_product() ? wc_get_product($item->get_product_id()) : null);
+    $product_name = $product_name ? $product_name->get_name() : $item->get_name();
+    $headers = function_exists('mandala_gift_email_headers') ? mandala_gift_email_headers() : ['Content-Type: text/html; charset=UTF-8'];
+    wp_mail(
+        $gift['buyerEmail'],
+        "Tu compra fue confirmada — $brand",
+        sprintf(
+            '<p>¡Gracias por tu compra! Confirmamos tu gift card de <strong>%s</strong>.</p><p>Se enviará a <strong>%s</strong> el <strong>%s</strong>.</p>',
+            esc_html($product_name),
+            esc_html($gift['recipientEmail']),
+            esc_html($date)
+        ),
+        $headers
+    );
+}
+
+/** Notifica al equipo cuando se confirma una compra de gift card. */
+function mandala_gift_notify_admin($gift, $item, $order) {
+    $admin_email = defined('MANDALA_GIFT_ADMIN_EMAIL') ? MANDALA_GIFT_ADMIN_EMAIL
+        : (defined('MANDALA_CONTACT_EMAIL') ? MANDALA_CONTACT_EMAIL : get_option('admin_email'));
+    if (!$admin_email) return;
+    $product_name = ($item->get_product() ? wc_get_product($item->get_product_id()) : null);
+    $product_name = $product_name ? $product_name->get_name() : $item->get_name();
+    $body = sprintf(
+        "Nueva gift card vendida.\n\nOrden: #%d\nComprador: %s\nDestinatario: %s\nProducto: %s\nMonto: %s\nEnvío: %s",
+        $order->get_id(),
+        $gift['buyerEmail'] ?: '—',
+        $gift['recipientEmail'],
+        $product_name,
+        $order->get_formatted_order_total(),
+        !empty($gift['deliveryDate']) ? 'Programado para ' . $gift['deliveryDate'] : 'Inmediato'
+    );
+    wp_mail($admin_email, 'Nueva gift card vendida — Orden #' . $order->get_id(), $body);
 }
 
 /**
@@ -496,6 +543,50 @@ add_action('graphql_register_types', function () {
                 'imageUrl' => mandala_gift_image_url(),
             ];
         },
+    ]);
+});
+
+/**
+ * 6) Verificación pública de un código (botón flotante del sitio, ver
+ *    components/giftcard/GiftCardRedeemModal.tsx): confirma que existe, no está
+ *    usado/expirado, y que el email coincide si el cupón tiene restricción.
+ *    No marca nada como usado — eso sigue siendo manual o vía checkout.
+ */
+add_action('rest_api_init', function () {
+    register_rest_route('mandala/v1', '/gift-verify', [
+        'methods'  => 'POST',
+        'callback' => function (WP_REST_Request $req) {
+            $code = sanitize_text_field((string) $req->get_param('code'));
+            $email = sanitize_email((string) $req->get_param('email'));
+            if (!$code) return new WP_REST_Response(['valid' => false, 'reason' => 'Falta el código.'], 200);
+
+            $coupon_id = wc_get_coupon_id_by_code($code);
+            if (!$coupon_id) return new WP_REST_Response(['valid' => false, 'reason' => 'Ese código no existe.'], 200);
+
+            $coupon = new WC_Coupon($coupon_id);
+            if (!$coupon->get_meta('_mandala_gift_card')) {
+                return new WP_REST_Response(['valid' => false, 'reason' => 'Ese código no existe.'], 200);
+            }
+            if ($coupon->get_usage_count() > 0) {
+                return new WP_REST_Response(['valid' => false, 'reason' => 'Ese código ya fue canjeado.'], 200);
+            }
+            if ($coupon->get_date_expires() && $coupon->get_date_expires()->getTimestamp() < time()) {
+                return new WP_REST_Response(['valid' => false, 'reason' => 'Ese código ya expiró.'], 200);
+            }
+            $restricted = $coupon->get_email_restrictions();
+            if (!empty($restricted) && $email && !in_array(strtolower($email), array_map('strtolower', $restricted), true)) {
+                return new WP_REST_Response(['valid' => false, 'reason' => 'El correo no coincide con el de esta gift card.'], 200);
+            }
+
+            $product_ids = $coupon->get_product_ids();
+            $product = $product_ids ? wc_get_product($product_ids[0]) : null;
+            return new WP_REST_Response([
+                'valid'       => true,
+                'productName' => $product ? $product->get_name() : '',
+                'expires'     => $coupon->get_date_expires() ? $coupon->get_date_expires()->date('d-m-Y') : '',
+            ], 200);
+        },
+        'permission_callback' => '__return_true',
     ]);
 });
 
