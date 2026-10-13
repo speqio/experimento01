@@ -4,15 +4,30 @@ import type { APIRoute } from 'astro';
 // borrar en cuanto se confirme la causa (no expone secretos, solo URLs).
 export const prerender = false;
 
-export const GET: APIRoute = ({ locals }) => {
+export const GET: APIRoute = async ({ locals }) => {
   const runtime = (locals as any)?.runtime;
+  const url = import.meta.env.PUBLIC_WPGRAPHQL_URL;
+
+  let fetchResult: unknown = null;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: '{ products(first:1){ nodes { name } } }' }),
+    });
+    const text = await res.text();
+    fetchResult = { ok: res.ok, status: res.status, bodyStart: text.slice(0, 300) };
+  } catch (e) {
+    fetchResult = { error: (e as Error).message, stack: (e as Error).stack?.slice(0, 500) };
+  }
+
   return new Response(
     JSON.stringify(
       {
-        importMetaEnv: import.meta.env.PUBLIC_WPGRAPHQL_URL ?? null,
+        importMetaEnv: url ?? null,
         runtimeEnv: runtime?.env?.PUBLIC_WPGRAPHQL_URL ?? null,
         hasKv: !!runtime?.env?.WP_CACHE,
-        processEnv: (globalThis as any).process?.env?.PUBLIC_WPGRAPHQL_URL ?? null,
+        fetchResult,
       },
       null,
       2,
