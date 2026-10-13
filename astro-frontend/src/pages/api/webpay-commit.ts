@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { updateOrderStatus } from '../../lib/woo-server';
+import { updateOrderStatus, getOrderTotal } from '../../lib/woo-server';
 import { webpayCommit } from '../../lib/webpay';
 
 export const prerender = false;
@@ -27,6 +27,15 @@ async function commitAndRedirect(request: Request, locals: any) {
     const orderId = Number(String(result.buy_order).replace('order-', ''));
 
     if (result.response_code === 0) {
+      // Defensa en profundidad: Transbank ya ata el monto al token desde
+      // webpayCreate, pero se verifica igual contra el total real de la orden
+      // antes de marcarla pagada (lo pide la propia guía de integración de
+      // Transbank, por si el flujo cambia o esta función se reutiliza).
+      const orderTotal = await getOrderTotal(env, orderId);
+      if (Math.round(Number(result.amount)) !== orderTotal) {
+        console.error(`webpay-commit: monto no coincide (orden #${orderId} total=${orderTotal} transbank=${result.amount})`);
+        return fail('monto_no_coincide');
+      }
       // Dispara el mu-plugin de gift cards (cupón + email) al pasar a processing.
       await updateOrderStatus(env, orderId, 'processing', result.authorization_code);
       return Response.redirect(`${site}/checkout/confirmacion?status=success&order=${orderId}`, 303);

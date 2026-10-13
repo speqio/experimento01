@@ -61,6 +61,25 @@ export async function setOrderMeta(env: Env, orderId: number, meta: Record<strin
   if (!res.ok) console.error(`setOrderMeta ${orderId} REST ${res.status}: ${await res.text()}`);
 }
 
+/**
+ * Monto real de la orden en WooCommerce — se usa para verificar contra lo que
+ * confirma Transbank antes de marcar la orden como pagada (ver webpay-commit.ts).
+ * Defensa en profundidad: el `buy_order`/monto ya quedan atados al token en
+ * Transbank desde `webpayCreate`, pero la propia guía de integración de
+ * Transbank pide validar igual el monto en el commit, por si el flujo cambia
+ * o esta función se reutiliza en otro contexto.
+ */
+export async function getOrderTotal(env: Env, orderId: number): Promise<number> {
+  const origin = new URL(graphqlUrl(env)).origin;
+  const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
+  const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return Math.round(Number(data.total));
+}
+
 /** Cambia el estado de una orden vía REST (requiere WC_REST_KEY/WC_REST_SECRET). */
 export async function updateOrderStatus(
   env: Env,

@@ -1,2 +1,17 @@
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Headers de seguridad HTTP (gratis vía Cloudflare, sin tocar código de la app).
+# CSP permisivo en img-src/connect-src a propósito: las imágenes de producto y
+# gift cards vienen de distintos dominios de WordPress (cms.laboratorio.space,
+# spamandala.cl, media subida por clientes) y no conviene listarlos uno a uno
+# acá (archivo estático, sin acceso a env vars). 'unsafe-inline' en script/style
+# porque Astro/React emiten <script> y style={{}} inline — restringirlo requeriría
+# nonces y es un cambio más grande; esto ya tapa XSS/clickjacking/sniffing básicos.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'self'; object-src 'none'

@@ -48,7 +48,7 @@ export async function webpayCreate(
 export async function webpayCommit(
   env: Env,
   token: string,
-): Promise<{ response_code: number; buy_order: string; authorization_code?: string }> {
+): Promise<{ response_code: number; buy_order: string; amount: number; authorization_code?: string }> {
   const { base, headers } = config(env);
   return call(await fetch(`${base}/${token}`, { method: 'PUT', headers }));
 }
