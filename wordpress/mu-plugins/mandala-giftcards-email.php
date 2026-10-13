@@ -23,9 +23,12 @@ if (!defined('MANDALA_CONTACT_WHATSAPP')) define('MANDALA_CONTACT_WHATSAPP', '56
 if (!defined('MANDALA_CONTACT_EMAIL')) define('MANDALA_CONTACT_EMAIL', 'contacto@spamandala.cl');
 
 /**
- * $d: mode ('recipient'|'buyer'), code, product_name, variant, image, message,
- *     from_name, recipient_email, expires, product_url, addons (nombres de
- *     complementos incluidos en el mismo regalo, si los hay — ver mandala-giftcards.php)
+ * $d: mode ('recipient'|'buyer'|'scheduled_confirmation'|'admin_notify'), code, product_name,
+ *     variant, summary, image, message, from_name, recipient_email, expires, addons (nombres de
+ *     complementos incluidos en el mismo regalo, si los hay — ver mandala-giftcards.php).
+ *     'scheduled_confirmation' y 'admin_notify' no traen `code` todavía — eso oculta solas
+ *     las secciones de código/canje/agenda (ver $show_redeem más abajo). 'admin_notify' además
+ *     trae order_id/buyer_email/total para el detalle interno.
  */
 function mandala_gift_email_html(array $d) {
     $site   = untrailingslashit(apply_filters('mandala_gift_site_url', MANDALA_FRONTEND_URL));
@@ -33,15 +36,29 @@ function mandala_gift_email_html(array $d) {
     $mode   = $d['mode'] ?? 'recipient';
     $from   = $d['from_name'] ?: 'Alguien especial';
 
-    $title = $mode === 'buyer'
-        ? 'Tu regalo fue enviado'
-        : esc_html($from) . ' te regaló una experiencia';
-    $intro = $mode === 'buyer'
-        ? 'Tu regalo ya fue recibido: le acabamos de enviar la gift card a <strong>' . esc_html($d['recipient_email']) . '</strong>. Te dejamos una copia con el código.'
-        : 'Preparamos este regalo para que te tomes un momento solo para ti.';
-    $preheader = $mode === 'buyer'
-        ? 'Copia de la gift card que enviaste'
-        : $from . ' te regaló una experiencia en ' . MANDALA_BRAND;
+    switch ($mode) {
+        case 'buyer':
+            $title = 'Tu regalo fue enviado';
+            $intro = 'Tu regalo ya fue recibido: le acabamos de enviar la gift card a <strong>' . esc_html($d['recipient_email']) . '</strong>. Te dejamos una copia con el código.';
+            $preheader = 'Copia de la gift card que enviaste';
+            break;
+        case 'scheduled_confirmation':
+            $title = 'Tu compra fue confirmada';
+            $intro = '¡Gracias por tu compra! La gift card se enviará a <strong>' . esc_html($d['recipient_email']) . '</strong> el <strong>' . esc_html($d['expires_text'] ?? '') . '</strong>. Te avisaremos apenas salga.';
+            $preheader = 'Confirmamos tu compra — el envío queda programado';
+            break;
+        case 'admin_notify':
+            $title = 'Nueva gift card vendida';
+            $intro = 'Se confirmó el pago de una gift card. Detalle abajo.';
+            $preheader = 'Nueva venta de gift card — Orden #' . esc_html((string) ($d['order_id'] ?? ''));
+            break;
+        default:
+            $title = esc_html($from) . ' te regaló una experiencia';
+            $intro = 'Preparamos este regalo para que te tomes un momento solo para ti.';
+            $preheader = $from . ' te regaló una experiencia en ' . MANDALA_BRAND;
+    }
+    // Código/canje/agenda solo tienen sentido cuando ya existe un cupón emitido.
+    $show_redeem = !empty($d['code']);
 
     $brand_color = '#2C2724';
     $taupe       = '#8C7A6B';
@@ -128,14 +145,35 @@ function mandala_gift_email_html(array $d) {
         <tr><td style="padding:10px 20px 4px 20px;font-family:<?php echo $serif; ?>;font-style:italic;font-size:15px;line-height:1.55;color:#675647;">“<?php echo esc_html($d['message']); ?>”</td></tr>
         <?php endif; ?>
         <tr><td style="padding:12px 20px 16px 20px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #EFECE4;"><tr>
-            <td style="padding-top:10px;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:2px;color:<?php echo $taupe; ?>;text-transform:uppercase;">Para</td>
-            <td align="right" style="padding-top:10px;font-family:<?php echo $sans; ?>;font-size:12px;color:<?php echo $brand_color; ?>;"><?php echo esc_html($d['recipient_email']); ?></td>
-          </tr></table>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #EFECE4;">
+            <tr>
+              <td style="padding-top:10px;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:2px;color:<?php echo $taupe; ?>;text-transform:uppercase;"><?php echo $mode === 'admin_notify' ? 'Destinatario' : 'Para'; ?></td>
+              <td align="right" style="padding-top:10px;font-family:<?php echo $sans; ?>;font-size:12px;color:<?php echo $brand_color; ?>;"><?php echo esc_html($d['recipient_email'] ?? '—'); ?></td>
+            </tr>
+            <?php if ($mode === 'admin_notify') : ?>
+            <tr>
+              <td style="padding-top:6px;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:2px;color:<?php echo $taupe; ?>;text-transform:uppercase;">Comprador</td>
+              <td align="right" style="padding-top:6px;font-family:<?php echo $sans; ?>;font-size:12px;color:<?php echo $brand_color; ?>;"><?php echo esc_html($d['buyer_email'] ?? '—'); ?></td>
+            </tr>
+            <tr>
+              <td style="padding-top:6px;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:2px;color:<?php echo $taupe; ?>;text-transform:uppercase;">Orden</td>
+              <td align="right" style="padding-top:6px;font-family:<?php echo $sans; ?>;font-size:12px;color:<?php echo $brand_color; ?>;">#<?php echo esc_html((string) ($d['order_id'] ?? '')); ?></td>
+            </tr>
+            <tr>
+              <td style="padding-top:6px;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:2px;color:<?php echo $taupe; ?>;text-transform:uppercase;">Monto</td>
+              <td align="right" style="padding-top:6px;font-family:<?php echo $sans; ?>;font-size:12px;color:<?php echo $brand_color; ?>;"><?php echo wp_kses_post($d['total'] ?? '—'); ?></td>
+            </tr>
+            <tr>
+              <td style="padding-top:6px;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:2px;color:<?php echo $taupe; ?>;text-transform:uppercase;">Envío</td>
+              <td align="right" style="padding-top:6px;font-family:<?php echo $sans; ?>;font-size:12px;color:<?php echo $brand_color; ?>;"><?php echo esc_html($d['delivery_label'] ?? 'Inmediato'); ?></td>
+            </tr>
+            <?php endif; ?>
+          </table>
         </td></tr>
       </table>
     </td></tr>
 
+    <?php if ($show_redeem) : ?>
     <!-- Código -->
     <tr><td align="center" style="padding:0 0 8px 0;font-family:<?php echo $sans; ?>;font-size:11px;letter-spacing:3px;color:<?php echo $taupe; ?>;text-transform:uppercase;">Tu código de regalo</td></tr>
     <tr><td align="center" style="padding:0 0 10px 0;">
@@ -181,6 +219,12 @@ function mandala_gift_email_html(array $d) {
         </td>
       </tr></table>
     </td></tr>
+    <?php elseif ($mode === 'scheduled_confirmation') : ?>
+    <!-- Sin código todavía: solo un cierre cálido, el código llega en el próximo correo. -->
+    <tr><td align="center" style="padding:0 0 30px 0;font-family:<?php echo $sans; ?>;font-size:13px;line-height:1.6;color:#675647;">Te escribiremos de nuevo con el código cuando el regalo se envíe.</td></tr>
+    <?php else : ?>
+    <tr><td style="padding:0 0 10px 0;"></td></tr>
+    <?php endif; ?>
 
     <!-- Footer -->
     <tr><td align="center" style="padding:22px 16px 0 16px;border-top:1px solid #E2DDD3;font-family:<?php echo $sans; ?>;font-size:12px;line-height:1.7;color:<?php echo $taupe; ?>;">
@@ -218,16 +262,23 @@ add_action('admin_post_mandala_gift_preview', function () {
         $image_id = $product->get_image_id();
         $image = $image_id ? wp_get_attachment_image_url($image_id, 'large') : '';
     }
+    $mode = in_array($_GET['mode'] ?? '', ['buyer', 'scheduled_confirmation', 'admin_notify'], true) ? $_GET['mode'] : 'recipient';
     $data = [
-        'mode'            => (isset($_GET['mode']) && $_GET['mode'] === 'buyer') ? 'buyer' : 'recipient',
-        'code'            => 'A1B2C3D4E5F6',
+        'mode'            => $mode,
+        'code'            => $mode === 'recipient' || $mode === 'buyer' ? 'A1B2C3D4E5F6' : '',
         'product_name'    => $product ? $product->get_name() : 'Limpieza facial profunda con hidratación',
         'variant'         => '5 sesiones, 1 hora y 15 min',
+        'summary'         => 'Un ritual de 60 minutos que combina masaje relajante y exfoliación corporal.',
         'image'           => $image,
         'message'         => 'Feliz cumpleaños, te mereces este momento para ti.',
         'from_name'       => 'Macarena',
         'recipient_email' => 'destinatario@email.com',
+        'buyer_email'     => 'macarena@email.com',
+        'order_id'        => 1234,
+        'total'           => '$45.000',
+        'delivery_label'  => 'Programado para 2026-11-01',
         'expires'         => date_i18n('j \d\e F \d\e Y', strtotime('+12 months')),
+        'expires_text'    => date_i18n('j \d\e F \d\e Y', strtotime('+3 days')),
     ];
     $html = mandala_gift_email_html($data);
 

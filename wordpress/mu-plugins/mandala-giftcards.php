@@ -453,44 +453,52 @@ function mandala_gift_send_email($code, $gift, $items, $order) {
     }
 }
 
-/** Avisa al comprador, al confirmarse el pago, que su gift card se enviará en la fecha elegida (sin código todavía). */
+/** Datos comunes del producto/variante/imagen para un order item, reusados por ambos correos de abajo. */
+function mandala_gift_item_display_data($item) {
+    $product = $item->get_product();
+    $parent  = wc_get_product($item->get_product_id());
+    $image_id = $product ? $product->get_image_id() : 0;
+    if (!$image_id && $parent) $image_id = $parent->get_image_id();
+    return [
+        'product_name' => $parent ? $parent->get_name() : $item->get_name(),
+        'variant'      => ($product && $product->is_type('variation')) ? wc_get_formatted_variation($product, true, false) : '',
+        'image'        => $image_id ? wp_get_attachment_image_url($image_id, 'large') : '',
+    ];
+}
+
+/** Avisa al comprador, al confirmarse el pago, que su gift card se enviará en la fecha elegida (sin código todavía — usa la misma plantilla vestida del resto de correos de gift card). */
 function mandala_gift_send_scheduled_confirmation($gift, $item, $order) {
     if (empty($gift['buyerEmail'])) return;
     $brand = defined('MANDALA_BRAND') ? MANDALA_BRAND : 'Mándala Spa';
     $date = date_i18n('j \d\e F \d\e Y', strtotime($gift['deliveryDate']));
-    $product_name = ($item->get_product() ? wc_get_product($item->get_product_id()) : null);
-    $product_name = $product_name ? $product_name->get_name() : $item->get_name();
     $headers = function_exists('mandala_gift_email_headers') ? mandala_gift_email_headers() : ['Content-Type: text/html; charset=UTF-8'];
-    wp_mail(
-        $gift['buyerEmail'],
-        "Tu compra fue confirmada — $brand",
-        sprintf(
-            '<p>¡Gracias por tu compra! Confirmamos tu gift card de <strong>%s</strong>.</p><p>Se enviará a <strong>%s</strong> el <strong>%s</strong>.</p>',
-            esc_html($product_name),
-            esc_html($gift['recipientEmail']),
-            esc_html($date)
-        ),
-        $headers
-    );
+
+    $data = array_merge(mandala_gift_item_display_data($item), [
+        'summary'         => $gift['summary'] ?? '',
+        'recipient_email' => $gift['recipientEmail'],
+        'expires_text'    => $date,
+        'mode'            => 'scheduled_confirmation',
+    ]);
+    wp_mail($gift['buyerEmail'], "Tu compra fue confirmada — $brand", mandala_gift_email_html($data), $headers);
 }
 
-/** Notifica al equipo cuando se confirma una compra de gift card. */
+/** Notifica al equipo (con la misma plantilla vestida) cuando se confirma una compra de gift card. */
 function mandala_gift_notify_admin($gift, $item, $order) {
     $admin_email = defined('MANDALA_GIFT_ADMIN_EMAIL') ? MANDALA_GIFT_ADMIN_EMAIL
         : (defined('MANDALA_CONTACT_EMAIL') ? MANDALA_CONTACT_EMAIL : get_option('admin_email'));
     if (!$admin_email) return;
-    $product_name = ($item->get_product() ? wc_get_product($item->get_product_id()) : null);
-    $product_name = $product_name ? $product_name->get_name() : $item->get_name();
-    $body = sprintf(
-        "Nueva gift card vendida.\n\nOrden: #%d\nComprador: %s\nDestinatario: %s\nProducto: %s\nMonto: %s\nEnvío: %s",
-        $order->get_id(),
-        $gift['buyerEmail'] ?: '—',
-        $gift['recipientEmail'],
-        $product_name,
-        $order->get_formatted_order_total(),
-        !empty($gift['deliveryDate']) ? 'Programado para ' . $gift['deliveryDate'] : 'Inmediato'
-    );
-    wp_mail($admin_email, 'Nueva gift card vendida — Orden #' . $order->get_id(), $body);
+    $headers = function_exists('mandala_gift_email_headers') ? mandala_gift_email_headers() : ['Content-Type: text/html; charset=UTF-8'];
+
+    $data = array_merge(mandala_gift_item_display_data($item), [
+        'summary'         => $gift['summary'] ?? '',
+        'recipient_email' => $gift['recipientEmail'],
+        'buyer_email'     => $gift['buyerEmail'] ?: '—',
+        'order_id'        => $order->get_id(),
+        'total'           => $order->get_formatted_order_total(),
+        'delivery_label'  => !empty($gift['deliveryDate']) ? 'Programado para ' . $gift['deliveryDate'] : 'Inmediato',
+        'mode'            => 'admin_notify',
+    ]);
+    wp_mail($admin_email, 'Nueva gift card vendida — Orden #' . $order->get_id(), mandala_gift_email_html($data), $headers);
 }
 
 /**
