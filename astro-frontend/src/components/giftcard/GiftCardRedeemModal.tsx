@@ -59,7 +59,7 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Usa tu giftcard disponible"
-        className="fixed bottom-24 right-6 z-40 flex items-end gap-2"
+        className="fixed bottom-24 right-2 z-40 flex items-end gap-2"
       >
         {/* Etiqueta siempre visible — no depende de hover ni click */}
         <span className="mb-1 bg-spa-charcoal text-white text-[10px] font-semibold uppercase tracking-wide px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
@@ -69,7 +69,7 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
           <div
             ref={wrapperRef}
             className="gc-float relative"
-            style={{ width: '88px', aspectRatio: '1748 / 1240', transformStyle: 'preserve-3d', touchAction: 'pan-y' }}
+            style={{ width: '140px', aspectRatio: '1748 / 1240', transformStyle: 'preserve-3d', touchAction: 'pan-y' }}
             onMouseMove={onMouse}
             onMouseLeave={leave}
             onTouchMove={onTouch}

@@ -220,13 +220,14 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
               </div>
               {occasion && (
                 <div className="flex flex-col gap-1.5 mb-2">
-                  {OCCASION_MESSAGES[occasion].map((phrase) => (
+                  {OCCASION_MESSAGES[occasion].map((phrase, i) => (
                     <button
                       key={phrase}
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, message: phrase.slice(0, MESSAGE_LIMIT) }))}
                       className="text-left text-xs px-3 py-2 rounded-xl bg-white border border-[#E2DBCE] hover:border-spa-taupe transition-colors"
                     >
+                      <span className="block text-[10px] font-semibold uppercase tracking-wide text-spa-taupe mb-0.5">Opción {i + 1}</span>
                       {phrase}
                     </button>
                   ))}
