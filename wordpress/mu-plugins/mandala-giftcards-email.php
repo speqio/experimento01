@@ -126,12 +126,11 @@ function mandala_gift_email_html(array $d) {
             </td>
             <?php endif; ?>
             <td valign="middle">
-              <div style="font-family:<?php echo $serif; ?>;font-size:19px;line-height:1.3;color:<?php echo $brand_color; ?>;"><?php echo esc_html($d['product_name']); ?></div>
+              <div style="font-family:<?php echo $serif; ?>;font-size:19px;line-height:1.3;color:<?php echo $brand_color; ?>;">
+                <?php echo esc_html($d['product_name']); ?><?php if (!empty($d['summary'])) : ?><span style="font-family:<?php echo $sans; ?>;font-size:13px;font-style:italic;color:#675647;"> — <?php echo esc_html($d['summary']); ?></span><?php endif; ?>
+              </div>
               <?php if (!empty($d['variant'])) : ?>
               <div style="font-family:<?php echo $sans; ?>;font-size:13px;color:<?php echo $taupe; ?>;padding-top:3px;"><?php echo esc_html($d['variant']); ?></div>
-              <?php endif; ?>
-              <?php if (!empty($d['summary'])) : ?>
-              <div style="font-family:<?php echo $sans; ?>;font-size:12px;color:#675647;padding-top:4px;line-height:1.5;"><?php echo esc_html($d['summary']); ?></div>
               <?php endif; ?>
             </td>
           </tr></table>
