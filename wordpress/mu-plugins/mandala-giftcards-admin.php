@@ -101,7 +101,9 @@ add_action('admin_post_mandala_gift_export_csv', function () {
     $buyer = isset($_GET['comprador']) ? sanitize_text_field($_GET['comprador']) : '';
     $producto = isset($_GET['producto']) ? sanitize_text_field($_GET['producto']) : '';
     $campania = isset($_GET['campania']) ? sanitize_text_field($_GET['campania']) : '';
-    $result = mandala_gift_query_orders(1, 100000, $estado, $buyer, $producto, $campania);
+    $desde = isset($_GET['desde']) ? sanitize_text_field($_GET['desde']) : '';
+    $hasta = isset($_GET['hasta']) ? sanitize_text_field($_GET['hasta']) : '';
+    $result = mandala_gift_query_orders(1, 100000, $estado, $buyer, $producto, $campania, $desde, $hasta);
 
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="gift-cards.csv"');
@@ -133,7 +135,7 @@ add_action('admin_post_mandala_gift_export_csv', function () {
  * Resuelve todo antes de paginar (el filtro depende del estado del cupón, que solo
  * se sabe al resolver cada ítem); volumen bajo, sin impacto real de performance.
  */
-function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos', $buyer = '', $producto = '', $campania = '') {
+function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos', $buyer = '', $producto = '', $campania = '', $desde = '', $hasta = '') {
     global $wpdb;
     // wc_get_orders no filtra por meta de line item directamente; se busca por los
     // ítems (_mandala_gift) y se resuelve a la orden dueña de cada ítem.
@@ -219,6 +221,13 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
     if ($campania !== '') {
         $items = array_values(array_filter($items, fn($row) => $row['campaign'] === $campania));
     }
+    // Fecha de la orden (no de envío) — para ver tendencias: "¿qué se vendió en octubre?".
+    if ($desde !== '') {
+        $items = array_values(array_filter($items, fn($row) => $row['order']->get_date_created() && $row['order']->get_date_created()->date('Y-m-d') >= $desde));
+    }
+    if ($hasta !== '') {
+        $items = array_values(array_filter($items, fn($row) => $row['order']->get_date_created() && $row['order']->get_date_created()->date('Y-m-d') <= $hasta));
+    }
 
     $total = count($items);
     $offset = ($page - 1) * $per_page;
@@ -260,7 +269,9 @@ function mandala_gift_admin_tab_trazabilidad() {
     $buyer = isset($_GET['comprador']) ? sanitize_text_field($_GET['comprador']) : '';
     $producto = isset($_GET['producto']) ? sanitize_text_field($_GET['producto']) : '';
     $campania = isset($_GET['campania']) ? sanitize_text_field($_GET['campania']) : '';
-    $result = mandala_gift_query_orders($page, 20, $estado, $buyer, $producto, $campania);
+    $desde = isset($_GET['desde']) ? sanitize_text_field($_GET['desde']) : '';
+    $hasta = isset($_GET['hasta']) ? sanitize_text_field($_GET['hasta']) : '';
+    $result = mandala_gift_query_orders($page, 20, $estado, $buyer, $producto, $campania, $desde, $hasta);
     // Opciones de los selects: se sacan de todos los resultados sin filtrar (volumen bajo).
     $all = mandala_gift_query_orders(1, 100000, 'todos');
     $productos_opts = array_unique(array_map(fn($r) => $r['item']->get_name(), $all['items']));
@@ -298,6 +309,8 @@ function mandala_gift_admin_tab_trazabilidad() {
           <?php endforeach; ?>
         </select>
       </label>
+      <label>Desde: <input type="date" name="desde" value="<?php echo esc_attr($desde); ?>" onchange="this.form.submit()"></label>
+      <label>Hasta: <input type="date" name="hasta" value="<?php echo esc_attr($hasta); ?>" onchange="this.form.submit()"></label>
       <button type="submit" class="button">Filtrar</button>
       <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($_GET, ['action' => 'mandala_gift_export_csv']), admin_url('admin-post.php'))); ?>">Exportar CSV</a>
     </form>
