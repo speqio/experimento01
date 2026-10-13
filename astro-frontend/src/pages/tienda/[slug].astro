@@ -17,6 +17,7 @@ import {
   getCardSummary,
   getPriceDisplay,
   formatPriceDisplay,
+  clampIntroWords,
 } from '../../lib/parse';
 import { getUpsellsFor } from '../../lib/queries/upsells';
 import type { SimpleProduct } from '../../types/catalog';
@@ -54,7 +55,8 @@ const variantAttrs = variations[0]
       options: [...new Set(variations.map((v) => v.attributes.nodes.find((x) => x.name === a.name)?.value ?? ''))].filter(Boolean),
     }))
   : [];
-const { intro, benefits, includes, indicatedFor, contraindications, extras } = parseProductSections(product.description ?? '');
+const { intro: introHtml, benefits, includes, indicatedFor, contraindications, extras } = parseProductSections(product.description ?? '');
+const intro = clampIntroWords(introHtml);
 
 const [upsells, relatedResult] = await Promise.all([
   getUpsellsFor(product.databaseId, cache),
@@ -141,9 +143,9 @@ const related: SimpleProduct[] = relatedResult
         {intro && (
           <div>
             <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-spa-taupe mb-3 flex items-center gap-2">
-              <span class="w-6 h-px bg-spa-taupe" />Descripción Sensorial
+              <span class="w-6 h-px bg-spa-taupe" />Te ofrecemos
             </h2>
-            <div class="text-[#4A4036] text-sm sm:text-base leading-relaxed [&_p]:mb-3 last:[&_p]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_li]:mb-1 [&_h2]:font-editorial [&_h2]:text-xl [&_h2]:text-spa-charcoal [&_h2]:mb-2 [&_h3]:font-semibold [&_h3]:text-spa-charcoal [&_h3]:mb-1 [&_strong]:text-spa-charcoal" set:html={intro} />
+            <p class="text-[#4A4036] text-sm sm:text-base leading-relaxed">{intro}</p>
           </div>
         )}
 

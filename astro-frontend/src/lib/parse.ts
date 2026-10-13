@@ -172,6 +172,14 @@ export function parseProductSections(html: string): ProductSections {
   return result;
 }
 
+/** Texto plano de la introducción recortado a `max` palabras (el texto sensorial de la ficha). */
+export function clampIntroWords(introHtml: string, max = 56): string {
+  const words = htmlToText(introHtml).split(/\s+/).filter(Boolean);
+  if (words.length <= max) return words.join(' ');
+  const cut = words.slice(0, max).join(' ').replace(/[,;:\s]+$/, '');
+  return /[.!?]$/.test(cut) ? cut : `${cut}…`;
+}
+
 // WooGraphQL devuelve `price`/`regularPrice` como rango ("$X - $Y") para
 // VariableProduct (variantes de duración). Mostrar el rango completo es
 // confuso; se muestra el valor más bajo con el prefijo "Desde".
