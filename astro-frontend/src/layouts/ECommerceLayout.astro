@@ -32,5 +32,5 @@ const { categoryGroups, giftCardImageUrl } = await (layoutData ?? fetchLayoutDat
   </main>
   <Footer />
   <GiftCardModal cardImageUrl={giftCardImageUrl} client:idle />
-  <GiftCardRedeemModal client:idle />
+  <GiftCardRedeemModal cardImageUrl={giftCardImageUrl} client:idle />
 </BaseLayout>

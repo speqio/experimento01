@@ -1,17 +1,28 @@
 import { useState } from 'react';
 import { SITE_INFO } from '../../lib/siteInfo';
+import { useCardTilt, REST_SHADOW } from '../../lib/useCardTilt';
+
+interface Props {
+  // Diseño de la tarjeta (wp-admin → Gift Cards → Ajustes) — mismo arte que GiftCardPreview.
+  cardImageUrl?: string;
+}
 
 // Botón flotante + modal para que quien recibió una gift card verifique su
 // código y agende por WhatsApp — sin pasar por el checkout. El canje real
 // (marcar el código como usado) sigue siendo manual en wp-admin o automático
 // al aplicarlo en checkout; ver wordpress/mu-plugins/mandala-giftcards.php.
-export default function GiftCardRedeemModal() {
+//
+// El disparador es la misma tarjeta 3D del modal de compra (GiftCardPreview),
+// en miniatura, con la etiqueta "Usa tu giftcard disponible" siempre visible
+// (no solo al pasar el mouse) para que no pase desapercibida.
+export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { wrapperRef, cardRef, glareRef, sheenRef, onMouse, onTouch, leave } = useCardTilt();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,16 +50,62 @@ export default function GiftCardRedeemModal() {
 
   return (
     <>
+      <style>{`
+        @keyframes gc-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        .gc-float { animation: gc-float 6s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) { .gc-float { animation: none; } }
+      `}</style>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Verificar mi gift card"
-        title="Verificar mi gift card"
-        className="fixed bottom-24 right-6 z-40 bg-spa-charcoal hover:bg-[#433B36] text-white p-3.5 rounded-full shadow-2xl transition-all duration-300 hover:scale-105 flex items-center justify-center"
+        aria-label="Usa tu giftcard disponible"
+        className="fixed bottom-24 right-6 z-40 flex items-end gap-2"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="w-6 h-6">
-          <rect x="3" y="8" width="18" height="13" rx="2" /><path d="M12 8v13M3 12h18M12 8a2.5 2.5 0 1 1-2.5-2.5C11 5.5 12 8 12 8Zm0 0a2.5 2.5 0 1 0 2.5-2.5C13 5.5 12 8 12 8Z" />
-        </svg>
+        {/* Etiqueta siempre visible — no depende de hover ni click */}
+        <span className="mb-1 bg-spa-charcoal text-white text-[10px] font-semibold uppercase tracking-wide px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
+          Usa tu giftcard disponible
+        </span>
+        <div style={{ perspective: '800px' }}>
+          <div
+            ref={wrapperRef}
+            className="gc-float relative"
+            style={{ width: '88px', aspectRatio: '1748 / 1240', transformStyle: 'preserve-3d', touchAction: 'pan-y' }}
+            onMouseMove={onMouse}
+            onMouseLeave={leave}
+            onTouchMove={onTouch}
+            onTouchEnd={leave}
+          >
+            <div
+              ref={cardRef}
+              className="relative w-full h-full"
+              style={{
+                borderRadius: '4.5% / 6.4%',
+                transformStyle: 'preserve-3d',
+                boxShadow: REST_SHADOW,
+                transition: 'transform 0.6s cubic-bezier(0.23,1,0.32,1), box-shadow 0.6s cubic-bezier(0.23,1,0.32,1)',
+                backgroundImage: `url('${cardImageUrl || '/gift-card.webp'}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                overflow: 'hidden',
+              }}
+              role="img"
+              aria-hidden="true"
+            >
+              <div ref={glareRef} className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'overlay', opacity: 0 }} />
+              <div
+                ref={sheenRef}
+                className="absolute pointer-events-none"
+                style={{
+                  inset: '-100%',
+                  mixBlendMode: 'color-dodge',
+                  transform: 'translateX(-100%)',
+                  background:
+                    'linear-gradient(105deg, transparent, transparent 40%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.2) 55%, transparent 60%, transparent)',
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </button>
 
       {open && (
