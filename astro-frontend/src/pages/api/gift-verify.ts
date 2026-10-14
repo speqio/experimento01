@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { WORKER_USER_AGENT } from '../../lib/wp-graphql';
 
 // Verifica un código de gift card contra WooCommerce antes de dirigir al
 // WhatsApp de reservas (ver components/giftcard/GiftCardRedeemModal.tsx).
@@ -41,7 +42,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const wpOrigin = new URL(import.meta.env.PUBLIC_WPGRAPHQL_URL).origin;
     const res = await fetch(`${wpOrigin}/wp-json/mandala/v1/gift-verify`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'User-Agent': WORKER_USER_AGENT },
       body: JSON.stringify({ code, email }),
     });
     const data = await res.json();

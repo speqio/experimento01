@@ -1,5 +1,7 @@
 // Utilidades SOLO de servidor (endpoints SSR). Usan claves REST de WooCommerce
 // que nunca deben llegar al navegador (ver docs/wp-setup-guide.md §7).
+import { WORKER_USER_AGENT } from './wp-graphql';
+
 type Env = Record<string, string | undefined>;
 
 const CHECKOUT_MUTATION = /* GraphQL */ `
@@ -28,7 +30,11 @@ export async function createOrderFromCart(
 ): Promise<CreatedOrder> {
   const res = await fetch(graphqlUrl(env), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'woocommerce-session': sessionHeader },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': WORKER_USER_AGENT,
+      'woocommerce-session': sessionHeader,
+    },
     body: JSON.stringify({
       query: CHECKOUT_MUTATION,
       variables: {
@@ -52,7 +58,11 @@ export async function setOrderMeta(env: Env, orderId: number, meta: Record<strin
   const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
   const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': WORKER_USER_AGENT,
+      Authorization: `Basic ${auth}`,
+    },
     body: JSON.stringify({
       meta_data: Object.entries(meta).map(([key, value]) => ({ key, value })),
     }),
@@ -73,7 +83,7 @@ export async function getOrderTotal(env: Env, orderId: number): Promise<number> 
   const origin = new URL(graphqlUrl(env)).origin;
   const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
   const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
-    headers: { Authorization: `Basic ${auth}` },
+    headers: { Authorization: `Basic ${auth}`, 'User-Agent': WORKER_USER_AGENT },
   });
   if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`);
   const data = await res.json();
@@ -91,7 +101,11 @@ export async function updateOrderStatus(
   const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
   const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': WORKER_USER_AGENT,
+      Authorization: `Basic ${auth}`,
+    },
     body: JSON.stringify({
       status,
       ...(status === 'processing' || status === 'completed'

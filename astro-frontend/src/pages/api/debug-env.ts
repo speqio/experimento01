@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { WORKER_USER_AGENT } from '../../lib/wp-graphql';
 
 // ponytail: diagnóstico temporal para el incidente de PUBLIC_WPGRAPHQL_URL —
 // borrar en cuanto se confirme la causa (no expone secretos, solo URLs).
@@ -12,7 +13,7 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'User-Agent': WORKER_USER_AGENT },
       body: JSON.stringify({ query: '{ products(first:1){ nodes { name } } }' }),
     });
     const text = await res.text();

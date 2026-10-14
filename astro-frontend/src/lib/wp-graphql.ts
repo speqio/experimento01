@@ -33,6 +33,11 @@ interface WpQueryArgs {
 /** KV exige expirationTtl >= 60s. */
 const MIN_KV_TTL = 60;
 
+// ponytail: algunos WAF del hosting (ver waf_logs.csv, regla "Bad user-agent")
+// bloquean requests con User-Agent vacío o genérico por parecer bots — el
+// fetch del Worker no manda ninguno por defecto. Identificarnos evita el 403.
+export const WORKER_USER_AGENT = 'MandalaAstroWorker/1.0 (+https://laboratorio.space)';
+
 function cacheKeyFor(query: string, variables: object): string {
   return `wpq:${query}:${JSON.stringify(variables)}`;
 }
@@ -67,6 +72,7 @@ export async function wpQuery<T>({ query, variables = {}, cache }: WpQueryArgs):
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'User-Agent': WORKER_USER_AGENT,
       ...(sessionToken ? { 'woocommerce-session': `Session ${sessionToken}` } : {}),
     },
     body: JSON.stringify({ query, variables }),
