@@ -10,4 +10,7 @@ export const SITE_INFO = {
   schedule: 'Lun a Sáb, 10:00 - 20:00 hrs',
 };
 
-export const RESERVO_URL = 'https://agendamiento.reservo.cl/makereserva/agenda/h0iYsYc0h0mkkT2Y0E606nC2p3k4Km';
+// Contenedor de laboratorio.space (clon de producción). Cambiar a GTM-M5SFR549 en el corte.
+export const GTM_CONTAINER_ID = 'GTM-MLTN686R';
+
+export const RESERVO_URL ='https://agendamiento.reservo.cl/makereserva/agenda/h0iYsYc0h0mkkT2Y0E606nC2p3k4Km';

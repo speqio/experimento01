@@ -1,5 +1,5 @@
 ---
-import { SITE_INFO } from '../lib/siteInfo';
+import { SITE_INFO, GTM_CONTAINER_ID } from '../lib/siteInfo';
 import '../styles/global.css';
 
 interface Props {
@@ -14,6 +14,16 @@ const {
 <!doctype html>
 <html lang="es">
   <head>
+    <script is:inline define:vars={{ gtmId: GTM_CONTAINER_ID }}>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+        j.async = true;
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, 'script', 'dataLayer', gtmId);
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
@@ -38,6 +48,7 @@ const {
     </noscript>
   </head>
   <body class="bg-spa-bg text-spa-charcoal font-sans antialiased selection:bg-[#D4C3B3] selection:text-[#1F1B18]">
+    <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${GTM_CONTAINER_ID}`} height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div id="page-loader" class="fixed inset-0 z-[100] bg-spa-bg flex items-center justify-center transition-opacity duration-700 ease-out">
       <div class="flex flex-col items-center gap-4">
         <div class="w-10 h-10 text-spa-taupe animate-[spin_2.4s_linear_infinite]">
