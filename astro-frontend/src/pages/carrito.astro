@@ -12,3 +12,13 @@ import CartSummaryPanel from '../components/cart/CartSummaryPanel.tsx';
     <CartSummaryPanel client:load />
   </div>
 </ECommerceLayout>
+
+<script>
+  import { fetchCart } from '../store/cartStore';
+  import { clp, cartLinesToItems, pushEcommerce } from '../lib/dataLayer';
+
+  fetchCart().then((s) => {
+    const items = cartLinesToItems(s.items);
+    if (items.length) pushEcommerce('view_cart', { value: clp(s.total), items });
+  }).catch(() => {});
+</script>

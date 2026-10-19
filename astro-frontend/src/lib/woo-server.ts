@@ -90,6 +90,37 @@ export async function getOrderTotal(env: Env, orderId: number): Promise<number> 
   return Math.round(Number(data.total));
 }
 
+export interface OrderForAnalytics {
+  transactionId: string;
+  value: number;
+  items: { item_id: string; item_name: string; price: number; quantity: number }[];
+  purchaseType: 'product' | 'gift';
+}
+
+/** Datos de una orden pagada para el evento `purchase` de GTM (ver pages/checkout/confirmacion.astro). */
+export async function getOrderForAnalytics(env: Env, orderId: number): Promise<OrderForAnalytics> {
+  const origin = new URL(graphqlUrl(env)).origin;
+  const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
+  const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
+    headers: { Authorization: `Basic ${auth}`, 'User-Agent': WORKER_USER_AGENT },
+  });
+  if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  const lines: any[] = data.line_items ?? [];
+  const isGift = lines.some((l) => (l.meta_data ?? []).some((m: { key: string }) => m.key === '_mandala_gift'));
+  return {
+    transactionId: String(data.id),
+    value: Math.round(Number(data.total)),
+    items: lines.map((l) => ({
+      item_id: String(l.product_id),
+      item_name: l.name,
+      price: Math.round(Number(l.total) / (l.quantity || 1)),
+      quantity: l.quantity,
+    })),
+    purchaseType: isGift ? 'gift' : 'product',
+  };
+}
+
 /** Cambia el estado de una orden vía REST (requiere WC_REST_KEY/WC_REST_SECRET). */
 export async function updateOrderStatus(
   env: Env,

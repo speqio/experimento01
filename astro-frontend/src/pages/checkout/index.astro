@@ -35,6 +35,13 @@ const inputClass =
   import type { CheckoutInput } from '../../types/checkout';
   import type { WebpayInitResponse } from '../../types/checkout';
   import { getAttribution } from '../../lib/attribution';
+  import { fetchCart } from '../../store/cartStore';
+  import { clp, cartLinesToItems, pushEcommerce } from '../../lib/dataLayer';
+
+  fetchCart().then((s) => {
+    const items = cartLinesToItems(s.items);
+    if (items.length) pushEcommerce('begin_checkout', { value: clp(s.total), items });
+  }).catch(() => {});
 
   const form = document.getElementById('checkout-form') as HTMLFormElement;
   form.addEventListener('submit', async (e) => {

@@ -11,6 +11,7 @@ import {
 } from '../lib/mutations/cart';
 import type { SimpleProduct } from '../types/catalog';
 import type { GiftCardInput } from '../types/giftcard';
+import { clp, pushEcommerce } from '../lib/dataLayer';
 
 export interface CartItem {
   key: string;
@@ -85,6 +86,16 @@ export async function fetchCart() {
   }
 }
 
+function emitAddToCart(productId: number, quantity: number, summary: CartSummary) {
+  const line = summary.items.find((i) => i.product?.databaseId === productId);
+  if (!line) return;
+  const price = clp(line.total) / (line.quantity || 1);
+  pushEcommerce('add_to_cart', {
+    value: price * quantity,
+    items: [{ item_id: String(productId), item_name: line.product.name, price, quantity }],
+  });
+}
+
 export async function addToCart(productId: number, quantity = 1, variationId?: number) {
   isCartLoading.set(true);
   try {
@@ -92,7 +103,9 @@ export async function addToCart(productId: number, quantity = 1, variationId?: n
       query: ADD_TO_CART,
       variables: { productId, quantity, variationId },
     });
-    return applySummary(data.addToCart.cart);
+    const summary = applySummary(data.addToCart.cart);
+    emitAddToCart(productId, quantity, summary);
+    return summary;
   } finally {
     isCartLoading.set(false);
   }
@@ -105,7 +118,9 @@ export async function addGiftCardToCart(productId: number, giftCard: GiftCardInp
       query: ADD_GIFTCARD_TO_CART,
       variables: { productId, extraData: JSON.stringify(giftCard), variationId },
     });
-    return applySummary(data.addToCart.cart);
+    const summary = applySummary(data.addToCart.cart);
+    emitAddToCart(productId, 1, summary);
+    return summary;
   } finally {
     isCartLoading.set(false);
   }

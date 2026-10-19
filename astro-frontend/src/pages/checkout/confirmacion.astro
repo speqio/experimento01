@@ -3,10 +3,19 @@
 export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+import { getOrderForAnalytics } from '../../lib/woo-server';
 
 const orderId = Astro.url.searchParams.get('order');
 const status = Astro.url.searchParams.get('status') ?? 'unknown';
 const success = status === 'success';
+
+const env = { ...import.meta.env, ...process.env, ...((Astro.locals as any).runtime?.env ?? {}) } as Record<string, string | undefined>;
+const purchase = success && orderId
+  ? await getOrderForAnalytics(env, Number(orderId)).catch((e) => {
+      console.error(`confirmacion: no se pudo leer la orden #${orderId} para medición: ${(e as Error).message}`);
+      return null;
+    })
+  : null;
 ---
 <ECommerceLayout title="Confirmación de compra">
   <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
@@ -37,3 +46,27 @@ const success = status === 'success';
     )}
   </div>
 </ECommerceLayout>
+
+<script type="application/json" id="purchase-data" set:html={JSON.stringify(purchase)} />
+
+<script>
+  import { pushEcommerce } from '../../lib/dataLayer';
+
+  const purchase: {
+    transactionId: string;
+    value: number;
+    items: { item_id: string; item_name: string; price: number; quantity: number }[];
+    purchaseType: string;
+  } | null = JSON.parse(document.getElementById('purchase-data')?.textContent ?? 'null');
+
+  // Una recarga de la confirmación no debe contar la misma compra dos veces.
+  const key = purchase ? `purchase-sent-${purchase.transactionId}` : null;
+  if (purchase && key && !sessionStorage.getItem(key)) {
+    pushEcommerce(
+      'purchase',
+      { transaction_id: purchase.transactionId, value: purchase.value, items: purchase.items },
+      { purchase_type: purchase.purchaseType },
+    );
+    sessionStorage.setItem(key, '1');
+  }
+</script>

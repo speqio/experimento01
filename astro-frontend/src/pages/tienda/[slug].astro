@@ -344,9 +344,19 @@ const related: SimpleProduct[] = relatedResult
 </ECommerceLayout>
 
 <script type="application/json" id="variations-data" set:html={JSON.stringify(variations)} />
+<script type="application/json" id="view-item-data" set:html={JSON.stringify({ id: product.databaseId, name: product.name, price: formatPriceDisplay(product.price) })} />
 
 <script>
   import { addToCart } from '../../store/cartStore';
+  import { clp, pushEcommerce } from '../../lib/dataLayer';
+
+  const viewItem: { id: number; name: string; price: string } | null = JSON.parse(
+    document.getElementById('view-item-data')?.textContent ?? 'null',
+  );
+  if (viewItem) {
+    const price = clp(viewItem.price);
+    pushEcommerce('view_item', { value: price, items: [{ item_id: String(viewItem.id), item_name: viewItem.name, price, quantity: 1 }] });
+  }
 
   const variations: { databaseId: number; price?: string; regularPrice?: string; attributes: { nodes: { name: string; value: string }[] } }[] =
     JSON.parse(document.getElementById('variations-data')?.textContent ?? '[]');
