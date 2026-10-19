@@ -55,7 +55,7 @@ const purchase = success && orderId
   const purchase: {
     transactionId: string;
     value: number;
-    items: { item_id: string; item_name: string; price: number; quantity: number }[];
+    items: { item_id: string; item_name: string; price: number; quantity: number; item_variant: string; item_category: string; item_category2: string }[];
     purchaseType: string;
   } | null = JSON.parse(document.getElementById('purchase-data')?.textContent ?? 'null');
 

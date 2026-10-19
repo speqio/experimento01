@@ -134,6 +134,32 @@ add_action('woocommerce_checkout_create_order_line_item', function ($item, $cart
     }
 }, 10, 3);
 
+/**
+ * Trazabilidad para analítica: la REST de WooCommerce oculta metas con "_", así que se
+ * publica un campo `mandala` en la orden (lo lee astro-frontend/src/lib/woo-server.ts).
+ * Se calcula al leer, por eso sirve también para órdenes antiguas (sin backfill).
+ */
+add_filter('woocommerce_rest_prepare_shop_order_object', function ($response, $order) {
+    $lines = [];
+    $has_gift = $has_upsell = false;
+    foreach ($order->get_items() as $item) {
+        $is_gift   = !empty($item->get_meta(MANDALA_GIFT_KEY));
+        $is_upsell = function_exists('mandala_ud_is_upsell') && mandala_ud_is_upsell((int) $item->get_product_id());
+        $has_gift   = $has_gift || $is_gift;
+        $has_upsell = $has_upsell || $is_upsell;
+        $lines[(string) $item->get_product_id()] = [
+            'gift'   => $is_gift,
+            'upsell' => $is_upsell,
+            'slug'   => (string) get_post_field('post_name', $item->get_product_id()),
+        ];
+    }
+    $response->data['mandala'] = [
+        'purchase_type' => ($has_gift ? 'gift' : 'product') . ($has_upsell ? '_upsell' : ''),
+        'lines'         => $lines,
+    ];
+    return $response;
+}, 10, 2);
+
 /** 3) Pago confirmado → emitir cupón (siempre) + email (de inmediato o programado). */
 add_action('woocommerce_order_status_changed', function ($order_id, $from, $to) {
     if (!in_array($to, ['processing', 'completed'], true)) return;

@@ -93,8 +93,8 @@ export async function getOrderTotal(env: Env, orderId: number): Promise<number> 
 export interface OrderForAnalytics {
   transactionId: string;
   value: number;
-  items: { item_id: string; item_name: string; price: number; quantity: number }[];
-  purchaseType: 'product' | 'gift';
+  items: { item_id: string; item_name: string; price: number; quantity: number; item_variant: string; item_category: string; item_category2: string }[];
+  purchaseType: 'product' | 'gift' | 'product_upsell' | 'gift_upsell';
 }
 
 /** Datos de una orden pagada para el evento `purchase` de GTM (ver pages/checkout/confirmacion.astro). */
@@ -107,17 +107,25 @@ export async function getOrderForAnalytics(env: Env, orderId: number): Promise<O
   if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`);
   const data = await res.json();
   const lines: any[] = data.line_items ?? [];
-  const isGift = lines.some((l) => (l.meta_data ?? []).some((m: { key: string }) => m.key === '_mandala_gift'));
+  // `mandala` lo publica mandala-giftcards.php (la REST oculta las metas con "_").
+  const mandala = data.mandala ?? { purchase_type: 'product', lines: {} };
   return {
     transactionId: String(data.id),
     value: Math.round(Number(data.total)),
-    items: lines.map((l) => ({
-      item_id: String(l.product_id),
-      item_name: l.name,
-      price: Math.round(Number(l.total) / (l.quantity || 1)),
-      quantity: l.quantity,
-    })),
-    purchaseType: isGift ? 'gift' : 'product',
+    items: lines.map((l) => {
+      const line = mandala.lines[String(l.product_id)] ?? {};
+      return {
+        item_id: String(l.product_id),
+        item_name: l.name,
+        price: Math.round(Number(l.total) / (l.quantity || 1)),
+        quantity: l.quantity,
+        // Ej. "spa-de-lujo_giftcard": producto + cómo se compró, visible como "Variante del artículo" en GA4.
+        item_variant: `${line.slug || l.product_id}_${line.gift ? 'giftcard' : 'normal'}`,
+        item_category: line.gift ? 'gift' : 'producto',
+        item_category2: line.upsell ? 'upsell' : 'principal',
+      };
+    }),
+    purchaseType: mandala.purchase_type,
   };
 }
 
