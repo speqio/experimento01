@@ -9,7 +9,7 @@ import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
 import { fetchLayoutData } from '../lib/layoutData';
 import { GET_PRODUCTS } from '../lib/queries/products';
 import { SITE_INFO } from '../lib/siteInfo';
-import { getProductDuration, getProductBadge, extractDuration, getCardSummary, getPriceDisplay, formatPriceDisplay } from '../lib/parse';
+import { getProductDuration, getProductBadge, extractDuration, getCardSummary, getPriceDisplay, formatPriceDisplay, hasAnyDiscount } from '../lib/parse';
 import { GET_SITE_BANNER } from '../lib/queries/banners';
 import type { SimpleProduct } from '../types/catalog';
 import type { SiteBanner } from '../types/banner';
@@ -129,6 +129,9 @@ const hero = {
                     <img src={product.image.sourceUrl} alt={product.image.altText ?? product.name} width="400" height="224" loading="lazy" decoding="async" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div class="w-full h-full bg-spa-sand" />
+                  )}
+                  {hasAnyDiscount(product.price, product.regularPrice) && (
+                    <span class="absolute top-3 left-3 bg-[#C94D3F] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-xs">Oferta</span>
                   )}
                   {badge && (
                     <span class="absolute top-3 right-3 bg-spa-charcoal text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">

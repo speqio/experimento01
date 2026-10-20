@@ -17,6 +17,7 @@ import {
   getCardSummary,
   getPriceDisplay,
   formatPriceDisplay,
+  hasAnyDiscount,
   clampIntroWords,
 } from '../../lib/parse';
 import { getUpsellsFor } from '../../lib/queries/upsells';
@@ -327,8 +328,11 @@ const related: SimpleProduct[] = relatedResult
                   ) : (
                     <div class="w-full h-full bg-spa-sand" />
                   )}
-                  {itemBadge && (
+                  {hasAnyDiscount(item.price, item.regularPrice) && (
                     <span class="absolute top-3 left-3 bg-[#C94D3F] text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider uppercase shadow-xs">Oferta</span>
+                  )}
+                  {itemBadge && (
+                    <span class="absolute top-3 right-3 bg-spa-charcoal text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider uppercase">{itemBadge}</span>
                   )}
                 </div>
                 <div class="p-5">
