@@ -22,7 +22,7 @@ const GET_UPSELL_CANDIDATES = /* GraphQL */ `
       nodes {
         databaseId
         name
-        ... on SimpleProduct { price }
+        ... on SimpleProduct { price regularPrice }
         ... on WithAcfUpsellerFields {
           upsellerFields {
             popupComplementoTexto
@@ -38,11 +38,16 @@ export interface Upsell {
   databaseId: number;
   name: string;
   price: string;
+  regularPrice: string;
   popup: string;
   principales: number[];
 }
 
+// Cache en memoria del Worker con vencimiento: sin él, un isolate que vive horas
+// seguía sirviendo (y reescribiendo en KV) la lista vieja tras editar en wp-admin.
+const MEMORY_TTL_MS = 90_000;
 let cache: Promise<Upsell[]> | null = null;
+let cachedAt = 0;
 
 async function loadUpsells(): Promise<Upsell[]> {
   const found: Upsell[] = [];
@@ -58,6 +63,7 @@ async function loadUpsells(): Promise<Upsell[]> {
           databaseId: p.databaseId,
           name: p.name,
           price: p.price ?? '',
+          regularPrice: p.regularPrice ?? '',
           popup: p.upsellerFields?.popupComplementoTexto ?? '',
           principales: ids,
         });
@@ -79,7 +85,10 @@ export async function getUpsellsFor(principalId: number, kvCache?: UpsellCacheOp
         // KV no disponible — sigue con el escaneo normal.
       }
     }
-    cache ??= loadUpsells();
+    if (!cache || Date.now() - cachedAt > MEMORY_TTL_MS) {
+      cache = loadUpsells();
+      cachedAt = Date.now();
+    }
     const all = await cache;
     if (kvCache) {
       const ttlSeconds = Math.max(kvCache.ttlSeconds ?? 90, 60);

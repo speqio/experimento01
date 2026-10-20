@@ -238,13 +238,18 @@ const related: SimpleProduct[] = relatedResult
               <div class="rounded-xl border border-[#E8E2D7] bg-spa-bg p-4" id="upsell-block">
                 <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">Complementa tu experiencia</h3>
                 <div class="space-y-3">
-                  {upsells.map((u) => (
+                  {upsells.map((u) => {
+                    const upsellPrice = getPriceDisplay(u.price, u.regularPrice);
+                    return (
                     <div class="border-b border-dashed border-[#DDD5CA] pb-3 last:border-0 last:pb-0">
                       <label class="flex items-start gap-3 cursor-pointer">
                         <input type="checkbox" class="mt-1 accent-[#2C2724]" data-upsell-id={u.databaseId} />
                         <span class="flex-1">
                           <span class="block text-sm font-semibold text-spa-charcoal leading-snug">{u.name}</span>
-                          <span class="block text-sm font-bold text-spa-taupe-dark">{formatPriceDisplay(u.price)}</span>
+                          <span class="flex items-baseline gap-2">
+                            {upsellPrice.original && <span class="text-xs line-through text-[#A89E95]">{upsellPrice.original}</span>}
+                            <span class="text-sm font-bold text-spa-taupe-dark">{upsellPrice.current}</span>
+                          </span>
                         </span>
                       </label>
                       {u.popup && (
@@ -254,7 +259,8 @@ const related: SimpleProduct[] = relatedResult
                         </details>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
