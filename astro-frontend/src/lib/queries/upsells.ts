@@ -34,6 +34,17 @@ const GET_UPSELL_CANDIDATES = /* GraphQL */ `
   }
 `;
 
+// Algunos textos del popup vienen con HTML pegado y escapado (ej. "&lt;div dir="auto"&gt;…"):
+// se muestran como texto plano, sin etiquetas.
+function toPlainText(s: string): string {
+  return s
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export interface Upsell {
   databaseId: number;
   name: string;
@@ -64,7 +75,7 @@ async function loadUpsells(): Promise<Upsell[]> {
           name: p.name,
           price: p.price ?? '',
           regularPrice: p.regularPrice ?? '',
-          popup: p.upsellerFields?.popupComplementoTexto ?? '',
+          popup: toPlainText(p.upsellerFields?.popupComplementoTexto ?? ''),
           principales: ids,
         });
       }
