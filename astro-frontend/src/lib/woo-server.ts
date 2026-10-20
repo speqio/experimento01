@@ -1,6 +1,6 @@
 // Utilidades SOLO de servidor (endpoints SSR). Usan claves REST de WooCommerce
 // que nunca deben llegar al navegador (ver docs/wp-setup-guide.md §7).
-import { WORKER_USER_AGENT } from './wp-graphql';
+import { WORKER_USER_AGENT, wpRestUrl } from './wp-graphql';
 
 type Env = Record<string, string | undefined>;
 
@@ -56,7 +56,7 @@ export async function createOrderFromCart(
 export async function setOrderMeta(env: Env, orderId: number, meta: Record<string, unknown>) {
   const origin = new URL(graphqlUrl(env)).origin;
   const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
-  const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
+  const res = await fetch(wpRestUrl(origin, `/wc/v3/orders/${orderId}`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ export async function setOrderMeta(env: Env, orderId: number, meta: Record<strin
 export async function getOrderTotal(env: Env, orderId: number): Promise<number> {
   const origin = new URL(graphqlUrl(env)).origin;
   const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
-  const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
+  const res = await fetch(wpRestUrl(origin, `/wc/v3/orders/${orderId}`), {
     headers: { Authorization: `Basic ${auth}`, 'User-Agent': WORKER_USER_AGENT },
   });
   if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`);
@@ -101,7 +101,7 @@ export interface OrderForAnalytics {
 export async function getOrderForAnalytics(env: Env, orderId: number): Promise<OrderForAnalytics> {
   const origin = new URL(graphqlUrl(env)).origin;
   const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
-  const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
+  const res = await fetch(wpRestUrl(origin, `/wc/v3/orders/${orderId}`), {
     headers: { Authorization: `Basic ${auth}`, 'User-Agent': WORKER_USER_AGENT },
   });
   if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`);
@@ -138,7 +138,7 @@ export async function updateOrderStatus(
 ) {
   const origin = new URL(graphqlUrl(env)).origin;
   const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
-  const res = await fetch(`${origin}/wp-json/wc/v3/orders/${orderId}`, {
+  const res = await fetch(wpRestUrl(origin, `/wc/v3/orders/${orderId}`), {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

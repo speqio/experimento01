@@ -28,7 +28,7 @@ id = "68794430f0cf4af390ff04244f1a31b2"
 # archivo — por eso WP_MEDIA_APP_USER (username, no sensible) se agrega acá.
 [vars]
 PUBLIC_SITE_URL = "https://laboratorio.space"
-PUBLIC_WPGRAPHQL_URL = "https://cms.spamandala.cl/graphql"
+PUBLIC_WPGRAPHQL_URL = "https://cms.spamandala.cl/index.php?graphql"
 WEBPAY_ENVIRONMENT = "INTEGRACION"
 WEBPAY_COMMERCE_CODE = "597055555532"
 WP_MEDIA_APP_USER = "giftcard-uploader"

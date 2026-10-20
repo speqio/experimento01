@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { wpRestUrl } from '../../lib/wp-graphql';
 
 // Sube la foto que el comprador elige para personalizar el diseño de su gift
 // card (ver components/giftcard/GiftCardModal.tsx). Corre en Cloudflare
@@ -69,7 +70,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Nombre generado por el servidor — nunca el nombre original del archivo.
     const filename = `gift-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${signature.ext}`;
     const auth = btoa(`${user}:${pass}`);
-    const res = await fetch(`${wpOrigin}/wp-json/wp/v2/media`, {
+    const res = await fetch(wpRestUrl(wpOrigin, '/wp/v2/media'), {
       method: 'POST',
       headers: {
         Authorization: `Basic ${auth}`,

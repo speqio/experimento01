@@ -38,6 +38,13 @@ const MIN_KV_TTL = 60;
 // fetch del Worker no manda ninguno por defecto. Identificarnos evita el 403.
 export const WORKER_USER_AGENT = 'MandalaAstroWorker/1.0 (+https://laboratorio.space)';
 
+// ponytail: el hosting de cms.spamandala.cl responde 404 a POST/PUT en URLs reescritas
+// (/wp-json/...); la forma sin reescritura funciona igual. Volver a `${origin}/wp-json${route}`
+// cuando el hosting lo arregle.
+export function wpRestUrl(origin: string, route: string): string {
+  return `${origin}/index.php?rest_route=${route}`;
+}
+
 function cacheKeyFor(query: string, variables: object): string {
   return `wpq:${query}:${JSON.stringify(variables)}`;
 }
