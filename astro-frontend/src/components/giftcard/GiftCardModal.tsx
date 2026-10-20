@@ -74,6 +74,8 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   const [target, setTarget] = useState<Target | null>(null);
   const [form, setForm] = useState<GiftCardInput>(empty);
   const [selectedAddons, setSelectedAddons] = useState<number[]>([]);
+  // true = los complementos ya se eligieron en la ficha: el modal los muestra incluidos, sin poder cambiarlos.
+  const [addonsLocked, setAddonsLocked] = useState(false);
   const [occasion, setOccasion] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [photoError, setPhotoError] = useState('');
@@ -107,7 +109,9 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
       const checkedIds = new Set(
         [...document.querySelectorAll<HTMLInputElement>('[data-upsell-id]:checked')].map((el) => Number(el.dataset.upsellId))
       );
-      setSelectedAddons((addons ?? []).filter((a) => checkedIds.has(a.id)).map((a) => a.id));
+      const preselected = (addons ?? []).filter((a) => checkedIds.has(a.id)).map((a) => a.id);
+      setSelectedAddons(preselected);
+      setAddonsLocked(preselected.length > 0);
       setError('');
     }
     document.addEventListener('click', onClick);
@@ -272,7 +276,25 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
               {photoError && <p className="text-sm text-red-600 mt-1">{photoError}</p>}
             </div>
 
-            {target.addons && target.addons.length > 0 && (
+            {addonsLocked && target.addons ? (
+              <div className="rounded-xl border border-[#DDD5CA] bg-white p-4">
+                <span className={`${labelClass} mb-3`}>Incluido en el regalo</span>
+                <div className="space-y-2.5">
+                  {target.addons.filter((a) => selectedAddons.includes(a.id)).map((a) => (
+                    <div key={a.id} className="flex items-start gap-3">
+                      <span className="mt-0.5 text-spa-charcoal" aria-hidden="true">✓</span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-semibold text-spa-charcoal leading-snug">{a.name}</span>
+                        <span className="block text-sm font-bold text-spa-taupe-dark">{a.price}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-spa-taupe mt-2.5">
+                  Lo elegiste en la ficha del producto. Para cambiarlo, cierra y desmárcalo ahí.
+                </p>
+              </div>
+            ) : target.addons && target.addons.length > 0 && (
               <div className="rounded-xl border border-[#DDD5CA] bg-white p-4">
                 <span className={`${labelClass} mb-3`}>Agregar al regalo</span>
                 <div className="space-y-2.5">
