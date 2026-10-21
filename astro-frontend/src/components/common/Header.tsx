@@ -199,7 +199,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
           <span>Refugio de bienestar &middot; {SITE_INFO.address}</span>
         </span>
         <span className="sm:hidden">{SITE_INFO.name}</span>
-        <a href={`tel:${SITE_INFO.phone}`} className="text-[#D8CABE] hover:text-white flex items-center gap-1 transition-colors">
+        <a href={`tel:${SITE_INFO.phone.replace(/\s/g, '')}`} aria-label={`Llamar al ${SITE_INFO.phone}`} className="text-[#D8CABE] hover:text-white flex items-center gap-1 transition-colors">
           <Phone className="w-3 h-3" />
           <span className="hidden md:inline">{SITE_INFO.phone}</span>
         </a>
