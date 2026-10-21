@@ -168,9 +168,9 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-spa-bg rounded-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto"
+        className="bg-spa-bg rounded-2xl w-full max-w-3xl lg:max-w-6xl max-h-[94vh] overflow-y-auto"
       >
-        <div className="flex items-start justify-between gap-4 px-6 sm:px-8 pt-6 sm:pt-7">
+        <div className="flex items-start justify-between gap-4 px-6 sm:px-8 pt-5 sm:pt-6">
           <div>
             <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-spa-taupe block mb-1">Un regalo para alguien especial</span>
             <h2 className="font-editorial text-2xl sm:text-3xl text-spa-charcoal">Regalar como giftcard</h2>
@@ -180,7 +180,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
           </button>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 md:gap-8 p-6 sm:p-8 items-start">
+        <div className="grid md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-6 md:gap-8 px-6 sm:px-8 pt-4 pb-6 sm:pb-7 items-start">
           <div className="md:sticky md:top-0 space-y-4">
             <GiftCardPreview
               image={target.image}
@@ -213,7 +213,8 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="grid lg:grid-cols-2 gap-x-6 gap-y-4 items-start">
+            <div className="space-y-4">
             <div>
               <label className={labelClass}>Tu email</label>
               <input required type="email" value={form.buyerEmail} onChange={(e) => setForm({ ...form, buyerEmail: e.target.value })} className={inputClass} />
@@ -259,12 +260,15 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
               <textarea
                 value={form.message}
                 maxLength={MESSAGE_LIMIT}
-                rows={3}
+                rows={2}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
                 className="w-full border border-[#DDD5CA] rounded-2xl px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe resize-none"
               />
             </div>
 
+            </div>
+
+            <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className={`${labelClass} mb-0`}>Personaliza el diseño con tu foto (opcional)</label>
@@ -351,6 +355,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
                 ? 'El destinatario recibirá su código el día que elegiste.'
                 : 'El destinatario recibirá un correo con su código una vez confirmado el pago.'}
             </p>
+            </div>
           </form>
         </div>
       </div>
