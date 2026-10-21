@@ -35,10 +35,22 @@ const {
       (function (w, d, s, l, i) {
         w[l] = w[l] || [];
         w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-        var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
-        j.async = true;
-        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-        f.parentNode.insertBefore(j, f);
+        // GTM se descarga con la primera interacción o 3 s después de cargar la página, para no competir con el
+        // contenido en celular. Los eventos empujados antes quedan en dataLayer y GTM los procesa al llegar.
+        var done = false, evs = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+        function load() {
+          if (done) return;
+          done = true;
+          evs.forEach(function (e) { w.removeEventListener(e, load); });
+          var f = d.getElementsByTagName(s)[0], j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : '';
+          j.async = true;
+          j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+          f.parentNode.insertBefore(j, f);
+        }
+        // Carrito, checkout y confirmaciones cargan al tiro: ahí están purchase/begin_checkout y la salida a Webpay.
+        if (/^\/(carrito|checkout|contacto\/gracias)/.test(w.location.pathname)) return load();
+        evs.forEach(function (e) { w.addEventListener(e, load, { once: true, passive: true }); });
+        w.addEventListener('load', function () { setTimeout(load, 3000); });
       })(window, document, 'script', 'dataLayer', gtmId);
     </script>
     <meta charset="UTF-8" />
