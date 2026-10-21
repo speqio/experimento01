@@ -45,8 +45,11 @@ export function wpRestUrl(origin: string, route: string): string {
   return `${origin}/index.php?rest_route=${route}`;
 }
 
-function cacheKeyFor(query: string, variables: object): string {
-  return `wpq:${query}:${JSON.stringify(variables)}`;
+// KV acepta claves de hasta 512 bytes y las consultas de productos son más largas (fallaba en silencio
+// y nunca se cacheaban): la clave es un hash SHA-256 de consulta + variables.
+async function cacheKeyFor(query: string, variables: object): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${query}:${JSON.stringify(variables)}`));
+  return 'wpq2:' + [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -60,7 +63,7 @@ export async function wpQuery<T>({ query, variables = {}, cache }: WpQueryArgs):
 
   // Nunca cachear si hay sesión de WooCommerce de por medio (carrito, checkout):
   // esas respuestas son por-usuario, no se pueden compartir entre visitantes.
-  const cacheKey = cache && !sessionToken ? cacheKeyFor(query, variables) : null;
+  const cacheKey = cache && !sessionToken ? await cacheKeyFor(query, variables) : null;
   if (cacheKey) {
     try {
       // Servir y renovar en segundo plano: el dato se guarda hasta STALE_KV_TTL; si pasó su ttl,
