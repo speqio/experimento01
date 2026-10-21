@@ -181,7 +181,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 md:gap-8 p-6 sm:p-8 items-start">
-          <div className="md:sticky md:top-0">
+          <div className="md:sticky md:top-0 space-y-4">
             <GiftCardPreview
               image={target.image}
               productName={target.name}
@@ -192,6 +192,25 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
               cardImageUrl={cardImageUrl}
               personalImageUrl={form.personalImageUrl}
             />
+            {addonsLocked && target.addons && (
+              <div className="rounded-xl border border-[#DDD5CA] bg-white p-4">
+                <span className={`${labelClass} mb-3`}>Incluido en el regalo</span>
+                <div className="space-y-2.5">
+                  {target.addons.filter((a) => selectedAddons.includes(a.id)).map((a) => (
+                    <div key={a.id} className="flex items-start gap-3">
+                      <span className="mt-0.5 text-spa-charcoal" aria-hidden="true">✓</span>
+                      <span className="flex-1">
+                        <span className="block text-sm font-semibold text-spa-charcoal leading-snug">{a.name}</span>
+                        <span className="block text-sm font-bold text-spa-taupe-dark">{a.price}</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-spa-taupe mt-2.5">
+                  Lo elegiste en la ficha del producto. Para cambiarlo, cierra y desmárcalo ahí.
+                </p>
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -276,25 +295,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
               {photoError && <p className="text-sm text-red-600 mt-1">{photoError}</p>}
             </div>
 
-            {addonsLocked && target.addons ? (
-              <div className="rounded-xl border border-[#DDD5CA] bg-white p-4">
-                <span className={`${labelClass} mb-3`}>Incluido en el regalo</span>
-                <div className="space-y-2.5">
-                  {target.addons.filter((a) => selectedAddons.includes(a.id)).map((a) => (
-                    <div key={a.id} className="flex items-start gap-3">
-                      <span className="mt-0.5 text-spa-charcoal" aria-hidden="true">✓</span>
-                      <span className="flex-1">
-                        <span className="block text-sm font-semibold text-spa-charcoal leading-snug">{a.name}</span>
-                        <span className="block text-sm font-bold text-spa-taupe-dark">{a.price}</span>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-[11px] text-spa-taupe mt-2.5">
-                  Lo elegiste en la ficha del producto. Para cambiarlo, cierra y desmárcalo ahí.
-                </p>
-              </div>
-            ) : target.addons && target.addons.length > 0 && (
+            {!addonsLocked && target.addons && target.addons.length > 0 && (
               <div className="rounded-xl border border-[#DDD5CA] bg-white p-4">
                 <span className={`${labelClass} mb-3`}>Agregar al regalo</span>
                 <div className="space-y-2.5">
