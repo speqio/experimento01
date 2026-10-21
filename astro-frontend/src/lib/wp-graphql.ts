@@ -63,13 +63,36 @@ export async function wpQuery<T>({ query, variables = {}, cache }: WpQueryArgs):
   const cacheKey = cache && !sessionToken ? cacheKeyFor(query, variables) : null;
   if (cacheKey) {
     try {
-      const cached = await cache!.kv.get(cacheKey, 'json');
-      if (cached !== null && cached !== undefined) return cached as T;
+      // Servir y renovar en segundo plano: el dato se guarda hasta STALE_KV_TTL; si pasó su ttl,
+      // esta visita igual lo recibe al tiro y WordPress se consulta por detrás (el hosting tarda 1–3 s).
+      const cached = (await cache!.kv.get(cacheKey, 'json')) as { t?: number; d?: T } | null;
+      if (cached?.d !== undefined) {
+        const fresh = Date.now() - (cached.t ?? 0) < Math.max(cache!.ttlSeconds ?? 90, MIN_KV_TTL) * 1000;
+        if (!fresh && cache!.waitUntil) cache!.waitUntil(fetchAndStore<T>(query, variables, cache!, cacheKey).catch(() => {}));
+        if (fresh || cache!.waitUntil) return cached.d;
+      }
     } catch {
       // KV no disponible (dev local sin binding, etc.) — sigue con el fetch normal.
     }
   }
+  if (cacheKey && cache) return fetchAndStore<T>(query, variables, cache, cacheKey);
+  return fetchGraphql<T>(query, variables, sessionToken, cache);
+}
 
+/** Cuánto vive un dato en KV aunque ya esté vencido, para servirlo mientras se renueva. */
+const STALE_KV_TTL = 86400;
+
+async function fetchAndStore<T>(query: string, variables: Record<string, unknown>, cache: QueryCacheOptions, cacheKey: string): Promise<T> {
+  const data = await fetchGraphql<T>(query, variables, null, cache);
+  const putPromise = cache.kv
+    .put(cacheKey, JSON.stringify({ t: Date.now(), d: data }), { expirationTtl: STALE_KV_TTL })
+    .catch(() => {});
+  if (cache.waitUntil) cache.waitUntil(putPromise);
+  else await putPromise;
+  return data;
+}
+
+async function fetchGraphql<T>(query: string, variables: Record<string, unknown>, sessionToken: string | null, cache?: QueryCacheOptions): Promise<T> {
   // Sin `credentials: 'include'` a propósito: la sesión de WooCommerce viaja
   // por el header `woocommerce-session` (JWT), no por cookies, y el CORS de
   // WPGraphQL responde con Access-Control-Allow-Origin: * — combinar eso con
@@ -92,16 +115,6 @@ export async function wpQuery<T>({ query, variables = {}, cache }: WpQueryArgs):
 
   const { data, errors } = await res.json();
   if (errors) throw new Error(errors[0].message);
-
-  if (cacheKey && cache) {
-    const ttlSeconds = Math.max(cache.ttlSeconds ?? 90, MIN_KV_TTL);
-    const putPromise = cache.kv
-      .put(cacheKey, JSON.stringify(data), { expirationTtl: ttlSeconds })
-      .catch(() => {});
-    if (cache.waitUntil) cache.waitUntil(putPromise);
-    else await putPromise;
-  }
-
   return data as T;
 }
 
