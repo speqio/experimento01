@@ -43,9 +43,9 @@ const inputClass =
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.error);
-      form.reset();
-      show('¡Gracias! Recibimos tu mensaje y te responderemos a la brevedad.');
       (window as any).dataLayer?.push({ event: 'generate_lead', form_name: 'contacto' });
+      location.href = '/contacto/gracias/';
+      return;
     } catch (err) {
       show((err as Error).message || 'No pudimos enviar tu mensaje. Escríbenos por WhatsApp.');
     } finally {

@@ -67,9 +67,12 @@ function mandala_contact_send(array $d) {
     // ponytail: entorno de pruebas — al lanzar (Fase B) volver a 'contacto@spamandala.cl'.
     $to = apply_filters('mandala_contact_recipient', 'paolomoridesign@gmail.com');
     $headers = function_exists('mandala_gift_email_headers') ? mandala_gift_email_headers() : ['Content-Type: text/html; charset=UTF-8'];
-    $headers[] = 'Reply-To: ' . $d['name'] . ' <' . $d['email'] . '>';
-    $subject = '📩 Nuevo mensaje de contacto: ' . $d['name'] . ' · ' . wp_trim_words($d['message'], 6, '…');
-    return wp_mail($to, $subject, mandala_contact_email_html($d), $headers);
+    // El nombre puede llevar tildes: va codificado (RFC 2047) para que la cabecera no se corrompa.
+    $headers[] = 'Reply-To: =?UTF-8?B?' . base64_encode($d['name']) . '?= <' . $d['email'] . '>';
+    $subject = 'Nuevo contacto recibido - ' . $d['name'];
+    // Tildes y ñ como entidades HTML: el cuerpo queda en ASCII puro y ningún servidor de correo puede romperlas (el "�").
+    $html = mb_encode_numericentity(mandala_contact_email_html($d), [0x80, 0x10FFFF, 0, 0x1FFFFF], 'UTF-8');
+    return wp_mail($to, $subject, $html, $headers);
 }
 
 add_action('rest_api_init', function () {

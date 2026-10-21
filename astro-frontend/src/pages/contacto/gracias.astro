@@ -1,0 +1,25 @@
+---
+// Destino del formulario de /contacto/ tras un envío exitoso (ContactForm.astro). Sin indexar.
+export const prerender = false;
+
+import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+import { SITE_INFO, RESERVO_URL } from '../../lib/siteInfo';
+---
+<ECommerceLayout title="Mensaje enviado" description="Recibimos tu mensaje y te responderemos a la brevedad." noindex>
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
+    <span class="w-16 h-16 rounded-full bg-spa-sand text-spa-taupe-dark inline-flex items-center justify-center mb-6">
+      <svg viewBox="0 0 24 24" class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+    </span>
+    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Mensaje enviado</span>
+    <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal mb-5">¡Gracias por escribirnos!</h1>
+    <p class="text-spa-taupe leading-relaxed max-w-xl mx-auto mb-10">
+      Tu mensaje llegó correctamente a nuestro equipo. Te responderemos muy pronto al correo o celular que nos dejaste.
+      Si necesitas una respuesta inmediata, escríbenos por WhatsApp.
+    </p>
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href={`https://wa.me/${SITE_INFO.whatsapp}`} target="_blank" rel="noopener" class="bg-spa-charcoal hover:bg-[#433B36] text-white px-6 py-3 rounded-full text-xs font-semibold tracking-[0.15em] uppercase transition-colors">Escríbenos por WhatsApp</a>
+      <a href={RESERVO_URL} target="_blank" rel="noopener" class="bg-white border border-[#E8E2D7] hover:bg-spa-cream text-spa-taupe-dark px-6 py-3 rounded-full text-xs font-semibold tracking-[0.15em] uppercase transition-colors">Agendar en línea</a>
+      <a href="/tienda" class="bg-white border border-[#E8E2D7] hover:bg-spa-cream text-spa-taupe-dark px-6 py-3 rounded-full text-xs font-semibold tracking-[0.15em] uppercase transition-colors">Ver servicios</a>
+    </div>
+  </div>
+</ECommerceLayout>
