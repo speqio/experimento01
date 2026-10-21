@@ -18,7 +18,11 @@ interface Props {
 // El disparador es la misma tarjeta 3D del modal de compra (GiftCardPreview),
 // en miniatura, con la etiqueta "Usa tu giftcard disponible" siempre visible
 // (no solo al pasar el mouse) para que no pase desapercibida.
+// Tamaño "medium" de WordPress para la proporción de la gift card (1748 × 1240): 300 × 213.
+const thumb = (url: string) => (/\/wp-content\/uploads\/.+\.(webp|jpe?g|png)$/i.test(url) ? url.replace(/\.(\w+)$/, '-300x213.$1') : url);
+
 export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
+  const full = cardImageUrl || '/gift-card.webp';
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -86,14 +90,22 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
                 transformStyle: 'preserve-3d',
                 boxShadow: REST_SHADOW,
                 transition: 'transform 0.6s cubic-bezier(0.23,1,0.32,1), box-shadow 0.6s cubic-bezier(0.23,1,0.32,1)',
-                backgroundImage: `url('${cardImageUrl || '/gift-card.webp'}')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
                 overflow: 'hidden',
               }}
               role="img"
               aria-hidden="true"
             >
+              {/* El botón mide 140 px: se usa la versión de 300 px que genera WordPress (~11 KB en vez de ~140 KB),
+                  con prioridad baja para no competir con el banner; si no existe, cae a la imagen completa. */}
+              <img
+                src={thumb(full)}
+                alt=""
+                loading="lazy"
+                fetchPriority="low"
+                decoding="async"
+                onError={(e) => { if (e.currentTarget.src !== new URL(full, location.href).href) e.currentTarget.src = full; }}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <div ref={glareRef} className="absolute inset-0 pointer-events-none" style={{ mixBlendMode: 'overlay', opacity: 0 }} />
               <div
                 ref={sheenRef}
