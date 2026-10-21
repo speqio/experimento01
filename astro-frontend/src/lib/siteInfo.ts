@@ -3,7 +3,8 @@ export const SITE_INFO = {
   name: 'Mándala Spa',
   whatsapp: '56992242180',
   phone: '+56 9 9224 2180',
-  email: 'contacto@spamandala.cl',
+  email: 'contacto@spamandala.cl', // comercial
+  legalEmail: 'administracion@spamandala.cl', // privacidad y temas legales
   address: 'Las Condes, Santiago, Chile',
   instagram: 'https://instagram.com/spamandala',
   facebook: 'https://facebook.com/spamandala',

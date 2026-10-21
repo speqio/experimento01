@@ -108,6 +108,16 @@ export const SEARCH_PRODUCTS = /* GraphQL */ `
   }
 `;
 
+// /etiqueta-producto/<slug>: misma URL que spamandala.cl, lista los productos de la etiqueta.
+export const GET_PRODUCTS_BY_TAG = /* GraphQL */ `
+  query GetProductsByTag($tag: String!, $tagId: ID!, $first: Int = 48) {
+    products(first: $first, where: { status: "publish", tagIn: [$tag] }) {
+      nodes { ${PRODUCT_CARD_FIELDS} }
+    }
+    productTag(id: $tagId, idType: SLUG) { name }
+  }
+`;
+
 export const GET_PRODUCTS_BY_CATEGORIES = /* GraphQL */ `
   query GetProductsByCategories($categoryIn: [String], $first: Int = 3) {
     products(first: $first, where: { status: "publish", categoryIn: $categoryIn }) {

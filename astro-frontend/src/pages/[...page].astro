@@ -1,0 +1,76 @@
+---
+// Páginas de spamandala.cl publicadas en su misma URL (masajes, spa-day, contacto...), para no sumar redirecciones.
+// El texto viene de src/data/paginas-wp.json (migracion/_herramientas/paginas_wp.py sobre el WXR);
+// los productos de cada página se leen en vivo de WooCommerce según su categoría.
+export const prerender = false;
+
+import ECommerceLayout from '../layouts/ECommerceLayout.astro';
+import ProductGrid from '../components/catalog/ProductGrid.astro';
+import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
+import { fetchLayoutData } from '../lib/layoutData';
+import { GET_PRODUCTS_BY_CATEGORIES } from '../lib/queries/products';
+import { SITE_INFO } from '../lib/siteInfo';
+import type { SimpleProduct } from '../types/catalog';
+import pages from '../data/paginas-wp.json';
+import posts from '../data/entradas-wp.json';
+
+const path = (Astro.params.page ?? '').replace(/\/+$/, '');
+const page = pages.find((p) => p.path === path);
+if (!page) {
+  // Entradas del blog con el permalink de spamandala.cl (/slug/ o /aaaa/mm/dd/slug/): se sirven sin redirigir.
+  const post = path.match(/^(?:\d{4}\/\d{2}\/\d{2}\/)?([a-z0-9-]+)$/);
+  if (post && posts.includes(post[1])) return Astro.rewrite(`/blog/${post[1]}`);
+  return new Response(null, { status: 404 });
+}
+
+const cache = kvCacheFrom(Astro);
+const layoutDataPromise = fetchLayoutData(cache);
+let products: SimpleProduct[] = [];
+if (page.categories.length) {
+  try {
+    const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
+      query: GET_PRODUCTS_BY_CATEGORIES,
+      variables: { categoryIn: page.categories, first: 48 },
+      cache,
+    });
+    products = data.products.nodes;
+  } catch {
+    // Sin WordPress se muestra solo el texto.
+  }
+}
+const { title } = page;
+---
+<ECommerceLayout title={title} description={page.description || undefined} layoutData={layoutDataPromise}>
+  <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 mb-10">
+    <div class="max-w-6xl mx-auto text-center">
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Las Condes · Santiago de Chile</span>
+      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal uppercase tracking-wide">{title}</h1>
+      {page.description && <p class="text-spa-taupe max-w-2xl mx-auto mt-4 leading-relaxed">{page.description}</p>}
+    </div>
+  </div>
+
+  {products.length > 0 && (
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <ProductGrid products={products} basePath="/producto" />
+    </div>
+  )}
+
+  {page.html && (
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <article class="legal min-w-0" set:html={page.html} />
+    </div>
+  )}
+
+  <div class="bg-spa-taupe-dark text-white py-14 px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="font-editorial text-2xl sm:text-3xl font-light mb-6">¿Tienes dudas o quieres agendar?</h2>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href={`https://wa.me/${SITE_INFO.whatsapp}`} target="_blank" rel="noopener" class="bg-white hover:bg-spa-bg text-spa-charcoal px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition-all">WhatsApp</a>
+      <a href="/tienda" class="border border-white/40 hover:bg-white/10 px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition-all">Ver servicios</a>
+    </div>
+  </div>
+</ECommerceLayout>
+
+<style is:global>
+  /* Mismo estilo de texto que las políticas (.legal en LegalArticle), sin el filete de los h2. */
+  .legal h2 { border-top: 0; padding-top: 0; margin-top: 2rem; }
+</style>

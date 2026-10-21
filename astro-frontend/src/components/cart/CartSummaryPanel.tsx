@@ -55,7 +55,7 @@ export default function CartSummaryPanel() {
             )}
             <div className="flex-1 min-w-0">
               <a
-                href={`/tienda/${item.product.slug}`}
+                href={`/producto/${item.product.slug}`}
                 className="font-editorial text-lg text-spa-charcoal hover:text-spa-taupe transition-colors line-clamp-1"
               >
                 {item.product.name}

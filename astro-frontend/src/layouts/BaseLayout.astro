@@ -1,5 +1,6 @@
 ---
 import { SITE_INFO, GTM_CONTAINER_ID } from '../lib/siteInfo';
+import CookieBanner from '../components/common/CookieBanner.astro';
 import '../styles/global.css';
 
 interface Props {
@@ -14,6 +15,16 @@ const {
 <!doctype html>
 <html lang="es">
   <head>
+    <script is:inline>
+      // Consent Mode v2: todo denegado hasta que la persona elija; debe ir antes de GTM.
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', analytics_storage: 'denied', wait_for_update: 500 });
+      try {
+        var c = JSON.parse(localStorage.getItem('mandala_consent') || 'null');
+        if (c) gtag('consent', 'update', { analytics_storage: c.a ? 'granted' : 'denied', ad_storage: c.m ? 'granted' : 'denied', ad_user_data: c.m ? 'granted' : 'denied', ad_personalization: c.m ? 'granted' : 'denied' });
+      } catch (e) {}
+    </script>
     <script is:inline define:vars={{ gtmId: GTM_CONTAINER_ID }}>
       (function (w, d, s, l, i) {
         w[l] = w[l] || [];
@@ -127,5 +138,6 @@ const {
         bodyObserver.observe(document.body, { childList: true, subtree: true });
       }
     </script>
+    <CookieBanner />
   </body>
 </html>

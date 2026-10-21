@@ -4,7 +4,7 @@ export interface GiftCardInput {
   buyerEmail: string;
   recipientEmail: string;
   message: string;
-  // Descripción breve del servicio (ver tienda/[slug].astro data-gift-summary), para que
+  // Descripción breve del servicio (ver producto/[slug].astro data-gift-summary), para que
   // quien recibe el regalo entienda de qué trata sin tener que buscarlo.
   summary?: string;
   // Fecha de envío del correo (YYYY-MM-DD). Vacío = se envía apenas se confirma el pago.

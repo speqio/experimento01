@@ -84,7 +84,7 @@ function SearchBox({ className = '' }: { className?: string }) {
       setHighlight((h) => (h <= 0 ? suggestions.length - 1 : h - 1));
     } else if (e.key === 'Enter' && open && highlight >= 0 && suggestions[highlight]) {
       e.preventDefault();
-      window.location.href = `/tienda/${suggestions[highlight].slug}`;
+      window.location.href = `/producto/${suggestions[highlight].slug}`;
     }
   };
 
@@ -128,7 +128,7 @@ function SearchBox({ className = '' }: { className?: string }) {
               {suggestions.map((product, i) => (
                 <li key={product.id}>
                   <a
-                    href={`/tienda/${product.slug}`}
+                    href={`/producto/${product.slug}`}
                     onMouseEnter={() => setHighlight(i)}
                     className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${
                       highlight === i ? 'bg-spa-sand' : 'hover:bg-spa-sand'
@@ -379,7 +379,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
                     ) : (
                       <div className="grid grid-cols-3 gap-5">
                         {featured.map((product) => (
-                          <a key={product.id} href={`/tienda/${product.slug}`} className="group text-left normal-case">
+                          <a key={product.id} href={`/producto/${product.slug}`} className="group text-left normal-case">
                             <div className="h-28 rounded-xl overflow-hidden mb-2.5 bg-spa-cream">
                               {product.image?.sourceUrl && (
                                 <img
@@ -407,7 +407,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
                   <div className="col-span-3">
                     {promoProduct ? (
                       <a
-                        href={`/tienda/${promoProduct.slug}`}
+                        href={`/producto/${promoProduct.slug}`}
                         className="group relative block w-full h-full min-h-[220px] rounded-2xl overflow-hidden text-left"
                       >
                         {promoProduct.image?.sourceUrl && (

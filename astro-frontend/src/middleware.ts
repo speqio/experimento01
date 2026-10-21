@@ -1,4 +1,9 @@
 import { defineMiddleware } from 'astro:middleware';
+import redirecciones from './data/redirecciones.json';
+
+// URLs viejas de spamandala.cl sin equivalente directo -> destino final (sin cadenas).
+// Generado por migracion/_herramientas/redirecciones.py; las que sí calzan se sirven en su misma URL.
+const REDIRECTS = redirecciones as Record<string, string>;
 
 // Compatibilidad: cuando el dominio raíz pasa a servir el frontend Astro,
 // WordPress se muda a un subdominio (ver docs/deployment-guide.md). Las
@@ -37,6 +42,10 @@ const NOT_CACHEABLE_PREFIXES = ['/carrito', '/checkout', '/api'];
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname, search } = context.url;
+  let key = pathname;
+  try { key = decodeURIComponent(pathname); } catch {}
+  const target = REDIRECTS[key.toLowerCase().replace(/\/+$/, '')];
+  if (target) return context.redirect(target + search, 301);
   const shouldProxy = PROXIED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix)
   );

@@ -1,0 +1,7 @@
+---
+// Misma URL que spamandala.cl (/etiqueta-producto/<slug>/): muestra la tienda filtrada por etiqueta, sin redirigir.
+export const prerender = false;
+
+import ShopPage from '../../components/catalog/ShopPage.astro';
+---
+<ShopPage category={null} search={null} tag={Astro.params.tag ?? null} />

@@ -1,0 +1,88 @@
+---
+// Banner de consentimiento. La elección queda en localStorage ('mandala_consent': a = analítica, m = publicidad)
+// y se envía a GTM como Consent Mode v2; el estado por defecto (denegado) se fija en BaseLayout antes de GTM.
+---
+<div
+  id="cookie-banner"
+  hidden
+  role="dialog"
+  aria-labelledby="cookie-banner-title"
+  class="fixed inset-x-0 bottom-0 z-[90] p-4 sm:p-6 pointer-events-none"
+>
+  <div class="pointer-events-auto max-w-3xl mx-auto bg-white border border-[#E8E2D7] rounded-2xl shadow-xl p-5 sm:p-6 text-spa-charcoal">
+    <h2 id="cookie-banner-title" class="font-editorial text-xl mb-2">Usamos cookies</h2>
+    <p class="text-sm text-spa-taupe leading-relaxed">
+      Las necesarias hacen funcionar el sitio. Con tu permiso usamos también cookies de analítica y publicidad para mejorar el sitio y medir nuestras campañas.
+      <a href="/politicas-de-privacidad#cookies" class="underline underline-offset-4">Más información</a>
+    </p>
+
+    <div id="cookie-options" hidden class="mt-4 space-y-3 text-sm">
+      <label class="flex items-start gap-3">
+        <input type="checkbox" checked disabled class="mt-1" />
+        <span><strong>Necesarias</strong> — carrito, pago y esta elección. Siempre activas.</span>
+      </label>
+      <label class="flex items-start gap-3">
+        <input type="checkbox" id="cookie-analytics" class="mt-1" />
+        <span><strong>Analítica</strong> — Google Analytics.</span>
+      </label>
+      <label class="flex items-start gap-3">
+        <input type="checkbox" id="cookie-marketing" class="mt-1" />
+        <span><strong>Publicidad</strong> — Google Ads y Meta.</span>
+      </label>
+    </div>
+
+    <div class="mt-5 flex flex-wrap gap-3 justify-end">
+      <button type="button" data-cookie="config" class="px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider uppercase text-spa-taupe-dark hover:underline">Configurar</button>
+      <button type="button" data-cookie="save" hidden class="px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider uppercase border border-spa-taupe text-spa-taupe-dark hover:bg-spa-cream">Guardar elección</button>
+      <button type="button" data-cookie="reject" class="px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider uppercase border border-spa-taupe text-spa-taupe-dark hover:bg-spa-cream">Rechazar</button>
+      <button type="button" data-cookie="accept" class="px-5 py-2.5 rounded-full text-xs font-semibold tracking-wider uppercase bg-spa-taupe hover:bg-[#9D8B7C] text-white">Aceptar todas</button>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    var KEY = 'mandala_consent';
+    var banner = document.getElementById('cookie-banner');
+    var options = document.getElementById('cookie-options');
+    var saveBtn = banner.querySelector('[data-cookie="save"]');
+    var analytics = document.getElementById('cookie-analytics');
+    var marketing = document.getElementById('cookie-marketing');
+
+    function read() {
+      try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; }
+    }
+    function apply(a, m) {
+      var c = { a: a, m: m, t: Date.now() };
+      try { localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) {}
+      var g = a ? 'granted' : 'denied', ad = m ? 'granted' : 'denied';
+      // gtag() global definido en BaseLayout.
+      gtag('consent', 'update', { analytics_storage: g, ad_storage: ad, ad_user_data: ad, ad_personalization: ad });
+      window.dataLayer.push({ event: 'consent_update', consent_analytics: a, consent_marketing: m });
+      banner.hidden = true;
+    }
+    function open(showOptions) {
+      var c = read();
+      analytics.checked = !!(c && c.a);
+      marketing.checked = !!(c && c.m);
+      options.hidden = !showOptions;
+      saveBtn.hidden = !showOptions;
+      banner.hidden = false;
+    }
+
+    banner.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-cookie]');
+      if (!b) return;
+      var k = b.getAttribute('data-cookie');
+      if (k === 'accept') apply(true, true);
+      else if (k === 'reject') apply(false, false);
+      else if (k === 'save') apply(analytics.checked, marketing.checked);
+      else if (k === 'config') open(true);
+    });
+    document.addEventListener('click', function (e) {
+      if (e.target.closest('[data-cookie-prefs]')) open(true);
+    });
+
+    if (!read()) open(false);
+  })();
+</script>

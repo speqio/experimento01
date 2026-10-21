@@ -60,7 +60,7 @@ interface Target {
   variant?: string;
   variationId?: number;
   // Complementos ("Complementa tu experiencia") disponibles para este producto —
-  // mismos datos que la ficha de producto, ver tienda/[slug].astro.
+  // mismos datos que la ficha de producto, ver producto/[slug].astro.
   addons?: Addon[];
 }
 

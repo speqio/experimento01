@@ -19,7 +19,7 @@ export default function CheckoutUpsell({ suggestions }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {suggestions.map((product) => (
           <div key={product.databaseId} className="bg-white rounded-2xl border border-[#E8E2D7] p-3 text-sm">
-            <a href={`/tienda/${product.slug}`} className="block">
+            <a href={`/producto/${product.slug}`} className="block">
               <img
                 src={product.image.sourceUrl}
                 alt={product.image.altText ?? product.name}

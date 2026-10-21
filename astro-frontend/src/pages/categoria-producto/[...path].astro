@@ -1,0 +1,9 @@
+---
+// Misma URL que spamandala.cl (/categoria-producto/padre/hija/): muestra la tienda filtrada, sin redirigir.
+export const prerender = false;
+
+import ShopPage from '../../components/catalog/ShopPage.astro';
+
+const category = (Astro.params.path ?? '').split('/').filter(Boolean).pop() ?? null;
+---
+<ShopPage category={category} search={null} />

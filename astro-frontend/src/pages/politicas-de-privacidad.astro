@@ -2,6 +2,7 @@
 export const prerender = true;
 
 import LegalArticle from '../components/common/LegalArticle.astro';
+import { SITE_INFO } from '../lib/siteInfo';
 
 // Contenido tomado de spamandala.cl/politicas-de-privacidad/ (WordPress, modificado 04-02-2026).
 const sections = [
@@ -10,9 +11,10 @@ const sections = [
   { id: 'compartir', title: '3. Compartir la información' },
   { id: 'derechos', title: '4. Derechos del titular' },
   { id: 'seguridad', title: '5. Seguridad' },
-  { id: 'cambios', title: '6. Cambios en la política' },
+  { id: 'cookies', title: '6. Cookies' },
+  { id: 'cambios', title: '7. Cambios en la política' },
 ];
-const PRIVACY_EMAIL = 'contacto@spamandala.cl';
+const PRIVACY_EMAIL = SITE_INFO.legalEmail;
 ---
 <LegalArticle
   title="Políticas de privacidad"
@@ -51,7 +53,16 @@ const PRIVACY_EMAIL = 'contacto@spamandala.cl';
   <h2 id="seguridad">5. Seguridad de la información</h2>
   <p>Implementamos medidas de seguridad apropiadas para proteger la información personal de accesos no autorizados y usos indebidos.</p>
 
-  <h2 id="cambios">6. Cambios en la política</h2>
+  <h2 id="cookies">6. Cookies</h2>
+  <p>Usamos cookies y tecnologías similares en tres categorías:</p>
+  <ul>
+    <li><strong>Necesarias:</strong> hacen funcionar el sitio (carrito, pago con Webpay, recordar tu elección de cookies). No se pueden desactivar.</li>
+    <li><strong>Analítica:</strong> Google Analytics, para entender cómo se usa el sitio y mejorarlo. Solo se activan si las aceptas.</li>
+    <li><strong>Publicidad:</strong> Google Ads y Meta, para medir campañas y mostrarte anuncios relevantes. Solo se activan si las aceptas.</li>
+  </ul>
+  <p>Puedes cambiar tu elección cuando quieras desde <button type="button" data-cookie-prefs class="underline underline-offset-4">Preferencias de cookies</button>, también disponible al pie de cada página.</p>
+
+  <h2 id="cambios">7. Cambios en la política</h2>
   <p>Nos reservamos el derecho de actualizar esta política de privacidad. Te notificaremos sobre cambios importantes a través de nuestro sitio web o por otros medios.</p>
   <p class="nota">Si tienes preguntas sobre esta política o tus datos personales, escríbenos a <a href={`mailto:${PRIVACY_EMAIL}`}>{PRIVACY_EMAIL}</a>.</p>
 </LegalArticle>
