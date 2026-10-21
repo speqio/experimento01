@@ -1,15 +1,21 @@
 ---
 import { SITE_INFO, GTM_CONTAINER_ID } from '../lib/siteInfo';
 import CookieBanner from '../components/common/CookieBanner.astro';
+import Seo from '../components/common/Seo.astro';
 import '../styles/global.css';
 
 interface Props {
   title: string;
   description?: string;
+  image?: string | null;
+  type?: 'website' | 'article' | 'product';
+  noindex?: boolean;
+  schema?: Record<string, unknown>[];
 }
 const {
   title,
   description = 'Refugio de bienestar: masajes terapéuticos, tratamientos faciales, experiencias spa y gift cards.',
+  ...seo
 } = Astro.props;
 ---
 <!doctype html>
@@ -39,10 +45,7 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
     <title>{title}</title>
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
+    <Seo title={title} description={description} {...seo} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

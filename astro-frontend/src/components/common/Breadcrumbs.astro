@@ -1,0 +1,19 @@
+---
+// Migas de pan visibles; el mismo listado va como BreadcrumbList en el JSON-LD (ver ECommerceLayout).
+import type { Crumb } from '../../lib/seo';
+
+interface Props { crumbs: Crumb[] }
+const { crumbs } = Astro.props;
+---
+<nav aria-label="Migas de pan" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 text-xs text-spa-taupe">
+  <ol class="flex flex-wrap items-center gap-1.5">
+    {crumbs.map((c, i) => (
+      <li class="flex items-center gap-1.5 min-w-0">
+        {i > 0 && <span aria-hidden="true">›</span>}
+        {i < crumbs.length - 1
+          ? <a href={c.path} class="hover:text-spa-charcoal transition-colors">{c.name}</a>
+          : <span aria-current="page" class="text-spa-charcoal truncate">{c.name}</span>}
+      </li>
+    ))}
+  </ol>
+</nav>

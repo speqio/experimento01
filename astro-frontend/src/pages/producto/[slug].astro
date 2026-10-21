@@ -69,27 +69,45 @@ const [upsells, relatedResult] = await Promise.all([
       }).catch(() => null)
     : Promise.resolve(null),
 ]);
+const firstCategory = product.productCategories?.nodes?.[0] as { name: string; slug: string; parent?: { node: { slug: string } } | null } | undefined;
+const breadcrumbs = [
+  { name: 'Tienda', path: '/tienda' },
+  ...(firstCategory ? [{ name: firstCategory.name, path: `/categoria-producto/${firstCategory.parent ? firstCategory.parent.node.slug + '/' : ''}${firstCategory.slug}/` }] : []),
+  { name: product.name, path: `/producto/${product.slug}/` },
+];
+// Precios de WooGraphQL vienen formateados ("$12.000" o "$10.000 - $20.000"): un precio o un rango.
+const prices = String(product.price ?? '').split('-').map((p) => Number(p.replace(/\D/g, ''))).filter((n) => n > 0);
+const availability = (product as any).stockStatus === 'OUT_OF_STOCK' ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock';
+const productSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  description: getCardSummary(product.shortDescription ?? '', 300),
+  ...(product.image?.sourceUrl ? { image: product.image.sourceUrl } : {}),
+  ...((product as any).sku ? { sku: (product as any).sku } : {}),
+  brand: { '@type': 'Brand', name: 'Spa Mandala' },
+  ...(prices.length
+    ? {
+        offers: prices.length > 1
+          ? { '@type': 'AggregateOffer', priceCurrency: 'CLP', lowPrice: Math.min(...prices), highPrice: Math.max(...prices), offerCount: variations.length || prices.length, availability }
+          : { '@type': 'Offer', priceCurrency: 'CLP', price: prices[0], availability, url: new URL(`/producto/${product.slug}/`, Astro.url.origin).toString() },
+      }
+    : {}),
+};
 const related: SimpleProduct[] = relatedResult
   ? relatedResult.products.nodes.filter((p) => p.slug !== product.slug).slice(0, 3)
   : [];
 
 ---
-<ECommerceLayout title={product.name} description={getCardSummary(product.shortDescription ?? '', 160)} layoutData={layoutDataPromise}>
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-    <nav class="flex items-center flex-wrap gap-1.5 text-xs text-spa-taupe" aria-label="Breadcrumb">
-      <a href="/" class="hover:text-spa-charcoal transition-colors">Inicio</a>
-      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-      <a href="/tienda" class="hover:text-spa-charcoal transition-colors">Tienda</a>
-      {categorySlug && (
-        <>
-          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-          <a href={`/tienda?cat=${categorySlug}`} class="hover:text-spa-charcoal transition-colors">{categoryName}</a>
-        </>
-      )}
-      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-      <span class="text-spa-charcoal">{product.name}</span>
-    </nav>
-  </div>
+<ECommerceLayout
+  title={product.name}
+  description={getCardSummary(product.shortDescription ?? '', 160)}
+  layoutData={layoutDataPromise}
+  type="product"
+  image={product.image?.sourceUrl}
+  breadcrumbs={breadcrumbs}
+  schema={[productSchema]}
+>
 
   <section class="relative h-[26rem] sm:h-[32rem] lg:h-[36rem] w-full overflow-hidden bg-spa-charcoal">
     {product.image?.sourceUrl && (

@@ -6,6 +6,8 @@ import GiftCardRedeemModal from '../components/giftcard/GiftCardRedeemModal.tsx'
 import Footer from '../components/common/Footer.astro';
 import { kvCacheFrom } from '../lib/wp-graphql';
 import { fetchLayoutData, type LayoutData } from '../lib/layoutData';
+import Breadcrumbs from '../components/common/Breadcrumbs.astro';
+import { breadcrumbSchema, type Crumb } from '../lib/seo';
 
 interface Props {
   title: string;
@@ -19,15 +21,24 @@ interface Props {
    * que son estáticas y no llaman a ECommerceLayout con SSR).
    */
   layoutData?: Promise<LayoutData>;
+  image?: string | null;
+  type?: 'website' | 'article' | 'product';
+  noindex?: boolean;
+  schema?: Record<string, unknown>[];
+  /** Migas de pan sin "Inicio" (se agrega solo); también van al JSON-LD. */
+  breadcrumbs?: Crumb[];
 }
-const { title, description, layoutData } = Astro.props;
+const { title, description, layoutData, breadcrumbs, schema = [], ...seo } = Astro.props;
+const crumbs = breadcrumbs?.length ? [{ name: 'Inicio', path: '/' }, ...breadcrumbs] : null;
+const allSchema = crumbs ? [...schema, breadcrumbSchema(Astro.url.origin, crumbs)] : schema;
 const currentPath = Astro.url.pathname;
 
 const { categoryGroups, giftCardImageUrl } = await (layoutData ?? fetchLayoutData(kvCacheFrom(Astro)));
 ---
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} schema={allSchema} {...seo}>
   <Header currentPath={currentPath} categoryGroups={categoryGroups} client:idle />
   <main class="flex-grow">
+    {crumbs && <Breadcrumbs crumbs={crumbs} />}
     <slot />
   </main>
   <Footer />

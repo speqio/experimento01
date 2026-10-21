@@ -36,7 +36,11 @@ const categoryName: string | null = tag
     ? catsResult.value.productCategories.nodes.find((c) => c.slug === category)?.name ?? category
     : category;
 ---
-<ECommerceLayout title={search ? `Tienda · ${search}` : categoryName ? `Tienda · ${categoryName}` : 'Tienda'} layoutData={layoutDataPromise}>
+<ECommerceLayout
+  title={search ? `Tienda · ${search}` : categoryName ? `Tienda · ${categoryName}` : 'Tienda'}
+  layoutData={layoutDataPromise}
+  breadcrumbs={[{ name: 'Tienda', path: '/tienda' }, ...(categoryName ? [{ name: categoryName, path: Astro.url.pathname }] : [])]}
+>
   <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 mb-10">
     <div class="max-w-6xl mx-auto text-center">
       <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Las Condes · Santiago de Chile</span>

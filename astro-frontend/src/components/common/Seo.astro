@@ -1,0 +1,33 @@
+---
+// Etiquetas de SEO del <head>: canonical, robots, Open Graph y datos estructurados (JSON-LD).
+// Los valores de Yoast en producción (canonical, noindex, imagen) vienen de src/data/seo-wp.json.
+import { SITE_INFO } from '../../lib/siteInfo';
+import { canonicalFor, isNoindex, ogImageFor } from '../../lib/seo';
+
+interface Props {
+  title: string;
+  description: string;
+  image?: string | null;
+  type?: 'website' | 'article' | 'product';
+  noindex?: boolean;
+  schema?: Record<string, unknown>[];
+}
+const { title, description, image, type = 'website', noindex = false, schema = [] } = Astro.props;
+const url = Astro.url;
+const canonical = canonicalFor(url);
+const ogImage = ogImageFor(url, image);
+// `</` dentro de un string JSON cerraría el <script>; se escapa.
+const ld = (o: unknown) => JSON.stringify(o).replace(/</g, '\\u003c');
+---
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={isNoindex(url, noindex) ? 'noindex, follow' : 'index, follow, max-image-preview:large'} />
+<meta property="og:locale" content="es_CL" />
+<meta property="og:site_name" content={SITE_INFO.name} />
+<meta property="og:type" content={type === 'product' ? 'product' : type} />
+<meta property="og:url" content={canonical} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={ogImage} />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content={ogImage} />
+{schema.map((s) => <script type="application/ld+json" set:html={ld(s)} />)}

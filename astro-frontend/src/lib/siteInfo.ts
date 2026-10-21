@@ -1,6 +1,9 @@
 // Información editorial fija del spa (no viene de WooCommerce/WPGraphQL).
 export const SITE_INFO = {
   name: 'Mándala Spa',
+  legalName: 'Spa Mandala', // nombre de empresa en Yoast (datos estructurados)
+  streetAddress: 'Presidente Errázuriz 2933, Oficina B',
+  logo: '/gift-card-logo.png', // ponytail: reemplazar por el logo en alta y una imagen social de 1200x630 cuando lleguen
   whatsapp: '56992242180',
   phone: '+56 9 9224 2180',
   email: 'contacto@spamandala.cl', // comercial

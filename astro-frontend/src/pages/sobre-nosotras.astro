@@ -1,8 +1,10 @@
 ---
-export const prerender = true;
+// SSR: canonical, robots y JSON-LD necesitan el dominio real de cada request.
+export const prerender = false;
 
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import { SITE_INFO } from '../lib/siteInfo';
+import { businessSchema } from '../lib/seo';
 
 // Contenido de la marca basado en spamandala.cl/sobre-nosotras/ (WordPress, modificado 05-02-2026).
 // Misma URL que el sitio actual para no perder posicionamiento al migrar.
@@ -27,7 +29,7 @@ const hours = [
   ['Domingo', 'Cerrado'],
 ];
 ---
-<ECommerceLayout title="Sobre Nosotras" description="Spa Mandala: expertas en masajes, limpiezas faciales y terapias para restablecer tu bienestar en Las Condes, Santiago.">
+<ECommerceLayout title="Sobre Nosotras" schema={[businessSchema(Astro.url.origin)]} breadcrumbs={[{ name: "Sobre nosotras", path: "/sobre-nosotras/" }]} description="Spa Mandala: expertas en masajes, limpiezas faciales y terapias para restablecer tu bienestar en Las Condes, Santiago.">
   <div class="bg-spa-sand py-16 sm:py-20 px-4 sm:px-6 lg:px-8 text-center">
     <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Sobre nosotras</span>
     <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal max-w-3xl mx-auto leading-tight">

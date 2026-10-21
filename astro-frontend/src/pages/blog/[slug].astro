@@ -9,6 +9,7 @@ import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_POST_BY_SLUG } from '../../lib/queries/posts';
 import { cleanHtml, htmlToText, summarize } from '../../lib/sanitize';
 import type { Post } from '../../types/blog';
+import { SITE_INFO } from '../../lib/siteInfo';
 
 const { slug } = Astro.params;
 const layoutDataPromise = fetchLayoutData(kvCacheFrom(Astro));
@@ -34,7 +35,25 @@ const category = post.categories?.nodes?.[0]?.name;
 const description = summarize(htmlToText(post.excerpt), 160);
 const content = cleanHtml(post.content);
 ---
-<ECommerceLayout title={post.title} description={description} layoutData={layoutDataPromise}>
+<ECommerceLayout
+  title={post.title}
+  description={description}
+  layoutData={layoutDataPromise}
+  type="article"
+  image={post.featuredImage?.node?.sourceUrl}
+  breadcrumbs={[{ name: 'Blog', path: '/blog' }, { name: post.title, path: Astro.url.pathname }]}
+  schema={[{
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description,
+    datePublished: post.date,
+    ...(post.featuredImage?.node?.sourceUrl ? { image: post.featuredImage.node.sourceUrl } : {}),
+    author: { '@type': 'Organization', name: SITE_INFO.legalName },
+    publisher: { '@id': `${Astro.url.origin}/#negocio` },
+    mainEntityOfPage: Astro.url.href,
+  }]}
+>
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
     <nav class="flex items-center flex-wrap gap-1.5 text-xs text-spa-taupe" aria-label="Breadcrumb">
       <a href="/" class="hover:text-spa-charcoal transition-colors">Inicio</a>

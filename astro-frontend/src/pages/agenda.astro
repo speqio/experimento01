@@ -1,5 +1,6 @@
 ---
-export const prerender = true;
+// SSR: canonical, robots y JSON-LD necesitan el dominio real de cada request.
+export const prerender = false;
 
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import { RESERVO_URL } from '../lib/siteInfo';

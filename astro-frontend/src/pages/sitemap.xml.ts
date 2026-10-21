@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
-import { STATIC_PATHS } from '../lib/seo';
+import { STATIC_PATHS, postPath } from '../lib/seo';
 import pages from '../data/paginas-wp.json';
 
 export const prerender = false;
@@ -40,7 +40,7 @@ export const GET: APIRoute = async (ctx) => {
     ...pages.map((p) => entry(`/${p.path}/`)),
     ...cats.map((c) => entry(`/categoria-producto/${c.parent ? c.parent.node.slug + "/" : ""}${c.slug}/`)),
     ...products.map((p) => entry(`/producto/${p.slug}/`, p.modified)),
-    ...posts.map((p) => entry(`/blog/${p.slug}`, p.modified)),
+    ...posts.map((p) => entry(postPath(p.slug), p.modified)),
   ];
 
   return new Response(

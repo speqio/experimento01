@@ -34,8 +34,9 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       description
       shortDescription
       giftCardEnabled
+      sku
       image { sourceUrl(size: LARGE) altText }
-      productCategories { nodes { name slug } }
+      productCategories { nodes { name slug parent { node { slug } } } }
       ... on InventoriedProduct { stockStatus }
       ... on SimpleProduct { price regularPrice }
       ... on VariableProduct {
