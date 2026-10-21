@@ -75,7 +75,7 @@ export function businessSchema(origin: string) {
       opens: h.opens,
       closes: h.closes,
     })),
-    sameAs: [SITE_INFO.instagram, SITE_INFO.facebook],
+    sameAs: [SITE_INFO.instagram, SITE_INFO.youtube],
   };
 }
 

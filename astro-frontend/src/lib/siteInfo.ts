@@ -9,7 +9,9 @@ export const SITE_INFO = {
   email: 'contacto@spamandala.cl', // comercial
   legalEmail: 'administracion@spamandala.cl', // privacidad y temas legales
   address: 'Las Condes, Santiago, Chile',
-  instagram: 'https://instagram.com/spamandala',
+  instagram: 'https://www.instagram.com/spamandala.cl',
+  youtube: 'https://www.youtube.com/channel/UC_AwXeR2-zzDAtW1Y8uV7Bg',
+  bigbox: 'https://www.bigbox.cl/landings/spamandala-experiencias/',
   facebook: 'https://facebook.com/spamandala',
   schedule: 'Lun a Vie 10:00 - 19:00 hrs · Sáb 10:00 - 15:30 hrs',
   // Mismo horario en formato estructurado (sobre-nosotras y el JSON-LD de LocalBusiness).

@@ -1,101 +1,104 @@
 ---
 import { SITE_INFO } from '../../lib/siteInfo';
+
+// Mismas secciones que el pie de spamandala.cl; las rutas son las páginas migradas (ver [...page].astro).
+const tratamientos = [
+  { href: '/tratamientos-faciales/', label: 'Tratamientos Faciales' },
+  { href: '/tratamientos-corporales/', label: 'Tratamientos Corporales' },
+  { href: '/masajes/', label: 'Masajes' },
+  { href: '/spa-day/', label: 'Spa day' },
+  { href: '/productos/', label: 'Productos' },
+  { href: '/promociones', label: 'Promociones' },
+  { href: '/convenios-empresas/', label: 'Convenios' },
+  { href: '/eventos/', label: 'Eventos' },
+  { href: '/blog', label: 'Blog Mandala' },
+];
+const whatsappUrl = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURIComponent('Hola Mándala Spa, quisiera consultar por disponibilidades y servicios.')}`;
+const socialClass = 'w-11 h-11 rounded-full bg-[#7A6858] hover:bg-[#8F7B69] text-[#F3ECE3] flex items-center justify-center transition-colors';
+const headingClass = 'flex items-center gap-2 text-base font-semibold text-[#E9DCCB] mb-5';
 ---
-<footer class="bg-spa-charcoal text-[#D8D1C7] border-t border-[#3D3632]">
+<footer class="bg-[#463D37] text-[#E9E1D7]">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-16">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr] gap-10 lg:gap-12">
       <div class="space-y-6">
+        <img src="/logo-mandala-blanco.webp" alt={SITE_INFO.name} width="52" height="52" class="w-[52px] h-[52px] opacity-90" loading="lazy" />
+        <p class="text-sm leading-relaxed max-w-[15rem]">Tu refugio urbano para el bienestar consciente en Santiago.</p>
+
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full border border-spa-taupe flex items-center justify-center text-[#D4C3B3]">
-            <span class="font-editorial text-xl italic leading-none">M</span>
-          </div>
-          <div>
-            <span class="font-editorial text-2xl tracking-[0.16em] font-medium text-spa-bg uppercase block">
-              {SITE_INFO.name}
-            </span>
-            <span class="text-[10px] tracking-[0.25em] text-[#A69788] uppercase block">
-              Spa &middot; Masajes &middot; Terapias
-            </span>
-          </div>
-        </div>
-
-        <p class="text-sm text-[#A89E95] font-light leading-relaxed">
-          Tu refugio urbano para el bienestar consciente. Tratamientos terapéuticos, masajes de relajación y cuidado de la piel en un ambiente sereno.
-        </p>
-
-        <div class="flex items-center gap-3 pt-1">
-          <a
-            href={SITE_INFO.instagram}
-            target="_blank"
-            rel="noreferrer"
-            class="w-9 h-9 rounded-full bg-[#3D3632] hover:bg-spa-taupe text-spa-cream flex items-center justify-center transition-colors"
-            aria-label="Instagram"
-          >
-            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
+          <a href={SITE_INFO.instagram} target="_blank" rel="noopener" class={socialClass} aria-label="Instagram">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" /></svg>
           </a>
-          <a
-            href={`https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURIComponent('Hola Mándala Spa, quisiera consultar por disponibilidades y servicios.')}`}
-            target="_blank"
-            rel="noreferrer"
-            class="w-9 h-9 rounded-full bg-[#3D3632] hover:bg-[#25D366] text-spa-cream hover:text-white flex items-center justify-center transition-colors"
-            aria-label="WhatsApp"
-          >
-            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          <a href={SITE_INFO.youtube} target="_blank" rel="noopener" class={socialClass} aria-label="YouTube">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="currentColor"><path d="M21.6 7.2a2.6 2.6 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.6 2.6 0 0 0 2.4 7.2 27 27 0 0 0 2 12a27 27 0 0 0 .4 4.8 2.6 2.6 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.6 2.6 0 0 0 1.8-1.8A27 27 0 0 0 22 12a27 27 0 0 0-.4-4.8ZM10 15V9l5.2 3Z" /></svg>
+          </a>
+          <a href="/agenda" class={socialClass} aria-label="Agenda tu hora">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+          </a>
+          <a href={whatsappUrl} target="_blank" rel="noopener" class={socialClass} aria-label="WhatsApp">
+            <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /><path d="M9 10a.5.5 0 0 0 1 0V9a.5.5 0 0 0-1 0v1a5 5 0 0 0 5 5h1a.5.5 0 0 0 0-1h-1a.5.5 0 0 0 0 1" /></svg>
           </a>
         </div>
+
+        <a href={SITE_INFO.bigbox} target="_blank" rel="noopener" class="inline-flex items-center gap-4 group" aria-label="Partner Bigbox: experiencias Spa Mandala">
+          <img src="/bigbox-logo-blanco.svg" alt="" width="46" height="46" class="w-[46px] h-[46px]" loading="lazy" />
+          <span class="text-xs font-semibold group-hover:underline underline-offset-4">Partner Bigbox</span>
+        </a>
       </div>
 
       <div>
-        <h4 class="text-xs font-semibold uppercase tracking-[0.2em] text-spa-bg mb-5">Tratamientos</h4>
-        <ul class="space-y-2.5 text-sm text-[#B8AEA4]">
-          <li><a href="/tienda" class="hover:text-white transition-colors">Todos los servicios</a></li>
-          <li><a href="/promociones" class="hover:text-white transition-colors">Promociones</a></li>
-          <li><a href="/gift-cards" class="hover:text-white transition-colors">Gift Cards</a></li>
-          <li><a href="/sobre-nosotras" class="hover:text-white transition-colors">Sobre Nosotras</a></li>
+        <h4 class={headingClass}><img src="/icono-loto.webp" alt="" width="18" height="18" class="w-[18px] h-[18px]" loading="lazy" />Tratamientos</h4>
+        <ul class="space-y-2.5 text-sm">
+          {tratamientos.map((t) => <li><a href={t.href} class="hover:text-white transition-colors">{t.label}</a></li>)}
         </ul>
       </div>
 
       <div>
-        <h4 class="text-xs font-semibold uppercase tracking-[0.2em] text-spa-bg mb-5">Contacto</h4>
-        <ul class="space-y-3.5 text-sm text-[#B8AEA4]">
-          <li>
-            <a href={`tel:${SITE_INFO.phone}`} class="hover:text-white transition-colors">{SITE_INFO.phone}</a>
+        <h4 class={headingClass}><img src="/icono-loto.webp" alt="" width="18" height="18" class="w-[18px] h-[18px]" loading="lazy" />Contacto</h4>
+        <ul class="space-y-5 text-sm">
+          <li class="flex items-start gap-3">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 mt-0.5 shrink-0 text-[#E9DCCB]" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1Z" /></svg>
+            <a href={`tel:${SITE_INFO.phone.replace(/\s/g, '')}`} class="hover:text-white transition-colors">(+56 9) 9224 2180</a>
           </li>
-          <li>
+          <li class="flex items-start gap-3">
+            <svg viewBox="0 0 24 24" class="w-4 h-4 mt-0.5 shrink-0 text-[#E9DCCB]" fill="currentColor" aria-hidden="true"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 4-8 5-8-5V6l8 5 8-5Z" /></svg>
             <a href={`mailto:${SITE_INFO.email}`} class="hover:text-white transition-colors break-all">{SITE_INFO.email}</a>
           </li>
-          <li>{SITE_INFO.address}</li>
+          <li>
+            <p class="text-[0.95rem] font-medium mb-1 pl-7">Ubicación</p>
+            <a href="https://www.google.com/maps/search/?api=1&query=Presidente+Err%C3%A1zuriz+2933+Las+Condes" target="_blank" rel="noopener" class="flex items-start gap-3 text-[#C9BBAB] hover:text-white transition-colors">
+              <svg viewBox="0 0 24 24" class="w-4 h-4 mt-0.5 shrink-0 text-[#E9DCCB]" fill="currentColor" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z" /></svg>
+              <span>Presidente Errázuriz 2933,<br />Oficina B, Las Condes</span>
+            </a>
+          </li>
         </ul>
       </div>
 
       <div>
-        <h4 class="text-xs font-semibold uppercase tracking-[0.2em] text-spa-bg mb-5">Horario de atención</h4>
-        <div class="space-y-3 text-sm text-[#B8AEA4]">
-          <p>{SITE_INFO.schedule}</p>
-          <a
-            href="/tienda"
-            class="inline-flex w-full bg-spa-taupe hover:bg-[#9D8B7C] text-white py-2.5 px-4 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors items-center justify-center gap-2"
-          >
-            Reservar hora
-          </a>
-        </div>
+        <h4 class={headingClass}>
+          <svg viewBox="0 0 20 20" class="w-[18px] h-[18px]" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18.33a8.33 8.33 0 1 0 0-16.66 8.33 8.33 0 0 0 0 16.66ZM10.83 5a.83.83 0 0 0-1.66 0v5c0 .32.18.6.46.75l3.33 1.66a.83.83 0 1 0 .75-1.49l-2.88-1.43Z" /></svg>
+          Horario de Atención
+        </h4>
+        <dl class="space-y-5 text-sm pl-2">
+          {SITE_INFO.hours.map((h) => (
+            <div>
+              <dt class="font-semibold">{h.label === 'Sábado' ? 'Sábados' : 'Lunes a Viernes'}</dt>
+              <dd class="text-[#C9BBAB]">{h.opens} a {h.closes}hr</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </div>
   </div>
 
-  <div class="border-t border-[#3D3632] bg-[#221E1B] py-5 text-xs text-[#8A8077]">
+  <div class="border-t border-white/10 py-5 text-xs text-[#B9AB9C]">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <p>&copy; {new Date().getFullYear()} {SITE_INFO.name}. Pagos procesados con Webpay Plus (Transbank).</p>
-      <div class="flex flex-wrap items-center gap-4 sm:gap-6">
-        <a href="/gift-cards" class="hover:text-[#D4C3B3] transition-colors">Gift Cards</a>
-        <span>&bull;</span>
-        <a href="/carrito" class="hover:text-[#D4C3B3] transition-colors">Carrito</a>
-        <span>&bull;</span>
-        <a href="/politicas-de-la-empresa" class="hover:text-[#D4C3B3] transition-colors">Políticas de la empresa</a>
-        <span>&bull;</span>
-        <a href="/politicas-de-privacidad" class="hover:text-[#D4C3B3] transition-colors">Políticas de privacidad</a>
-        <span>&bull;</span>
-        <button type="button" data-cookie-prefs class="hover:text-[#D4C3B3] transition-colors">Preferencias de cookies</button>
+      <p>&copy; {new Date().getFullYear()} {SITE_INFO.legalName}. Pagos procesados con Webpay Plus (Transbank).</p>
+      <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+        <a href="/sobre-nosotras" class="hover:text-white transition-colors">Sobre nosotras</a>
+        <a href="/contacto/" class="hover:text-white transition-colors">Contacto</a>
+        <a href="/politicas-de-la-empresa" class="hover:text-white transition-colors">Políticas de la empresa</a>
+        <a href="/politicas-de-privacidad" class="hover:text-white transition-colors">Políticas de privacidad</a>
+        <button type="button" data-cookie-prefs class="hover:text-white transition-colors">Preferencias de cookies</button>
       </div>
     </div>
   </div>
