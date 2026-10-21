@@ -11,4 +11,8 @@ export default defineConfig({
     imageService: 'compile',
   }),
   integrations: [react(), tailwind()],
+  // /sobre-nosotras es la URL del sitio actual (posicionada en Google); /nosotros era la provisoria.
+  redirects: {
+    '/nosotros': '/sobre-nosotras',
+  },
 });

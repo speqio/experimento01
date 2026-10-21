@@ -293,10 +293,10 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
                 Tienda
               </a>
               <a
-                href="/nosotros"
+                href="/sobre-nosotras"
                 onMouseEnter={() => setActiveGroup(null)}
                 className={`py-1 hover:text-spa-charcoal transition-colors ${
-                  currentPath === '/nosotros' ? 'text-spa-charcoal font-bold underline underline-offset-8 decoration-spa-taupe' : ''
+                  currentPath === '/sobre-nosotras' ? 'text-spa-charcoal font-bold underline underline-offset-8 decoration-spa-taupe' : ''
                 }`}
               >
                 Sobre Nosotras
@@ -478,7 +478,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
               {link.label}
             </a>
           ))}
-          <a href="/nosotros" className="block py-2.5 border-b border-spa-sand">
+          <a href="/sobre-nosotras" className="block py-2.5 border-b border-spa-sand">
             Sobre Nosotras
           </a>
           <a href="/blog" className="block py-2.5 border-b border-spa-sand">

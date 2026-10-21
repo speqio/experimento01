@@ -1,0 +1,165 @@
+---
+export const prerender = true;
+
+import LegalArticle from '../components/common/LegalArticle.astro';
+import { SITE_INFO } from '../lib/siteInfo';
+
+// Contenido tomado de spamandala.cl/politicas-de-la-empresa/ (WordPress, modificado 03-03-2026).
+const sections = [
+  { id: 'reservas', title: '1. Reservas' },
+  { id: 'reagendamientos', title: '2. Reagendamientos y cancelaciones' },
+  { id: 'puntualidad', title: '3. Puntualidad' },
+  { id: 'confirmacion', title: '4. Confirmación de reserva' },
+  { id: 'estacionamiento', title: '5. Estacionamiento' },
+  { id: 'conducta', title: '6. Conducta y cuidado del ambiente' },
+  { id: 'vigencia', title: '7. Vigencia de sesiones y gift cards' },
+  { id: 'gift-cards', title: '8. Gift cards' },
+  { id: 'cambios', title: '9. Cambios y devoluciones' },
+  { id: 'garantia-servicio', title: '10. Garantía de servicio' },
+  { id: 'garantia-productos', title: '11. Garantía de productos' },
+  { id: 'no-aplican', title: '12. No aplican cambios ni devoluciones' },
+  { id: 'reembolsos', title: '13. Reembolsos y devoluciones' },
+  { id: 'compromiso', title: '14. Compromiso del equipo' },
+  { id: 'contacto', title: '15. Contacto' },
+];
+const ADMIN_EMAIL = 'administracion@spamandala.cl';
+---
+<LegalArticle
+  title="Políticas de la empresa"
+  description="Reservas, cancelaciones, gift cards, cambios, devoluciones y garantías de Spa Mandala."
+  updated="3 de marzo de 2026"
+  sections={sections}
+>
+  <p>En Spa Mandala, para asegurar una organización clara y un servicio justo para todos, hemos establecido las siguientes políticas, que equilibran el cuidado de nuestros clientes y la protección de nuestro equipo.</p>
+
+  <h2 id="reservas">1. Reservas</h2>
+  <p>Para brindar un servicio más eficiente y justo, y garantizar que cada cliente pueda disfrutar su cita con su terapeuta sin inconvenientes, hemos implementado el pago previo como requisito para confirmar reservas. Esto nos permite organizar la agenda de manera óptima y asegurar la disponibilidad exclusiva de tu hora.</p>
+  <h3>¿Cómo funciona?</h3>
+  <p><strong>Por WhatsApp</strong> al <a href={`https://wa.me/${SITE_INFO.whatsapp}`} target="_blank" rel="noopener">{SITE_INFO.phone}</a>:</p>
+  <ul>
+    <li>Para confirmar tu cita requerimos el pago total del servicio; solo entonces la fecha y hora quedarán bloqueadas exclusivamente para ti.</li>
+    <li>El pago debe realizarse dentro de un plazo máximo de 1 hora desde el agendamiento.</li>
+    <li>Si no recibimos el pago dentro de este tiempo, la hora será liberada para otros clientes interesados.</li>
+    <li>Si decides no continuar con la reserva, te pedimos informarlo lo antes posible para mantener la agenda disponible de manera responsable.</li>
+    <li>En momentos de alta demanda y días feriados contamos con una agente virtual para asistirte.</li>
+  </ul>
+  <p><strong>Online:</strong> puedes agendar y pagar directamente desde nuestra agenda online. La boleta se enviará posterior a tu pago al correo electrónico que registres.</p>
+
+  <h2 id="reagendamientos">2. Reagendamientos y cancelaciones</h2>
+  <p>Entendemos que pueden surgir imprevistos, pero para garantizar la sostenibilidad de nuestro servicio y el respeto al tiempo de nuestras terapeutas y otros clientes, todos los reagendamientos o cancelaciones deben notificarse con un mínimo de <strong>24 horas de anticipación</strong> a la hora programada de la cita.</p>
+  <p>Cuando una cancelación o cambio se realiza con menos de 24 horas de anticipación —independientemente del motivo— se aplicará un cargo administrativo. Este monto refleja el tiempo reservado en sala y la disponibilidad de la terapeuta, recursos que no pueden reasignarse en tan corto plazo:</p>
+  <table>
+    <thead><tr><th>Duración del servicio</th><th>Cargo por persona</th></tr></thead>
+    <tbody>
+      <tr><td>Hasta 55 minutos</td><td>$5.000</td></tr>
+      <tr><td>De 60 a 90 minutos</td><td>$7.000</td></tr>
+      <tr><td>Más de 90 minutos</td><td>$12.000</td></tr>
+    </tbody>
+  </table>
+  <p>Agradecemos tu comprensión y colaboración. Cumplir con esta política nos permite seguir ofreciéndote un servicio de calidad, con profesionales comprometidas y espacios adecuados para tu bienestar.</p>
+
+  <h2 id="puntualidad">3. Puntualidad</h2>
+  <ul>
+    <li>Te pedimos llegar 10 minutos antes de tu cita, para evitar retrasos y que tengas una planificación holgada de tu trayecto para que llegues con tranquilidad.</li>
+    <li>Si llegas con retraso, esos minutos se descontarán de tu sesión.</li>
+    <li>Podrás extenderla hasta 15 minutos adicionales por $15.000, sujeto a disponibilidad.</li>
+  </ul>
+
+  <h2 id="confirmacion">4. Confirmación de reserva</h2>
+  <p>Confirmamos tu cita el día hábil anterior. Si no recibes nuestro mensaje, por favor contáctanos para verificar tu agendamiento.</p>
+
+  <h2 id="estacionamiento">5. Estacionamiento</h2>
+  <p>Puedes estacionar frente al Stade Français o bordeando el parque de Presidente Errázuriz.</p>
+  <p class="nota"><strong>Importante:</strong> Spa Mandala no se hace responsable por la gestión del estacionamiento ni por imprevistos de tránsito, accidentes u otras situaciones externas que puedan afectar tu puntualidad.</p>
+
+  <h2 id="conducta">6. Conducta y cuidado del ambiente</h2>
+  <p>En Spa Mandala buscamos resguardar una experiencia de bienestar y respeto para todos nuestros clientes y equipo. Por ello:</p>
+  <ul>
+    <li>No se atenderá a clientes bajo efectos de alcohol o drogas.</li>
+    <li>Solicitamos que cada persona llegue en condiciones que le permitan alcanzar estados de bienestar y mantenga siempre una relación respetuosa con nuestro staff profesional.</li>
+    <li>Spa Mandala ofrece únicamente masaje terapéutico y estético: cualquier insinuación ajena a este contexto o conducta inapropiada será causal de término inmediato de la sesión, sin reembolso.</li>
+    <li>Si presentas una enfermedad contagiosa, debes informarnos con anticipación para evitar exponer a terapeutas y otros clientes. Spa Mandala puede interrumpir un servicio si el cliente presenta una situación médica no informada previamente que implique riesgo para su salud o la de las terapeutas.</li>
+    <li>Spa Mandala se reserva el derecho de admisión y permanencia.</li>
+  </ul>
+  <h3>Para preservar el ambiente de relajación</h3>
+  <ul>
+    <li>Evita traer acompañantes. En casos puntuales se permite máximo 1 persona, que deberá esperar en recepción y tener al menos 13 años. No está permitido el ingreso de acompañantes a las salas de terapia.</li>
+    <li>No se permite el ingreso de mascotas.</li>
+    <li>No está permitido el ingreso de alimentos ni bebidas, ya que los aromas pueden interferir en la experiencia sensorial.</li>
+    <li>Se solicita mantener un tono de voz bajo y el uso moderado del celular.</li>
+  </ul>
+
+  <h2 id="vigencia">7. Vigencia de sesiones de servicio y gift cards</h2>
+  <table>
+    <thead><tr><th>Cantidad de sesiones</th><th>Vigencia</th></tr></thead>
+    <tbody>
+      <tr><td>1 a 4 sesiones</td><td>3 meses</td></tr>
+      <tr><td>5 a 8 sesiones</td><td>4 meses</td></tr>
+      <tr><td>9 a 12 sesiones</td><td>6 meses</td></tr>
+    </tbody>
+  </table>
+  <p>Las gift cards vencidas pueden reactivarse pagando $5.000 por mes y por persona.</p>
+
+  <h2 id="gift-cards">8. Gift cards</h2>
+  <ul>
+    <li><strong>Validez:</strong> 3 meses desde la compra para sesiones unitarias, con posibilidad de extender pagando $5.000 por mes. La validez de múltiples sesiones se detalla en el punto 7.</li>
+    <li><strong>Reserva:</strong> debes informar el uso de la gift card al agendar y enviar el código o la imagen.</li>
+    <li><strong>Reagendamientos:</strong> con menos de 24 horas de aviso se aplicará el cargo por tiempo de ocupación indicado en el punto 2.</li>
+    <li><strong>Cambios de servicio:</strong> solo a servicios de igual o mayor valor, pagando la diferencia.</li>
+    <li><strong>Cambio de beneficiario:</strong> el titular debe enviar un correo a <a href={`mailto:${ADMIN_EMAIL}`}>{ADMIN_EMAIL}</a> indicando el traspaso.</li>
+    <li>Las gift cards no son canjeables por dinero en ningún caso.</li>
+    <li>Si el beneficiario no se presenta a su cita sin avisar con 24 horas de anticipación, el servicio se dará por utilizado.</li>
+  </ul>
+
+  <h2 id="cambios">9. Cambios y devoluciones</h2>
+  <h3>Servicios contratados</h3>
+  <ul>
+    <li>Cambios posibles según disponibilidad.</li>
+    <li>Si el nuevo servicio es de mayor valor, se paga la diferencia.</li>
+    <li>Si es de menor valor, no hay reembolso.</li>
+  </ul>
+  <h3>Compras con gift card</h3>
+  <ul>
+    <li>El destinatario puede cambiar el servicio a uno de igual o mayor valor, pagando la diferencia.</li>
+  </ul>
+  <h3>Productos</h3>
+  <ul>
+    <li>Las compras online tienen derecho a retracto en 10 días.</li>
+    <li>Las compras presenciales no tienen derecho a retracto, salvo fallas.</li>
+  </ul>
+
+  <h2 id="garantia-servicio">10. Garantía de servicio</h2>
+  <p>Si el servicio no cumple con el estándar de calidad:</p>
+  <ul>
+    <li>Puedes solicitar una evaluación dentro de 15 días hábiles al correo <a href={`mailto:${ADMIN_EMAIL}?subject=Garant%C3%ADa%20de%20Servicio`}>{ADMIN_EMAIL}</a> con el asunto “Garantía de Servicio”.</li>
+    <li>Si corresponde, se reagendará sin costo o se devolverá el dinero (excepto en gift cards, donde aplica solo el reagendamiento).</li>
+  </ul>
+
+  <h2 id="garantia-productos">11. Garantía de productos</h2>
+  <ul>
+    <li>Todos los productos cuentan con garantía legal de 6 meses.</li>
+    <li>Aplica en caso de falla o incumplimiento de lo informado.</li>
+    <li>No aplica por uso indebido.</li>
+  </ul>
+
+  <h2 id="no-aplican">12. No aplican cambios ni devoluciones</h2>
+  <p>En los siguientes casos:</p>
+  <ul>
+    <li>Servicios ya utilizados sin haber solicitado la garantía de servicio.</li>
+    <li>Productos comprados en promociones o liquidaciones.</li>
+    <li>Servicios reservados y posteriormente cancelados. Según la Ley del Consumidor en Chile, los servicios contratados con fecha y hora determinada no están sujetos a derecho a retracto: en caso de cancelar una cita, no corresponde devolución del dinero.</li>
+    <li>Si una persona no llega a su cita y no avisa con anticipación que no asistirá, o avisa una vez pasada la hora de la cita, esta se considerará tomada, sin derecho a reagendamiento ni reembolso.</li>
+  </ul>
+  <p>Esta política nos permite asegurar disponibilidad justa para todos nuestros clientes y disminuir las reservas que finalmente no se concretan.</p>
+
+  <h2 id="reembolsos">13. Proceso de reembolsos y devoluciones</h2>
+  <p>De acuerdo con la Ley N° 19.496 sobre Protección de los Derechos de los Consumidores, el cliente podrá ejercer su derecho a retracto dentro de un plazo de 10 días corridos desde realizada la compra, siempre que se trate de productos sin uso y en perfectas condiciones. En el caso de servicios, el retracto aplicará únicamente si el servicio no ha sido utilizado ni iniciado.</p>
+  <p>Si el cliente se arrepiente de la compra y el pago fue realizado con tarjeta de débito o crédito, el reembolso se realizará descontando el porcentaje correspondiente a la comisión de Transbank vigente (3%), ya que dicho monto no es reembolsado al comercio. El reembolso se efectuará vía transferencia bancaria.</p>
+  <p>Cuando la anulación de la compra sea por responsabilidad de Spa Mandala (falta de stock, error en la venta o imposibilidad de prestar el servicio), el reembolso será del 100% del monto pagado.</p>
+
+  <h2 id="compromiso">14. Compromiso del equipo</h2>
+  <p>Nuestro equipo se esfuerza por respetar los horarios y entregar siempre el mejor servicio. Sin embargo, como personas, pueden surgir imprevistos (enfermedad, accidentes o equivocaciones). Contamos con protocolos para minimizar el impacto y mantener tu experiencia lo más satisfactoria posible.</p>
+
+  <h2 id="contacto">15. Contacto</h2>
+  <p>Ante dudas o requerimientos, escríbenos a <a href={`mailto:${ADMIN_EMAIL}`}>{ADMIN_EMAIL}</a>. Te responderemos en un máximo de 5 días hábiles.</p>
+</LegalArticle>

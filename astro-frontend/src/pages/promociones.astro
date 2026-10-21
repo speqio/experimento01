@@ -19,7 +19,7 @@ let onSale: SimpleProduct[] = [];
 try {
   const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
     query: GET_PRODUCTS,
-    variables: { first: 48 },
+    variables: { first: 100 }, // máximo de WPGraphQL por página; con muchas ofertas habría que paginar
     cache,
   });
   onSale = data.products.nodes.filter(

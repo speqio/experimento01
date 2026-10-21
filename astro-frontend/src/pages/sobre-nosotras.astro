@@ -4,82 +4,100 @@ export const prerender = true;
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import { SITE_INFO } from '../lib/siteInfo';
 
-// Contenido editorial de la marca — no viene de WooCommerce/WPGraphQL.
-// TODO: reemplazar equipo/estadísticas por datos reales entregados por el cliente.
-const team = [
-  { name: 'Valentina Silva', role: 'Kinesióloga', services: ['Masajes descontracturantes', 'Drenaje linfático', 'Terapias corporales'] },
-  { name: 'Camila Soto', role: 'Cosmiatra', services: ['Limpiezas faciales', 'Tratamientos anti-edad', 'Hidratación profunda'] },
-  { name: 'Andrea Morales', role: 'Masoterapeuta', services: ['Masajes relajantes', 'Piedras calientes', 'Aromaterapia'] },
-  { name: 'Asignación automática', role: 'Según disponibilidad', services: ['Cualquier tratamiento del catálogo'] },
+// Contenido de la marca basado en spamandala.cl/sobre-nosotras/ (WordPress, modificado 05-02-2026).
+// Misma URL que el sitio actual para no perder posicionamiento al migrar.
+const pillars = [
+  {
+    title: 'Servicios con vocación',
+    text: 'Creemos en las energías y en un ambiente de trabajo amigable. Cada caso es único: dedicamos tiempo a evaluarte y diseñar un masaje, una limpieza facial o una terapia especializada para tu necesidad.',
+  },
+  {
+    title: 'Promovemos la relajación',
+    text: 'Los estados de relajación mejoran la irrigación sanguínea, el drenaje linfático y la nutrición celular. También ayudan en estados de ansiedad, insomnio, déficit atencional, colon irritable, celulitis, acné y depresión.',
+  },
+  {
+    title: 'Cuidamos nuestro entorno',
+    text: 'Eliminamos nuestros desechos con cuidado, reciclamos de forma activa, usamos iluminación de bajo consumo y promovemos el uso mesurado de los recursos, para que sigan disponibles para las generaciones futuras.',
+  },
+];
+const services = ['Masajes', 'Limpiezas faciales', 'Terapias complementarias', 'Tratamientos postoperatorios'];
+const CONTACT_EMAIL = 'info@spamandala.cl';
+const hours = [
+  ['Lunes a viernes', '9:00 – 20:00 hrs'],
+  ['Sábado', '10:00 – 18:00 hrs'],
+  ['Domingo', 'Cerrado'],
 ];
 ---
-<ECommerceLayout title="Sobre Nosotras" description="Conoce la filosofía y el equipo de Mándala Spa">
+<ECommerceLayout title="Sobre Nosotras" description="Spa Mandala: expertas en masajes, limpiezas faciales y terapias para restablecer tu bienestar en Las Condes, Santiago.">
   <div class="bg-spa-sand py-16 sm:py-20 px-4 sm:px-6 lg:px-8 text-center">
-    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Nuestra esencia &amp; filosofía</span>
+    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Sobre nosotras</span>
     <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal max-w-3xl mx-auto leading-tight">
-      Un santuario de calma en el corazón de Las Condes
+      Un espacio dedicado a tu bienestar
     </h1>
   </div>
 
-  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 text-center">
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 text-center space-y-5">
     <p class="font-editorial text-xl sm:text-2xl text-spa-charcoal leading-relaxed">
-      Creemos que el bienestar no es un lujo ocasional, sino una necesidad vital.
+      Somos expertas en masajes y terapias. Creamos experiencias de relajación para restablecer tu biorritmo.
     </p>
+    <p class="text-spa-taupe leading-relaxed">
+      Tratamos las somatizaciones del estrés, tanto anímicas como tensiones musculares, y otras afecciones que afectan tu belleza y bienestar. Somos un refugio para descansar el cuerpo y la mente, rejuvenecer y recuperar energía para el día a día.
+    </p>
+    <ul class="flex flex-wrap justify-center gap-2 pt-2">
+      {services.map((s) => (
+        <li class="bg-white border border-[#E8E2D7] rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide text-spa-taupe-dark uppercase">{s}</li>
+      ))}
+    </ul>
   </div>
 
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 grid md:grid-cols-2 gap-10 items-center">
-    <div>
-      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Nuestro espacio</span>
-      <h2 class="font-editorial text-2xl sm:text-3xl text-spa-charcoal font-normal mb-4">Diseñado para desconectar</h2>
-      <ul class="space-y-3 text-spa-taupe">
-        <li class="flex gap-3"><span class="text-spa-charcoal">—</span> Aislación acústica de estándar médico</li>
-        <li class="flex gap-3"><span class="text-spa-charcoal">—</span> Aromaterapia orgánica en cada sala</li>
-        <li class="flex gap-3"><span class="text-spa-charcoal">—</span> Productos y protocolos premium</li>
-      </ul>
-      <div class="flex gap-10 mt-8">
-        <div>
-          <p class="font-editorial text-4xl text-spa-charcoal">8+</p>
-          <p class="text-xs text-spa-taupe uppercase tracking-wide mt-1">Años</p>
-        </div>
-        <div>
-          <p class="font-editorial text-4xl text-spa-charcoal">15.000+</p>
-          <p class="text-xs text-spa-taupe uppercase tracking-wide mt-1">Experiencias</p>
-        </div>
+  <div class="bg-spa-cream py-14 sm:py-16 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-10">
+        <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Experiencia Mandala</span>
+        <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Lo que nos mueve</h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6">
+        {pillars.map((p) => (
+          <div class="bg-white rounded-2xl border border-[#E8E2D7] p-7">
+            <h3 class="font-editorial text-xl text-spa-charcoal mb-3">{p.title}</h3>
+            <p class="text-sm text-spa-taupe leading-relaxed">{p.text}</p>
+          </div>
+        ))}
       </div>
     </div>
-    <div class="aspect-[4/5] bg-spa-sand arch-card"></div>
   </div>
 
-  <div class="bg-spa-cream py-12 px-4 sm:px-6 lg:px-8 text-center">
-    <p class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase mb-2">Certificación kinesiológica</p>
-    <p class="text-spa-charcoal max-w-xl mx-auto">
-      Todas nuestras especialistas cuentan con formación y certificación profesional, para que cada tratamiento sea seguro y efectivo.
-    </p>
-  </div>
-
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16">
     <div class="text-center mb-10">
-      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Nuestro equipo</span>
-      <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Especialistas dedicadas a tu bienestar</h2>
+      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Visítanos</span>
+      <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Contáctanos</h2>
     </div>
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-      {team.map((member) => (
-        <div class="bg-white rounded-2xl border border-[#E8E2D7] p-5 text-center">
-          <div class="w-20 h-20 rounded-full bg-spa-sand mx-auto mb-4"></div>
-          <h3 class="font-editorial text-lg text-spa-charcoal">{member.name}</h3>
-          <p class="text-xs text-spa-taupe uppercase tracking-wide mb-3">{member.role}</p>
-          <ul class="text-xs text-spa-taupe space-y-1">
-            {member.services.map((s) => <li>{s}</li>)}
-          </ul>
-        </div>
-      ))}
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+      <div>
+        <p class="text-[11px] font-semibold tracking-[0.2em] text-spa-taupe uppercase mb-2">Dirección</p>
+        <p class="text-spa-charcoal">Presidente Errázuriz 2933, Oficina B<br />Las Condes, Santiago</p>
+      </div>
+      <div>
+        <p class="text-[11px] font-semibold tracking-[0.2em] text-spa-taupe uppercase mb-2">Horario</p>
+        <ul class="text-spa-charcoal space-y-0.5">
+          {hours.map(([d, h]) => <li>{d}: {h}</li>)}
+        </ul>
+      </div>
+      <div>
+        <p class="text-[11px] font-semibold tracking-[0.2em] text-spa-taupe uppercase mb-2">Teléfono</p>
+        <a href={`https://wa.me/${SITE_INFO.whatsapp}`} target="_blank" rel="noopener" class="text-spa-charcoal underline underline-offset-4">{SITE_INFO.phone}</a>
+      </div>
+      <div>
+        <p class="text-[11px] font-semibold tracking-[0.2em] text-spa-taupe uppercase mb-2">Correo</p>
+        <a href={`mailto:${CONTACT_EMAIL}`} class="text-spa-charcoal underline underline-offset-4 break-all">{CONTACT_EMAIL}</a>
+      </div>
     </div>
   </div>
 
   <div class="bg-spa-taupe-dark text-white py-16 px-4 sm:px-6 lg:px-8 text-center">
     <h2 class="font-editorial text-2xl sm:text-3xl font-light mb-3">¿Tienes alguna consulta o requerimiento especial?</h2>
     <p class="text-white/80 mb-8 max-w-xl mx-auto">
-      Convenios corporativos, celebraciones o atención domiciliaria — escríbenos y lo conversamos.
+      Convenios corporativos, celebraciones o una experiencia a tu medida: escríbenos y lo conversamos.
     </p>
     <div class="flex flex-wrap justify-center gap-4">
       <a
@@ -91,11 +109,16 @@ const team = [
         WhatsApp
       </a>
       <a
-        href={`mailto:${SITE_INFO.email}`}
+        href="/tienda"
         class="bg-transparent border border-white/40 hover:bg-white/10 px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition-all"
       >
-        {SITE_INFO.email}
+        Ver servicios
       </a>
     </div>
+    <p class="text-white/60 text-xs mt-8">
+      <a href="/politicas-de-la-empresa" class="underline underline-offset-4">Políticas de la empresa</a>
+      &nbsp;·&nbsp;
+      <a href="/politicas-de-privacidad" class="underline underline-offset-4">Políticas de privacidad</a>
+    </p>
   </div>
 </ECommerceLayout>

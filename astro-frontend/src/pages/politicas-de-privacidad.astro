@@ -1,0 +1,57 @@
+---
+export const prerender = true;
+
+import LegalArticle from '../components/common/LegalArticle.astro';
+
+// Contenido tomado de spamandala.cl/politicas-de-privacidad/ (WordPress, modificado 04-02-2026).
+const sections = [
+  { id: 'informacion', title: '1. Información que recopilamos' },
+  { id: 'uso', title: '2. Uso de la información' },
+  { id: 'compartir', title: '3. Compartir la información' },
+  { id: 'derechos', title: '4. Derechos del titular' },
+  { id: 'seguridad', title: '5. Seguridad' },
+  { id: 'cambios', title: '6. Cambios en la política' },
+];
+const PRIVACY_EMAIL = 'contacto@spamandala.cl';
+---
+<LegalArticle
+  title="Políticas de privacidad"
+  description="Cómo Spa Mandala recopila, usa, comparte y protege tus datos personales."
+  updated="4 de febrero de 2026"
+  sections={sections}
+>
+  <p>En Spa Mandala reconocemos la importancia de proteger la privacidad y los datos personales de nuestros clientes y usuarios. Esta política describe cómo recopilamos, utilizamos, compartimos y protegemos la información personal.</p>
+
+  <h2 id="informacion">1. Información que recopilamos</h2>
+  <h3>Información de identificación</h3>
+  <p>Podemos recopilar tu nombre, dirección, número de teléfono, correo electrónico y otra información de identificación similar cuando te registras en nuestros servicios, haces una reserva o te comunicas con nosotras.</p>
+  <h3>Información de salud</h3>
+  <p>Para brindarte tratamientos seguros y personalizados, podemos recopilar información sobre tu salud, alergias o condiciones médicas relevantes.</p>
+  <h3>Información financiera</h3>
+  <p>Si realizas pagos por nuestros servicios, recopilamos los detalles necesarios para procesarlos, como información de tarjetas de crédito o cuentas bancarias.</p>
+
+  <h2 id="uso">2. Uso de la información</h2>
+  <p>Utilizamos la información recopilada para:</p>
+  <ul>
+    <li>Prestar y mejorar nuestros servicios, como gestionar citas, ofrecer tratamientos personalizados y responder a tus consultas.</li>
+    <li>Procesar pagos y llevar a cabo transacciones relacionadas con nuestros servicios.</li>
+    <li>Enviar comunicaciones relevantes sobre promociones, ofertas especiales o actualizaciones de servicios, si has dado tu consentimiento.</li>
+    <li>Cumplir con las obligaciones legales y reglamentarias.</li>
+  </ul>
+
+  <h2 id="compartir">3. Compartir la información</h2>
+  <h3>Proveedores de servicios</h3>
+  <p>Podemos compartir información con terceros proveedores que nos ayudan a brindar nuestros servicios, como procesadores de pagos y sistemas de gestión de citas.</p>
+  <h3>Cumplimiento legal</h3>
+  <p>Podemos divulgar información si lo requiere la ley, una orden judicial o una autoridad gubernamental.</p>
+
+  <h2 id="derechos">4. Derechos del titular de los datos</h2>
+  <p>De acuerdo con la Ley N° 19.628 sobre Protección de la Vida Privada en Chile, tienes derecho a acceder, corregir, actualizar y eliminar tus datos personales. Puedes ejercer estos derechos escribiéndonos a la dirección indicada al final de esta política.</p>
+
+  <h2 id="seguridad">5. Seguridad de la información</h2>
+  <p>Implementamos medidas de seguridad apropiadas para proteger la información personal de accesos no autorizados y usos indebidos.</p>
+
+  <h2 id="cambios">6. Cambios en la política</h2>
+  <p>Nos reservamos el derecho de actualizar esta política de privacidad. Te notificaremos sobre cambios importantes a través de nuestro sitio web o por otros medios.</p>
+  <p class="nota">Si tienes preguntas sobre esta política o tus datos personales, escríbenos a <a href={`mailto:${PRIVACY_EMAIL}`}>{PRIVACY_EMAIL}</a>.</p>
+</LegalArticle>
