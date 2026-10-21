@@ -72,7 +72,7 @@ const content = cleanHtml(post.content);
     {post.featuredImage?.node?.sourceUrl && (
       <img
         src={post.featuredImage.node.sourceUrl}
-        alt={post.featuredImage.node.altText ?? post.title}
+        alt={post.featuredImage.node.altText || post.title}
         class="w-full h-64 sm:h-96 object-cover rounded-2xl mb-10"
       />
     )}

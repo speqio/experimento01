@@ -46,14 +46,14 @@ const headingClass = 'flex items-center gap-2 text-base font-semibold text-[#E9D
       </div>
 
       <div>
-        <h4 class={headingClass}><img src="/icono-loto.webp" alt="" width="18" height="18" class="w-[18px] h-[18px]" loading="lazy" />Tratamientos</h4>
+        <h2 class={headingClass}><img src="/icono-loto.webp" alt="" width="18" height="18" class="w-[18px] h-[18px]" loading="lazy" />Tratamientos</h2>
         <ul class="space-y-2.5 text-sm">
           {tratamientos.map((t) => <li><a href={t.href} class="hover:text-white transition-colors">{t.label}</a></li>)}
         </ul>
       </div>
 
       <div>
-        <h4 class={headingClass}><img src="/icono-loto.webp" alt="" width="18" height="18" class="w-[18px] h-[18px]" loading="lazy" />Contacto</h4>
+        <h2 class={headingClass}><img src="/icono-loto.webp" alt="" width="18" height="18" class="w-[18px] h-[18px]" loading="lazy" />Contacto</h2>
         <ul class="space-y-5 text-sm">
           <li class="flex items-start gap-3">
             <svg viewBox="0 0 24 24" class="w-4 h-4 mt-0.5 shrink-0 text-[#E9DCCB]" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1Z" /></svg>
@@ -74,10 +74,10 @@ const headingClass = 'flex items-center gap-2 text-base font-semibold text-[#E9D
       </div>
 
       <div>
-        <h4 class={headingClass}>
+        <h2 class={headingClass}>
           <svg viewBox="0 0 20 20" class="w-[18px] h-[18px]" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18.33a8.33 8.33 0 1 0 0-16.66 8.33 8.33 0 0 0 0 16.66ZM10.83 5a.83.83 0 0 0-1.66 0v5c0 .32.18.6.46.75l3.33 1.66a.83.83 0 1 0 .75-1.49l-2.88-1.43Z" /></svg>
           Horario de Atención
-        </h4>
+        </h2>
         <dl class="space-y-5 text-sm pl-2">
           {SITE_INFO.hours.map((h) => (
             <div>

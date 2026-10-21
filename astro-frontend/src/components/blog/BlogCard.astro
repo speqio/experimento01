@@ -16,7 +16,7 @@ const date = new Date(post.date).toLocaleDateString('es-CL', { day: 'numeric', m
     {post.featuredImage?.node?.sourceUrl ? (
       <img
         src={post.featuredImage.node.sourceUrl}
-        alt={post.featuredImage.node.altText ?? post.title}
+        alt={post.featuredImage.node.altText || post.title}
         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
       />
     ) : (

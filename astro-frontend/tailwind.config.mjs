@@ -13,7 +13,7 @@ export default {
           card: '#FFFFFF',
           sand: '#EFECE4',
           cream: '#F4F1EA',
-          taupe: '#8C7A6B',
+          taupe: '#796859', // #8C7A6B no llegaba a contraste 4.5:1 sobre el fondo (PageSpeed)
           'taupe-dark': '#675647',
           charcoal: '#2C2724',
         },

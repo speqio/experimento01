@@ -47,7 +47,7 @@ export default function CartSummaryPanel() {
             {item.product.image?.sourceUrl ? (
               <img
                 src={item.product.image.sourceUrl}
-                alt={item.product.image.altText ?? item.product.name}
+                alt={item.product.image.altText || item.product.name}
                 className="w-20 h-20 object-cover arch-card shrink-0"
               />
             ) : (

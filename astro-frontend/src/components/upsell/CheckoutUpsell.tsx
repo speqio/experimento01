@@ -22,7 +22,7 @@ export default function CheckoutUpsell({ suggestions }: Props) {
             <a href={`/producto/${product.slug}`} className="block">
               <img
                 src={product.image.sourceUrl}
-                alt={product.image.altText ?? product.name}
+                alt={product.image.altText || product.name}
                 className="w-full aspect-square object-cover arch-card mb-3"
               />
               <p className="font-editorial text-base text-spa-charcoal leading-snug line-clamp-2">{product.name}</p>
