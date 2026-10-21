@@ -4,7 +4,10 @@ const inputClass =
   'w-full border border-[#DDD5CA] rounded-2xl px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe placeholder:text-spa-taupe';
 ---
 <form id="contact-form" class="space-y-4 bg-white rounded-2xl border border-[#E8E2D7] p-6 sm:p-8" novalidate>
-  <h2 class="font-editorial text-2xl text-spa-charcoal">Escríbenos</h2>
+  <div>
+    <h2 class="font-editorial text-2xl sm:text-3xl text-spa-charcoal">¿Tienes dudas?</h2>
+    <p class="text-sm text-spa-taupe mt-1">Envíanos tus dudas o comentarios y nuestro equipo te responderá a la brevedad.</p>
+  </div>
   <div class="grid sm:grid-cols-2 gap-4">
     <input name="name" required maxlength="120" autocomplete="name" placeholder="Nombre (requerido)" aria-label="Nombre" class={inputClass} />
     <input name="phone" required maxlength="40" autocomplete="tel" inputmode="tel" placeholder="Celular (requerido)" aria-label="Celular" class={inputClass} />
