@@ -383,7 +383,7 @@ const related: SimpleProduct[] = relatedResult
   );
   if (viewItem) {
     const price = clp(viewItem.price);
-    pushEcommerce('view_item', { value: price, items: [{ item_id: String(viewItem.id), item_name: viewItem.name, price, quantity: 1 }] });
+    pushEcommerce('view_item', { value: price, items: [{ item_id: String(viewItem.id), item_name: viewItem.name, price, quantity: 1, item_category: 'producto', item_category2: 'principal' }] });
   }
 
   const variations: { databaseId: number; price?: string; regularPrice?: string; attributes: { nodes: { name: string; value: string }[] } }[] =

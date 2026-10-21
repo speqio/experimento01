@@ -86,13 +86,20 @@ export async function fetchCart() {
   }
 }
 
-function emitAddToCart(productId: number, quantity: number, summary: CartSummary) {
+// Mismos campos que `purchase` (lib/woo-server.ts getOrderForAnalytics): así en GA4 los filtros por
+// "Categoría del artículo = gift" cuentan también los añadidos al carrito, no solo las compras.
+function emitAddToCart(productId: number, quantity: number, summary: CartSummary, kind: { gift?: boolean; upsell?: boolean } = {}) {
   const line = summary.items.find((i) => i.product?.databaseId === productId);
   if (!line) return;
   const price = clp(line.total) / (line.quantity || 1);
   pushEcommerce('add_to_cart', {
     value: price * quantity,
-    items: [{ item_id: String(productId), item_name: line.product.name, price, quantity }],
+    items: [{
+      item_id: String(productId), item_name: line.product.name, price, quantity,
+      item_variant: `${line.product.slug || productId}_${kind.gift ? 'giftcard' : 'normal'}`,
+      item_category: kind.gift ? 'gift' : 'producto',
+      item_category2: kind.upsell ? 'upsell' : 'principal',
+    }],
   });
 }
 
@@ -111,7 +118,7 @@ export async function addToCart(productId: number, quantity = 1, variationId?: n
   }
 }
 
-export async function addGiftCardToCart(productId: number, giftCard: GiftCardInput, variationId?: number) {
+export async function addGiftCardToCart(productId: number, giftCard: GiftCardInput, variationId?: number, upsell = false) {
   isCartLoading.set(true);
   try {
     const data = await wpQuery<{ addToCart: { cart: any } }>({
@@ -119,7 +126,7 @@ export async function addGiftCardToCart(productId: number, giftCard: GiftCardInp
       variables: { productId, extraData: JSON.stringify(giftCard), variationId },
     });
     const summary = applySummary(data.addToCart.cart);
-    emitAddToCart(productId, 1, summary);
+    emitAddToCart(productId, 1, summary, { gift: true, upsell });
     return summary;
   } finally {
     isCartLoading.set(false);

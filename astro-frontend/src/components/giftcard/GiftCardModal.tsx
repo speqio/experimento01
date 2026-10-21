@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { addGiftCardToCart, isCartLoading } from '../../store/cartStore';
+import { pushEcommerce } from '../../lib/dataLayer';
 import type { GiftCardInput } from '../../types/giftcard';
 import GiftCardPreview from './GiftCardPreview';
 
@@ -94,6 +95,10 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
           addons = undefined;
         }
       }
+      // "Artículo visto" de gift card: abrir el modal de regalo es la vista equivalente para GA4.
+      pushEcommerce('view_item', {
+        items: [{ item_id: String(btn.dataset.giftProduct), item_name: btn.dataset.giftName ?? '', quantity: 1, item_category: 'gift', item_category2: 'principal' }],
+      });
       setTarget({
         id: Number(btn.dataset.giftProduct),
         name: btn.dataset.giftName ?? '',
@@ -153,7 +158,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
       const payload: GiftCardInput = selectedAddons.length ? { ...base, groupId: crypto.randomUUID() } : base;
       await addGiftCardToCart(target!.id, payload, target!.variationId);
       for (const addonId of selectedAddons) {
-        await addGiftCardToCart(addonId, payload);
+        await addGiftCardToCart(addonId, payload, undefined, true);
       }
       window.location.href = '/checkout';
     } catch (err) {
