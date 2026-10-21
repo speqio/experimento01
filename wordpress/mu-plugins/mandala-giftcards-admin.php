@@ -30,14 +30,30 @@ add_action('admin_enqueue_scripts', function () {
     wp_enqueue_media();
 });
 
+const MANDALA_GIFT_LOG_OPTION = 'mandala_gift_log';
+
+/** Registra un cambio hecho desde este panel (quién, cuándo, qué) para la pestaña Historial. */
+function mandala_gift_log($detail, $type = 'general') {
+    $log = (array) get_option(MANDALA_GIFT_LOG_OPTION, []);
+    array_unshift($log, ['time' => time(), 'user' => wp_get_current_user()->user_login, 'detail' => $detail, 'type' => $type]);
+    update_option(MANDALA_GIFT_LOG_OPTION, array_slice($log, 0, 100), false);
+}
+
 /** Guarda los formularios (ajustes globales / imagen / por producto). Corre antes de pintar la página. */
 add_action('admin_init', function () {
     if (empty($_POST['mandala_gift_admin_nonce']) || !wp_verify_nonce($_POST['mandala_gift_admin_nonce'], 'mandala_gift_admin')) return;
     if (!current_user_can('manage_woocommerce')) return;
 
     if (isset($_POST['mandala_gift_save_settings'])) {
-        update_option('mandala_gift_enabled', !empty($_POST['mandala_gift_enabled']) ? 1 : 0);
+        $enabled = !empty($_POST['mandala_gift_enabled']) ? 1 : 0;
         $image = esc_url_raw(trim((string) ($_POST['mandala_gift_image_url'] ?? '')));
+        if ((int) get_option('mandala_gift_enabled', 1) !== $enabled) {
+            mandala_gift_log($enabled ? 'Activó las gift cards en todo el sitio' : 'Desactivó las gift cards en todo el sitio');
+        }
+        if (get_option(MANDALA_GIFT_IMAGE_OPTION, '') !== $image) {
+            mandala_gift_log('Cambió el diseño de la tarjeta: ' . ($image ?: '(volvió al diseño por defecto)'));
+        }
+        update_option('mandala_gift_enabled', $enabled);
         update_option(MANDALA_GIFT_IMAGE_OPTION, $image);
         wp_safe_redirect(add_query_arg(['page' => MANDALA_GIFT_ADMIN_SLUG, 'tab' => 'ajustes', 'saved' => 1], admin_url('admin.php')));
         exit;
@@ -47,7 +63,12 @@ add_action('admin_init', function () {
         $enabled_ids = array_map('intval', $_POST['mandala_gift_enabled_ids'] ?? []);
         foreach (array_map('intval', $_POST['mandala_gift_product']) as $product_id) {
             if ($product_id <= 0) continue;
-            update_post_meta($product_id, '_mandala_gift_enabled', in_array($product_id, $enabled_ids, true) ? 'yes' : 'no');
+            $was = mandala_gift_product_enabled($product_id);
+            $now = in_array($product_id, $enabled_ids, true);
+            update_post_meta($product_id, '_mandala_gift_enabled', $now ? 'yes' : 'no');
+            if ($was !== $now) {
+                mandala_gift_log(($now ? 'Permitió regalar: ' : 'Dejó de permitir regalar: ') . get_the_title($product_id), 'producto');
+            }
         }
         wp_safe_redirect(add_query_arg(['page' => MANDALA_GIFT_ADMIN_SLUG, 'tab' => 'productos', 'saved' => 1], admin_url('admin.php')));
         exit;
@@ -77,6 +98,7 @@ add_action('admin_post_mandala_gift_mark_used', function () {
             'at' => current_time('mysql'),
         ]);
         $coupon->save();
+        mandala_gift_log("Marcó como usado el código $code");
     }
 
     $redirect = add_query_arg(
@@ -103,12 +125,13 @@ add_action('admin_post_mandala_gift_export_csv', function () {
     $campania = isset($_GET['campania']) ? sanitize_text_field($_GET['campania']) : '';
     $desde = isset($_GET['desde']) ? sanitize_text_field($_GET['desde']) : '';
     $hasta = isset($_GET['hasta']) ? sanitize_text_field($_GET['hasta']) : '';
-    $result = mandala_gift_query_orders(1, 100000, $estado, $buyer, $producto, $campania, $desde, $hasta);
+    $q = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
+    $result = mandala_gift_query_orders(1, 100000, $estado, $buyer, $producto, $campania, $desde, $hasta, $q);
 
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="gift-cards.csv"');
     $out = fopen('php://output', 'w');
-    fputcsv($out, ['Fecha', 'Orden', 'Comprador', 'Destinatario', 'Producto', 'Monto', 'Código', 'Usado', 'Estado', 'Origen', 'Campaña']);
+    fputcsv($out, ['Fecha', 'Orden', 'Comprador', 'Destinatario', 'Producto', 'Monto', 'Código', 'Usado', 'Estado', 'Tipo de cupón', 'Importe del cupón', 'Descripción', 'IDs de Producto', 'Uso / Límite', 'Fecha de caducidad', 'Origen', 'Campaña']);
     foreach ($result['items'] as $row) {
         $order = $row['order']; $item = $row['item']; $gift = $row['gift'];
         fputcsv($out, [
@@ -121,6 +144,12 @@ add_action('admin_post_mandala_gift_export_csv', function () {
             $row['code'] ?: '',
             $row['code'] ? ($row['used'] ? 'Sí' : 'No') : '',
             $row['status'],
+            $row['coupon']['type'],
+            wp_strip_all_tags(html_entity_decode($row['coupon']['amount'])),
+            $row['coupon']['description'],
+            $row['coupon']['product_ids'],
+            $row['coupon']['usage'],
+            $row['coupon']['expires'],
             $row['source'],
             $row['campaign'],
         ]);
@@ -129,13 +158,28 @@ add_action('admin_post_mandala_gift_export_csv', function () {
     exit;
 });
 
+/** Datos del cupón tal como los muestra WooCommerce → Cupones; vacíos si el cupón aún no existe. */
+function mandala_gift_coupon_details($coupon) {
+    if (!$coupon) return ['type' => '', 'amount' => '', 'description' => '', 'product_ids' => '', 'usage' => '', 'expires' => ''];
+    $types = wc_get_coupon_types();
+    $limit = $coupon->get_usage_limit();
+    return [
+        'type'        => $types[$coupon->get_discount_type()] ?? $coupon->get_discount_type(),
+        'amount'      => $coupon->get_discount_type() === 'percent' ? $coupon->get_amount() . '%' : wc_price($coupon->get_amount()),
+        'description' => $coupon->get_description(),
+        'product_ids' => implode(', ', $coupon->get_product_ids()),
+        'usage'       => $coupon->get_usage_count() . ' / ' . ($limit ?: '∞'),
+        'expires'     => $coupon->get_date_expires() ? $coupon->get_date_expires()->date('d-m-Y') : '—',
+    ];
+}
+
 /**
  * Trae todas las órdenes con al menos un ítem regalado, más recientes primero.
  * $estado: 'todos' | 'usados' | 'no-usados' — filtra por si el código ya se canjeó.
  * Resuelve todo antes de paginar (el filtro depende del estado del cupón, que solo
  * se sabe al resolver cada ítem); volumen bajo, sin impacto real de performance.
  */
-function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos', $buyer = '', $producto = '', $campania = '', $desde = '', $hasta = '') {
+function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos', $buyer = '', $producto = '', $campania = '', $desde = '', $hasta = '', $q = '') {
     global $wpdb;
     // wc_get_orders no filtra por meta de line item directamente; se busca por los
     // ítems (_mandala_gift) y se resuelve a la orden dueña de cada ítem.
@@ -165,6 +209,7 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
         $sent = $item->get_meta('_mandala_gift_sent');
         $status = 'Pendiente de pago';
         $used = false;
+        $coupon = null;
         if ($code) {
             if ($sent) {
                 $status = 'Enviado';
@@ -204,6 +249,7 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
             'total'    => $order->get_formatted_order_total(),
             'source'   => $source,
             'campaign' => $campaign,
+            'coupon'   => mandala_gift_coupon_details($coupon),
         ];
     }
 
@@ -217,6 +263,13 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
     }
     if ($producto !== '') {
         $items = array_values(array_filter($items, fn($row) => $row['item']->get_name() === $producto));
+    }
+    // Búsqueda libre: orden, comprador, destinatario, producto o código.
+    if ($q !== '') {
+        $items = array_values(array_filter($items, function ($row) use ($q) {
+            $hay = implode(' ', [$row['order']->get_id(), $row['gift']['buyerEmail'] ?? '', $row['gift']['recipientEmail'] ?? '', $row['item']->get_name(), $row['code']]);
+            return stripos($hay, $q) !== false;
+        }));
     }
     if ($campania !== '') {
         $items = array_values(array_filter($items, fn($row) => $row['campaign'] === $campania));
@@ -239,9 +292,9 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
 function mandala_gift_admin_render() {
     if (!current_user_can('manage_woocommerce')) return;
     $tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'trazabilidad';
-    $tabs = ['trazabilidad' => 'Trazabilidad', 'productos' => 'Productos', 'ajustes' => 'Ajustes'];
+    $tabs = ['trazabilidad' => 'Trazabilidad', 'productos' => 'Productos', 'ajustes' => 'Ajustes', 'historial' => 'Historial'];
     ?>
-    <div class="wrap mandala-admin">
+    <div class="wrap mandala-admin<?php echo $tab === 'trazabilidad' ? ' mandala-wide' : ''; ?>">
       <?php mandala_admin_header('Gift Cards', 'Trazabilidad de compras, qué productos se pueden regalar y el diseño de la tarjeta.'); ?>
       <?php if (!empty($_GET['saved'])) : ?>
         <div class="notice notice-success is-dismissible"><p>Guardado.</p></div>
@@ -252,10 +305,11 @@ function mandala_gift_admin_render() {
              class="nav-tab <?php echo $tab === $slug ? 'nav-tab-active' : ''; ?>"><?php echo esc_html($label); ?></a>
         <?php endforeach; ?>
       </h2>
-      <div style="max-width:1100px;margin-top:20px;">
+      <div style="<?php echo $tab === 'trazabilidad' ? '' : 'max-width:1100px;'; ?>margin-top:20px;">
         <?php
         if ($tab === 'productos') mandala_gift_admin_tab_productos();
         elseif ($tab === 'ajustes') mandala_gift_admin_tab_ajustes();
+        elseif ($tab === 'historial') mandala_gift_admin_tab_historial();
         else mandala_gift_admin_tab_trazabilidad();
         ?>
       </div>
@@ -271,7 +325,8 @@ function mandala_gift_admin_tab_trazabilidad() {
     $campania = isset($_GET['campania']) ? sanitize_text_field($_GET['campania']) : '';
     $desde = isset($_GET['desde']) ? sanitize_text_field($_GET['desde']) : '';
     $hasta = isset($_GET['hasta']) ? sanitize_text_field($_GET['hasta']) : '';
-    $result = mandala_gift_query_orders($page, 20, $estado, $buyer, $producto, $campania, $desde, $hasta);
+    $q = isset($_GET['q']) ? sanitize_text_field($_GET['q']) : '';
+    $result = mandala_gift_query_orders($page, 20, $estado, $buyer, $producto, $campania, $desde, $hasta, $q);
     // Opciones de los selects: se sacan de todos los resultados sin filtrar (volumen bajo).
     $all = mandala_gift_query_orders(1, 100000, 'todos');
     $productos_opts = array_unique(array_map(fn($r) => $r['item']->get_name(), $all['items']));
@@ -285,6 +340,7 @@ function mandala_gift_admin_tab_trazabilidad() {
     <form method="get" style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
       <input type="hidden" name="page" value="<?php echo esc_attr(MANDALA_GIFT_ADMIN_SLUG); ?>">
       <input type="hidden" name="tab" value="trazabilidad">
+      <input type="search" name="q" class="mandala-search" value="<?php echo esc_attr($q); ?>" placeholder="Buscar orden, email, producto o código…">
       <label>Estado:
         <select name="estado" onchange="this.form.submit()">
           <option value="todos" <?php selected($estado, 'todos'); ?>>Todos</option>
@@ -314,14 +370,16 @@ function mandala_gift_admin_tab_trazabilidad() {
       <button type="submit" class="button">Filtrar</button>
       <a class="button" href="<?php echo esc_url(add_query_arg(array_merge($_GET, ['action' => 'mandala_gift_export_csv']), admin_url('admin-post.php'))); ?>">Exportar CSV</a>
     </form>
-    <div class="mandala-card">
-    <table class="widefat striped">
+    <div class="mandala-card" style="overflow-x:auto">
+    <table class="widefat striped mandala-table-compact">
       <thead><tr>
-        <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Código</th><th>Usado</th><th>Estado</th><th>Origen</th><th>Campaña</th><th></th>
+        <th>Fecha</th><th>Orden</th><th>Comprador</th><th>Destinatario</th><th>Producto</th><th>Monto</th><th>Código</th><th>Usado</th><th>Estado</th>
+        <th>Tipo de cupón</th><th>Importe del cupón</th><th>Descripción</th><th>IDs de Producto</th><th>Uso / Límite</th><th>Fecha de caducidad</th>
+        <th>Origen</th><th>Campaña</th><th></th>
       </tr></thead>
       <tbody>
         <?php if (empty($result['items'])) : ?>
-          <tr><td colspan="12">No hay gift cards que coincidan con este filtro.</td></tr>
+          <tr><td colspan="18">No hay gift cards que coincidan con este filtro.</td></tr>
         <?php endif; ?>
         <?php foreach ($result['items'] as $row) :
           $order = $row['order']; $item = $row['item']; $gift = $row['gift']; ?>
@@ -335,6 +393,12 @@ function mandala_gift_admin_tab_trazabilidad() {
             <td><code><?php echo esc_html($row['code'] ?: '—'); ?></code></td>
             <td><?php echo $row['code'] ? ($row['used'] ? 'Sí' : 'No') : '—'; ?></td>
             <td><?php echo esc_html($row['status']); ?></td>
+            <td><?php echo esc_html($row['coupon']['type'] ?: '—'); ?></td>
+            <td><?php echo wp_kses_post($row['coupon']['amount'] ?: '—'); ?></td>
+            <td><?php echo esc_html($row['coupon']['description'] ?: '—'); ?></td>
+            <td><?php echo esc_html($row['coupon']['product_ids'] ?: '—'); ?></td>
+            <td><?php echo esc_html($row['coupon']['usage'] ?: '—'); ?></td>
+            <td><?php echo esc_html($row['coupon']['expires'] ?: '—'); ?></td>
             <td><?php echo esc_html($row['source'] ?: '—'); ?></td>
             <td><?php echo esc_html($row['campaign'] ?: '—'); ?></td>
             <td>
@@ -357,7 +421,7 @@ function mandala_gift_admin_tab_trazabilidad() {
       <div class="tablenav"><div class="tablenav-pages">
         <?php for ($p = 1; $p <= $result['pages']; $p++) : ?>
           <a class="button <?php echo $p === $page ? 'button-primary' : ''; ?>" style="margin:2px;"
-             href="<?php echo esc_url(add_query_arg(['page' => MANDALA_GIFT_ADMIN_SLUG, 'tab' => 'trazabilidad', 'estado' => $estado, 'paged' => $p], admin_url('admin.php'))); ?>"><?php echo $p; ?></a>
+             href="<?php echo esc_url(add_query_arg(['page' => MANDALA_GIFT_ADMIN_SLUG, 'tab' => 'trazabilidad', 'estado' => $estado, 'q' => $q, 'paged' => $p], admin_url('admin.php'))); ?>"><?php echo $p; ?></a>
         <?php endfor; ?>
       </div></div>
     <?php endif; ?>
@@ -369,10 +433,11 @@ function mandala_gift_admin_tab_productos() {
     $products = wc_get_products(['status' => 'publish', 'limit' => 300, 'orderby' => 'title', 'order' => 'ASC']);
     ?>
     <p>Desmarca un producto para que no se pueda regalar como gift card. El botón "Regalar" desaparece del sitio al instante (sin esperar un despliegue), y WordPress igual bloquea la compra del lado del servidor por si acaso.</p>
+    <p><input type="search" class="mandala-search" placeholder="Buscar producto…" data-mandala-filter="#mandala-gift-products tbody tr"></p>
     <form method="post">
       <?php wp_nonce_field('mandala_gift_admin', 'mandala_gift_admin_nonce'); ?>
       <div class="mandala-card">
-      <table class="widefat striped">
+      <table class="widefat striped" id="mandala-gift-products">
         <thead><tr><th style="width:40px;">Permitir</th><th>Producto</th><th>Precio</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($products as $product) :
@@ -393,6 +458,41 @@ function mandala_gift_admin_tab_productos() {
       </div>
       <p class="submit"><button type="submit" name="mandala_gift_save_products" class="button button-primary">Guardar</button></p>
     </form>
+
+    <h2>Historial de cambios en productos</h2>
+    <?php
+    $product_log = array_values(array_filter((array) get_option(MANDALA_GIFT_LOG_OPTION, []), function ($e) {
+        return ($e['type'] ?? '') === 'producto';
+    }));
+    mandala_gift_log_table('mandala-gift-products-log', array_slice($product_log, 0, 30));
+}
+
+/** Registro de cambios hechos desde este panel (ajustes, productos regalables, códigos marcados). */
+function mandala_gift_admin_tab_historial() {
+    ?>
+    <p>Últimos 100 cambios hechos desde este panel: quién los hizo y cuándo.</p>
+    <?php mandala_gift_log_table('mandala-gift-log', (array) get_option(MANDALA_GIFT_LOG_OPTION, []));
+}
+
+/** Tabla de historial con buscador; $id debe ser único en la página. */
+function mandala_gift_log_table($id, array $log) {
+    ?>
+    <p><input type="search" class="mandala-search" placeholder="Buscar en el historial…" data-mandala-filter="#<?php echo esc_attr($id); ?> tbody tr"></p>
+    <div class="mandala-card">
+    <table class="widefat striped" id="<?php echo esc_attr($id); ?>">
+      <thead><tr><th style="width:150px;">Fecha</th><th style="width:140px;">Usuario</th><th>Cambio</th></tr></thead>
+      <tbody>
+        <?php if (!$log) : ?><tr><td colspan="3">Todavía no hay cambios registrados.</td></tr><?php endif; ?>
+        <?php foreach ($log as $e) : ?>
+          <tr>
+            <td><?php echo esc_html(wp_date('d-m-Y H:i', $e['time'])); ?></td>
+            <td><?php echo esc_html($e['user']); ?></td>
+            <td><?php echo esc_html($e['detail']); ?></td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+    </div>
     <?php
 }
 

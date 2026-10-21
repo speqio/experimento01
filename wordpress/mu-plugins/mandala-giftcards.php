@@ -273,6 +273,7 @@ function mandala_gift_create_coupon($product_ids, $gift, $order_id) {
     }
     $coupon->set_description(sprintf('Gift card orden #%d para %s', $order_id, $gift['recipientEmail']));
     $coupon->update_meta_data('_mandala_gift_card', 1);
+    $coupon->update_meta_data('_mandala_gift_order', (int) $order_id); // lo usa mandala-cleanup.php
     $coupon->save();
 
     return $coupon->get_id() ? $code : null;
@@ -407,6 +408,20 @@ function mandala_gift_compose_card_image($photo_url) {
     return wp_get_attachment_url($attachment_id);
 }
 
+/**
+ * Guarda en los ítems el ID de la imagen compuesta, para poder borrarla junto con la gift card
+ * (ver mandala-cleanup.php). No lo hace si la composición falló y se devolvió la URL original.
+ */
+function mandala_gift_remember_mockup($items, $composed_url, $original_url) {
+    if (!$composed_url || $composed_url === $original_url) return;
+    $mockup_id = (int) attachment_url_to_postid($composed_url);
+    if (!$mockup_id) return;
+    foreach ((array) $items as $it) {
+        $it->add_meta_data('_mandala_gift_mockup_id', $mockup_id); // no único: un envío programado compone dos veces
+        $it->save();
+    }
+}
+
 /** $items: uno o más order items del mismo grupo (producto principal + complementos, si los hay). */
 function mandala_gift_send_email($code, $gift, $items, $order) {
     $items = (array) $items;
@@ -443,6 +458,7 @@ function mandala_gift_send_email($code, $gift, $items, $order) {
     $personal_image = $gift['personalImage'] ?? '';
     if ($personal_image) {
         $personal_image = mandala_gift_compose_card_image($personal_image);
+        mandala_gift_remember_mockup($items, $personal_image, $gift['personalImage']);
     }
 
     $data = [
@@ -503,7 +519,11 @@ function mandala_gift_send_scheduled_confirmation($gift, $item, $order) {
     // quedaron guardados — así ve que su compra se registró completa, aunque el código
     // todavía no se emite (eso llega en el siguiente correo, el día del envío).
     $personal_image = $gift['personalImage'] ?? '';
-    if ($personal_image) $personal_image = mandala_gift_compose_card_image($personal_image);
+    if ($personal_image) {
+        $composed = mandala_gift_compose_card_image($personal_image);
+        mandala_gift_remember_mockup([$item], $composed, $personal_image);
+        $personal_image = $composed;
+    }
 
     $data = array_merge(mandala_gift_item_display_data($item), [
         'summary'         => $gift['summary'] ?? '',

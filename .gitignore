@@ -11,3 +11,17 @@ dist/
 .claude/
 .agents/
 skills-lock.json
+
+# === Added by security-skill ===
+.env.*
+*.key
+*.pem
+secrets/
+
+# === Migración: datos crudos pesados/sensibles (viven en respaldo privado, no en git) ===
+migracion/02-contenido/_crudo/wxr/
+migracion/12-verificacion/*.sql
+*.sql
+*.sql.zip
+*.sql.gz
+migracion/03-medios/uploads/

@@ -126,12 +126,108 @@
   border-left-width: 4px;
 }
 
-/* Página de aterrizaje "Marketing": tarjetas de acceso directo */
+.mandala-admin [hidden] { display: none !important; }
+
+/* Tablas anchas (Trazabilidad de gift cards): usan todo el ancho y letra compacta. */
+.mandala-admin.mandala-wide { max-width: none; }
+.mandala-admin.mandala-wide .mandala-card { padding: 14px 12px; }
+.mandala-admin .mandala-table-compact th,
+.mandala-admin .mandala-table-compact td { font-size: 12px; padding: 6px 7px; line-height: 1.35; }
+.mandala-admin .mandala-table-compact code { font-size: 11px; }
+
+/* Buscador */
+.mandala-admin .mandala-search,
+.mandala-admin .mandala-check-search {
+  border: 1px solid var(--mandala-border);
+  border-radius: 999px;
+  padding: 7px 16px;
+  min-width: 260px;
+  background: #fff;
+}
+
+/* Lista de casillas con buscador (reemplaza <select multiple>) */
+.mandala-check-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.mandala-check-bar .mandala-check-search { flex: 1 1 200px; min-width: 0; }
+.mandala-check-count { color: var(--mandala-taupe-dark); font-size: 12px; }
+.mandala-check-list {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--mandala-border);
+  border-radius: 10px;
+  padding: 6px 4px;
+  background: #fff;
+}
+.mandala-check-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.mandala-check-item:hover { background: var(--mandala-bg); }
+
+/* Promociones / Complementos: columnas y selector de alcance */
+.mandala-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 960px) { .mandala-cols { grid-template-columns: 1fr; } }
+.mandala-card h2, .mandala-card h3.mandala-card-title {
+  margin: 0 0 14px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  font-size: 18px;
+  color: var(--mandala-charcoal);
+}
+.mandala-segmented { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.mandala-segmented label {
+  border: 1px solid var(--mandala-border);
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #fff;
+}
+.mandala-segmented label:has(input:checked) {
+  background: var(--mandala-charcoal);
+  border-color: var(--mandala-charcoal);
+  color: #fff;
+}
+.mandala-segmented input { position: absolute; opacity: 0; pointer-events: none; }
+.mandala-field { margin-bottom: 16px; }
+.mandala-field > .mandala-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--mandala-taupe-dark);
+  margin-bottom: 6px;
+}
+
+/* Página de aterrizaje "Marketing": secciones y tarjetas de acceso directo */
+.mandala-marketing-section { margin-bottom: 26px; }
+.mandala-marketing-section > h2 {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--mandala-taupe-dark);
+  margin: 0 0 10px;
+}
 .mandala-marketing-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
-  max-width: 900px;
 }
 .mandala-marketing-card {
   background: #fff;

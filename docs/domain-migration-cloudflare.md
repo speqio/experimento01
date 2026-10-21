@@ -129,6 +129,74 @@ Una vez Cloudflare confirma el dominio activo:
 - [ ] Flujo de Webpay de punta a punta con la nueva `PUBLIC_SITE_URL` (returnUrl correcto).
 - [ ] Certificado SSL válido tanto en `laboratorio.space` (Cloudflare lo emite automático) como en `cms.laboratorio.space` (AutoSSL de cPanel — debería seguir renovándose solo vía `_acme-challenge`, confirmarlo en el próximo ciclo de renovación).
 
+## Paso 8 — Baja de ModSecurity (hosting WP)
+
+Antes o en paralelo a los pasos anteriores, pedir al hosting que deshabilite ModSecurity para `cms.laboratorio.space` (o las reglas específicas que bloquean WPGraphQL/REST — típicamente payloads POST con GraphQL o headers custom como el `User-Agent` del Worker, ver `wp-graphql.ts`).
+
+- [ ] Ticket abierto con el hosting pidiendo la baja, especificando el subdominio (no tocar el resto de la cuenta si comparte hosting con otros sitios).
+- [ ] Verificación con `curl` directo a `https://cms.laboratorio.space/graphql` desde fuera del Worker, confirmando que ya no devuelve 403.
+
+## Paso 9 — Migración a `spamandala.cl` en dos fases
+
+El CMS (`cms.*`) y el frontend (dominio raíz) son independientes entre sí — el único acople es la URL de GraphQL que usa el Worker. Por eso conviene dividir el corte en dos fases en vez de mover todo de una: primero el CMS, manteniendo el frontend en `laboratorio.space`; recién al final, el dominio raíz.
+
+- **Fase A** (puede hacerse ya, sin esperar nada más): `cms.laboratorio.space` → `cms.spamandala.cl`, con el frontend **sin cambios**, siguiendo en `laboratorio.space` y apuntando su `PUBLIC_WPGRAPHQL_URL` al CMS nuevo.
+- **Fase B** (corte final, cuando todo lo demás esté listo): `laboratorio.space` → `spamandala.cl`, solo el dominio raíz/frontend — el CMS ya está en `spamandala.cl` desde la Fase A, así que esta fase no vuelve a tocarlo.
+
+### Fase A — Migrar solo el CMS, frontend sigue en `laboratorio.space`
+
+- [ ] Agregar `spamandala.cl` a Cloudflare (Pasos 1–4 de este documento) — alcanza con tener el subdominio `cms` resuelto, no es necesario mover ya el dominio raíz `spamandala.cl`.
+- [ ] En cPanel, agregar `cms.spamandala.cl` como dominio adicional/alias apuntando al mismo document root de WordPress (igual que se hizo con `cms.laboratorio.space` en el "Estado previo").
+- [ ] Certificado SSL para `cms.spamandala.cl` (AutoSSL de cPanel).
+- [ ] Probar `https://cms.spamandala.cl/graphql` directo (misma query que usa el Worker) **sin** cambiar `siteurl`/`home` de WP todavía — si WP fuerza redirect al dominio canónico, se verá un 301/302 en vez de JSON.
+- [ ] Cambiar `WP_HOME`/`WP_SITEURL` (o `siteurl`/`home` en la BD vía WP-CLI) de `cms.laboratorio.space` a `cms.spamandala.cl`.
+- [ ] `wp search-replace 'cms.laboratorio.space' 'cms.spamandala.cl'` sobre la BD (correr primero con `--dry-run`).
+- [ ] `Allowed Origins` en WPGraphQL CORS: **no cambia** en esta fase — sigue necesitando `https://laboratorio.space`, porque el frontend que consulta sigue ahí.
+- [ ] `PUBLIC_WPGRAPHQL_URL` → `https://cms.spamandala.cl/graphql`, como Variable de repo en GitHub Actions, y también en `astro-frontend/wrangler.toml` y `astro-frontend/.env`. `PUBLIC_SITE_URL` **no** cambia — sigue siendo `https://laboratorio.space`.
+- [ ] Redeploy obligatorio del Worker.
+- [ ] Verificar que `laboratorio.space` sigue funcionando con catálogo real, ahora contra `cms.spamandala.cl`.
+- [ ] `cms.laboratorio.space` queda libre para apagarse (o dejarlo como redirect) una vez confirmado esto estable.
+
+### Fase B — Corte final del dominio raíz: `laboratorio.space` → `spamandala.cl`
+
+Una vez la Fase A está estable y ModSecurity dado de baja (Paso 8), se repite el mismo patrón de este documento pero solo para el dominio raíz/frontend — el CMS ya quedó en `spamandala.cl` desde la Fase A.
+
+### 9.1 — Resto del DNS de `spamandala.cl` a Cloudflare
+
+En la Fase A ya se agregó `spamandala.cl` a Cloudflare solo para resolver `cms`. Ahora se completa el resto del dominio raíz, repitiendo el Paso 1–4 completo de este documento para `spamandala.cl` (DNS recreado 1:1, salvedades de MX/SRV/CalDAV-CardDAV de la sección "Por qué no se puede copiar el DNS 1:1", nameservers del registrador).
+
+- [ ] Cargar/completar en Cloudflare todos los registros DNS de `spamandala.cl` (si no se hizo ya al dar de alta `cms` en la Fase A).
+- [ ] Cambiar nameservers en el registrador de `spamandala.cl` a los de Cloudflare.
+
+### 9.2 — CORS en WPGraphQL
+
+- [ ] `Allowed Origins` en WPGraphQL → agregar `https://spamandala.cl` (y quitar `https://laboratorio.space` cuando ya no se use, en 9.5).
+
+### 9.3 — Actualizar la aplicación (solo el dominio raíz — el CMS ya está en `spamandala.cl` desde la Fase A)
+
+- [ ] `astro-frontend/wrangler.toml` → `PUBLIC_SITE_URL = "https://spamandala.cl"` en `[vars]` (`PUBLIC_WPGRAPHQL_URL` ya quedó en `cms.spamandala.cl` desde la Fase A, no cambia).
+- [ ] `astro-frontend/.env` → mismo cambio para desarrollo local.
+- [ ] `astro-frontend/src/lib/wp-graphql.ts` → `WORKER_USER_AGENT` referencia `https://laboratorio.space`, actualizar a `https://spamandala.cl`.
+- [ ] `PUBLIC_SITE_URL` como secret del Worker (`wrangler secret put PUBLIC_SITE_URL`) → `https://spamandala.cl` (de esto depende el `returnUrl` de Webpay).
+- [ ] Confirmar con Transbank si las URLs de retorno/callback de Webpay están registradas con el dominio viejo — actualizarlas ahí antes de cortar (puede tardar en tramitarse, conviene adelantarlo).
+- [ ] Repetir Paso 5 de este documento (Custom Domain del Worker) pero con `spamandala.cl` / `www.spamandala.cl`.
+- [ ] Redeploy obligatorio (push a `main` o re-ejecutar workflow) — la variable de build queda incrustada en el bundle anterior.
+
+### 9.4 — Verificación end-to-end (repetir Paso 7 con el dominio nuevo)
+
+- [ ] `https://spamandala.cl/` y `https://www.spamandala.cl/` cargan el Home con catálogo real.
+- [ ] `https://cms.spamandala.cl/wp-admin` funciona (ya validado desde la Fase A, se reconfirma).
+- [ ] Consulta GraphQL desde `https://spamandala.cl` contra `https://cms.spamandala.cl/graphql` sin error de CORS.
+- [ ] Correo, CalDAV/CardDAV siguen funcionando (MX/SPF/DKIM/SRV recreados igual que en el Paso 2).
+- [ ] Flujo de Webpay de punta a punta con la nueva `returnUrl` y, si ya se confirmó con Transbank, con las URLs de callback actualizadas.
+- [ ] Certificado SSL válido en el dominio raíz nuevo.
+
+### 9.5 — Apagado de `laboratorio.space`
+
+- [ ] Solo después de confirmar 9.4 completo y estable por un período razonable, desactivar o redirigir `laboratorio.space` → `spamandala.cl` (301) en vez de eliminarlo de inmediato, para no perder tráfico/enlaces existentes.
+- [ ] Quitar `https://laboratorio.space` de `Allowed Origins` en WPGraphQL CORS una vez confirmado que nada lo usa.
+- [ ] `cms.laboratorio.space` ya debería estar apagado desde el cierre de la Fase A; confirmar que sigue siéndolo.
+
 ## Notas para el futuro (Resend / correo saliente)
 
 Cuando se configure Resend (u otra herramienta) para envío transaccional, sus registros de verificación (SPF adicional o `include:`, DKIM, y opcionalmente un registro de tracking) se agregan directo en Cloudflare DNS una vez migrado — no requiere volver a tocar cPanel.
