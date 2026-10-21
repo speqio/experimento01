@@ -11,6 +11,8 @@ export default defineConfig({
     imageService: 'compile',
   }),
   integrations: [react(), tailwind()],
+  // El CSS (~19 KB) va dentro del HTML: en celular se ahorra la espera de dos archivos que bloqueaban el primer pintado.
+  build: { inlineStylesheets: 'always' },
   // /sobre-nosotras es la URL del sitio actual (posicionada en Google); /nosotros era la provisoria.
   redirects: {
     '/nosotros': '/sobre-nosotras',
