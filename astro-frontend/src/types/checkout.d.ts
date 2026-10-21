@@ -17,7 +17,9 @@ export interface CheckoutInput {
   email: string;
   phone: string;
   address1: string;
-  city: string;
+  city: string; // comuna
+  state: string; // región, código de WooCommerce (CL-RM)
+  shippingMethod?: string; // id del método de envío elegido (carritos con productos físicos)
   paymentMethod: 'webpay';
   giftCardCode?: string;
   // Origen del comprador (utm/referrer), ver lib/attribution.ts. Solo trazabilidad.

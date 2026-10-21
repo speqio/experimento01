@@ -3,6 +3,7 @@
 export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
+import { REGIONES } from '../../lib/comunas';
 
 const inputClass =
   'w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe placeholder:text-spa-taupe';
@@ -19,8 +20,23 @@ const inputClass =
       </div>
       <input name="email" type="email" required placeholder="Email" class={inputClass} />
       <input name="phone" required placeholder="Teléfono" class={inputClass} />
-      <input name="address1" required placeholder="Dirección" class={inputClass} />
-      <input name="city" required placeholder="Ciudad" class={inputClass} />
+      <div class="grid sm:grid-cols-2 gap-4">
+        <select name="state" required class={inputClass} aria-label="Región">
+          <option value="">Región</option>
+          {REGIONES.map((r) => <option value={r.code} selected={r.code === 'CL-RM'}>{r.name}</option>)}
+        </select>
+        <select name="city" required class={inputClass} aria-label="Comuna">
+          <option value="">Comuna</option>
+        </select>
+      </div>
+      <input name="address1" required placeholder="Dirección (calle, número, depto.)" class={inputClass} />
+
+      <!-- Solo aparece si el carrito tiene productos físicos (WooCommerce decide según las zonas de envío). -->
+      <fieldset id="shipping-box" hidden class="border border-[#E8E2D7] rounded-2xl p-5 space-y-3">
+        <legend class="px-2 text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase">Envío</legend>
+        <div id="shipping-rates" class="space-y-2 text-sm"></div>
+        <p id="shipping-total" class="text-sm text-spa-charcoal font-semibold"></p>
+      </fieldset>
       <button
         type="submit"
         class="w-full bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md mt-2"
@@ -37,6 +53,7 @@ const inputClass =
   import { getAttribution } from '../../lib/attribution';
   import { fetchCart } from '../../store/cartStore';
   import { clp, cartLinesToItems, pushEcommerce } from '../../lib/dataLayer';
+  import { REGIONES } from '../../lib/comunas';
 
   fetchCart().then((s) => {
     const items = cartLinesToItems(s.items);
@@ -44,6 +61,55 @@ const inputClass =
   }).catch(() => {});
 
   const form = document.getElementById('checkout-form') as HTMLFormElement;
+  const stateSel = form.elements.namedItem('state') as HTMLSelectElement;
+  const citySel = form.elements.namedItem('city') as HTMLSelectElement;
+  const address = form.elements.namedItem('address1') as HTMLInputElement;
+  const box = document.getElementById('shipping-box') as HTMLFieldSetElement;
+  const ratesEl = document.getElementById('shipping-rates')!;
+  const totalEl = document.getElementById('shipping-total')!;
+  const money = (n: number) => '$' + n.toLocaleString('es-CL');
+  let needsShipping = false;
+
+  function fillComunas() {
+    const region = REGIONES.find((r) => r.code === stateSel.value);
+    citySel.replaceChildren(new Option('Comuna', ''), ...(region?.comunas ?? []).map((c) => new Option(c, c)));
+  }
+
+  // Pide a WooCommerce los métodos de envío para la región/comuna; `method` cambia el elegido.
+  async function loadShipping(method?: string) {
+    if (!stateSel.value || !citySel.value) return;
+    const session = localStorage.getItem('woo-session');
+    const res = await fetch('/api/shipping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(session ? { 'woocommerce-session': `Session ${session}` } : {}) },
+      body: JSON.stringify({ state: stateSel.value, city: citySel.value, address1: address.value, method }),
+    });
+    const data = await res.json().catch(() => ({}));
+    needsShipping = !!data.needsShipping;
+    box.hidden = !needsShipping;
+    if (!needsShipping) return;
+    if (!data.rates?.length) {
+      ratesEl.textContent = 'No hay despacho disponible para esta comuna. Escríbenos por WhatsApp.';
+      totalEl.textContent = '';
+      return;
+    }
+    ratesEl.replaceChildren(...data.rates.map((r: { id: string; label: string; cost: number }) => {
+      const label = document.createElement('label');
+      label.className = 'flex items-start gap-3 cursor-pointer';
+      const input = Object.assign(document.createElement('input'), { type: 'radio', name: 'shippingMethod', value: r.id, required: true, checked: r.id === data.chosen });
+      input.className = 'mt-1';
+      input.addEventListener('change', () => loadShipping(r.id));
+      const text = document.createElement('span');
+      text.textContent = `${r.label} — ${r.cost ? money(r.cost) : 'sin costo en el pedido'}`;
+      label.append(input, text);
+      return label;
+    }));
+    totalEl.textContent = `Total a pagar: ${money(data.total)}`;
+  }
+
+  fillComunas();
+  stateSel.addEventListener('change', () => { fillComunas(); box.hidden = true; });
+  citySel.addEventListener('change', () => loadShipping());
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
@@ -54,6 +120,8 @@ const inputClass =
       phone: String(formData.get('phone')),
       address1: String(formData.get('address1')),
       city: String(formData.get('city')),
+      state: String(formData.get('state')),
+      shippingMethod: needsShipping ? String(formData.get('shippingMethod') ?? '') : undefined,
       paymentMethod: 'webpay',
       attribution: getAttribution(),
     };

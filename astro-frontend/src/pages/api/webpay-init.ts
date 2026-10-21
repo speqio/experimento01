@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import type { CheckoutInput, WebpayInitResponse } from '../../types/checkout';
-import { createOrderFromCart, updateOrderStatus, setOrderMeta } from '../../lib/woo-server';
+import { createOrderFromCart, updateOrderStatus, setOrderMeta, getShippingOptions } from '../../lib/woo-server';
+import { validAddress } from '../../lib/comunas';
 import { webpayCreate } from '../../lib/webpay';
 
 export const prerender = false;
@@ -19,8 +20,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const sessionHeader = request.headers.get('woocommerce-session') ?? '';
     if (!sessionHeader) return json({ error: 'Carrito vacío o sesión expirada' }, 400);
 
-    const { paymentMethod: _pm, giftCardCode: _gc, attribution, ...billing } = input;
-    const order = await createOrderFromCart(env, sessionHeader, billing);
+    const { paymentMethod: _pm, giftCardCode: _gc, attribution, shippingMethod, ...billing } = input;
+    if (!validAddress(billing.state, billing.city)) return json({ error: 'Región o comuna inválida' }, 400);
+
+    // El envío se recalcula aquí (no se confía en el navegador): si el carrito lleva productos
+    // físicos, el método elegido debe ser uno de los que WooCommerce ofrece para esa región.
+    const shipping = await getShippingOptions(env, sessionHeader, billing, shippingMethod);
+    if (shipping.needsShipping && !shipping.rates.some((r) => r.id === shippingMethod)) {
+      return json({ error: 'Elige un método de envío' }, 400);
+    }
+    const order = await createOrderFromCart(env, sessionHeader, billing, shipping.needsShipping ? shippingMethod : undefined);
 
     if (attribution) {
       // No bloquea el pago si falla — solo trazabilidad para wp-admin → Gift Cards.

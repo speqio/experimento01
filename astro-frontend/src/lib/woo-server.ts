@@ -22,12 +22,7 @@ function graphqlUrl(env: Env) {
   return env.PUBLIC_WPGRAPHQL_URL ?? import.meta.env.PUBLIC_WPGRAPHQL_URL;
 }
 
-/** Crea la orden pendiente desde el carrito de la sesión (cupones incluidos). */
-export async function createOrderFromCart(
-  env: Env,
-  sessionHeader: string,
-  billing: { firstName: string; lastName: string; email: string; phone: string; address1: string; city: string },
-): Promise<CreatedOrder> {
+async function sessionGraphql(env: Env, sessionHeader: string, query: string, variables: Record<string, unknown> = {}) {
   const res = await fetch(graphqlUrl(env), {
     method: 'POST',
     headers: {
@@ -35,18 +30,83 @@ export async function createOrderFromCart(
       'User-Agent': WORKER_USER_AGENT,
       'woocommerce-session': sessionHeader,
     },
-    body: JSON.stringify({
-      query: CHECKOUT_MUTATION,
-      variables: {
-        input: {
-          paymentMethod: 'webpay',
-          isPaid: false,
-          billing: { ...billing, country: 'CL' },
-        },
-      },
-    }),
+    body: JSON.stringify({ query, variables }),
   });
-  const json = await res.json();
+  return res.json();
+}
+
+export interface ShippingAddress {
+  state: string; // código de región de WooCommerce, ej. CL-RM
+  city: string; // comuna
+  address1: string;
+}
+
+export interface ShippingOptions {
+  needsShipping: boolean;
+  rates: { id: string; label: string; cost: number }[];
+  chosen: string | null;
+  total: number;
+}
+
+const SHIPPING_QUERY = /* GraphQL */ `
+  mutation Shipping($address: CustomerAddressInput!, $methods: [String]) {
+    updateCustomer(input: { shipping: $address, billing: $address }) { clientMutationId }
+    updateShippingMethod(input: { shippingMethods: $methods }) { clientMutationId }
+  }
+`;
+const SHIPPING_CART = /* GraphQL */ `
+  query ShippingCart {
+    cart {
+      needsShippingAddress
+      total(format: RAW)
+      chosenShippingMethods
+      availableShippingMethods { rates { id label cost } }
+    }
+  }
+`;
+
+/**
+ * Guarda la dirección en la sesión de WooCommerce y devuelve los métodos de envío de su zona
+ * (WooCommerce → Ajustes → Envío). `method` elige uno; sin él WooCommerce deja el primero disponible.
+ */
+export async function getShippingOptions(env: Env, sessionHeader: string, address: ShippingAddress, method?: string): Promise<ShippingOptions> {
+  const set = await sessionGraphql(env, sessionHeader, SHIPPING_QUERY, {
+    address: { ...address, country: 'CL' },
+    methods: method ? [method] : null,
+  });
+  if (set?.errors?.length && !set?.data?.updateCustomer) throw new Error(set.errors[0].message);
+  const json = await sessionGraphql(env, sessionHeader, SHIPPING_CART);
+  const cart = json?.data?.cart;
+  if (!cart) throw new Error(json?.errors?.[0]?.message ?? 'No se pudo leer el carrito');
+  const rates = (cart.availableShippingMethods ?? []).flatMap((p: any) => p?.rates ?? []).map((r: any) => ({
+    id: r.id,
+    label: r.label,
+    cost: Number(String(r.cost ?? '0').replace(/\D/g, '')) || 0, // CLP sin decimales; WooGraphQL lo entrega formateado
+  }));
+  return {
+    needsShipping: !!cart.needsShippingAddress,
+    rates,
+    chosen: cart.chosenShippingMethods?.[0] ?? null,
+    total: Math.round(Number(cart.total)),
+  };
+}
+
+/** Crea la orden pendiente desde el carrito de la sesión (cupones y envío elegido incluidos). */
+export async function createOrderFromCart(
+  env: Env,
+  sessionHeader: string,
+  billing: { firstName: string; lastName: string; email: string; phone: string; address1: string; city: string; state?: string },
+  shippingMethod?: string,
+): Promise<CreatedOrder> {
+  const address = { ...billing, country: 'CL' };
+  const json = await sessionGraphql(env, sessionHeader, CHECKOUT_MUTATION, {
+    input: {
+      paymentMethod: 'webpay',
+      isPaid: false,
+      billing: address,
+      ...(shippingMethod ? { shipping: address, shippingMethod: [shippingMethod] } : {}),
+    },
+  });
   const order = json?.data?.checkout?.order;
   if (!order) throw new Error(json?.errors?.[0]?.message ?? 'No se pudo crear la orden');
   return { id: order.databaseId, total: Math.round(Number(order.total)) };
