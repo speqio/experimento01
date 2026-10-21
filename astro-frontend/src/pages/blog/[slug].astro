@@ -8,6 +8,7 @@ import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
 import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_POST_BY_SLUG } from '../../lib/queries/posts';
 import { cleanHtml, htmlToText, summarize } from '../../lib/sanitize';
+import blogImages from '../../data/blog-imagenes.json';
 import type { Post } from '../../types/blog';
 import { SITE_INFO } from '../../lib/siteInfo';
 
@@ -33,7 +34,11 @@ if (!post) {
 const date = new Date(post.date).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });
 const category = post.categories?.nodes?.[0]?.name;
 const description = summarize(htmlToText(post.excerpt), 160);
-const content = cleanHtml(post.content);
+// Imágenes del contenido: la versión WebP subida al CMS; si no está en el mapa, la misma ruta en el CMS (nunca producción).
+const cmsOrigin = new URL(import.meta.env.PUBLIC_WPGRAPHQL_URL).origin;
+const content = cleanHtml(post.content, {
+  images: (src) => (blogImages as Record<string, string>)[src] ?? src.replace(/^https?:\/\/(www\.)?spamandala\.cl(?=\/wp-content\/)/, cmsOrigin),
+});
 ---
 <ECommerceLayout
   title={post.title}
@@ -78,7 +83,7 @@ const content = cleanHtml(post.content);
     )}
 
     <div
-      class="text-[#4A4036] text-sm sm:text-base leading-relaxed [&_p]:mb-4 last:[&_p]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4 [&_li]:mb-1 [&_h2]:font-editorial [&_h2]:text-2xl [&_h2]:text-spa-charcoal [&_h2]:mt-8 [&_h2]:mb-3 [&_h3]:font-semibold [&_h3]:text-spa-charcoal [&_h3]:mt-6 [&_h3]:mb-2 [&_strong]:text-spa-charcoal [&_a]:text-spa-taupe-dark [&_a]:underline"
+      class="text-[#4A4036] text-sm sm:text-base leading-relaxed [&_p]:mb-4 last:[&_p]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-4 [&_li]:mb-1 [&_h2]:font-editorial [&_h2]:text-2xl [&_h2]:text-spa-charcoal [&_h2]:mt-8 [&_h2]:mb-3 [&_h3]:font-semibold [&_h3]:text-spa-charcoal [&_h3]:mt-6 [&_h3]:mb-2 [&_strong]:text-spa-charcoal [&_a]:text-spa-taupe-dark [&_a]:underline [&_img]:rounded-2xl [&_img]:my-6 [&_img]:mx-auto [&_img]:max-w-full [&_img]:h-auto"
       set:html={content}
     />
 

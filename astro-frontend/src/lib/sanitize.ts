@@ -16,7 +16,8 @@ function decodeBasicEntities(s: string): string {
     .replace(/&gt;/g, '>');
 }
 
-export function cleanHtml(html?: string | null): string {
+/** `images`: solo el blog muestra imágenes; recibe el src original y devuelve el que se usa (o null para quitarla). */
+export function cleanHtml(html?: string | null, opts: { images?: (src: string) => string | null } = {}): string {
   if (!html) return '';
   let out = html
     .replace(/<!--[\s\S]*?-->/g, '')
@@ -26,6 +27,13 @@ export function cleanHtml(html?: string | null): string {
       const closing = tag.startsWith('</');
       let name = rawName.toLowerCase();
       name = RENAME[name] ?? name;
+      if (name === 'img' && opts.images && !closing) {
+        const attr = (k: string) => attrs.match(new RegExp(`(?:^|\\s)${k}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i'))?.slice(2).find((v) => v !== undefined);
+        const src = attr('src');
+        const url = src && /^https?:\/\//i.test(src) ? opts.images(src) : null;
+        const alt = (attr('alt') ?? '').replace(/"/g, '&quot;');
+        return url ? `<img src="${url.replace(/"/g, '%22')}" alt="${alt}" loading="lazy" decoding="async">` : '';
+      }
       if (!ALLOWED.has(name)) return BLOCK.has(name) ? ' ' : '';
       if (closing) return `</${name}>`;
       if (name === 'a') {
