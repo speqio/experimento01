@@ -50,5 +50,52 @@ def subir(envf, lista, salida):
         print(f"ok {it['slug']}: #{it['media']} -> #{media['id']}")
     json.dump(hechos, open(os.path.join(salida, 'reemplazos.json'), 'w', encoding='utf8'), indent=1)
 
+def catalogo(envf, lista, salida):
+    """Convierte a WebP cada imagen de producto (principal y galería) de la lista {media, src, usos:[[producto, posición]]}
+    y la reemplaza en todos los productos que la usan, conservando orden y texto alternativo."""
+    env = dict(l.strip().split('=', 1) for l in open(envf, encoding='utf8') if '=' in l and not l.startswith('#'))
+    q = lambda k: env[k].strip().strip('"')
+    o = urllib.parse.urlsplit(q('PUBLIC_WPGRAPHQL_URL'))
+    root = f'{o.scheme}://{o.netloc}/index.php?rest_route='
+    wp = 'Basic ' + base64.b64encode(f"{q('WP_MEDIA_APP_USER')}:{q('WP_MEDIA_APP_PASSWORD')}".encode()).decode()
+    wc = 'Basic ' + base64.b64encode(f"{q('WC_REST_KEY')}:{q('WC_REST_SECRET')}".encode()).decode()
+    def call(url, auth, data=None, method='GET', headers=None):
+        h = {'Authorization': auth, 'User-Agent': 'mandala-migracion', **(headers or {})}
+        return json.load(urllib.request.urlopen(urllib.request.Request(url, data=data, method=method, headers=h), timeout=120))
+    os.makedirs(salida, exist_ok=True)
+    reg_path = os.path.join(salida, 'reemplazos-catalogo.json')
+    hechos = json.load(open(reg_path, encoding='utf8')) if os.path.exists(reg_path) else {}
+    nuevo = {int(k): v['nueva'] for k, v in hechos.items()}
+    productos = set()
+    for it in json.load(open(lista, encoding='utf8')):
+        productos.update(u[0] for u in it['usos'])
+        if it['media'] in nuevo: continue
+        # Sufijo -opt: el nombre nunca choca con un original que ya fuera <nombre>.webp.
+        nombre = os.path.splitext(os.path.basename(urllib.parse.urlsplit(it['src']).path))[0] + '-opt'
+        f = os.path.join(salida, nombre + '.webp')
+        kb_antes = None
+        if not os.path.exists(f):
+            raw = urllib.request.urlopen(urllib.request.Request(it['src'], headers={'User-Agent': 'mandala-migracion'}), timeout=120).read()
+            im = Image.open(io.BytesIO(raw))
+            im = im.convert('RGBA' if im.mode in ('RGBA', 'LA', 'P') else 'RGB')
+            if im.width > ANCHO: im = im.resize((ANCHO, round(im.height * ANCHO / im.width)), Image.LANCZOS)
+            im.save(f, 'WEBP', quality=CALIDAD, method=6)
+            kb_antes = len(raw) // 1024
+        media = call(f"{root}/wp/v2/media", wp, open(f, 'rb').read(), 'POST',
+                     {'Content-Type': 'image/webp', 'Content-Disposition': f'attachment; filename="{nombre}.webp"'})
+        nuevo[it['media']] = media['id']
+        hechos[str(it['media'])] = {'nueva': media['id'], 'src': it['src'], 'kb_antes': kb_antes, 'kb_despues': os.path.getsize(f) // 1024}
+        json.dump(hechos, open(reg_path, 'w', encoding='utf8'), indent=1)  # registro tras cada subida: se puede retomar
+        print(f"subida #{it['media']} -> #{media['id']}  {nombre}.webp ({os.path.getsize(f)//1024} KB)")
+    for pid in sorted(productos):
+        prod = call(f"{root}/wc/v3/products/{pid}", wc)
+        if not any(i['id'] in nuevo for i in prod['images']): continue
+        imgs = [{'id': nuevo[i['id']], 'alt': i.get('alt') or prod['name'], 'name': i.get('name') or prod['name']} if i['id'] in nuevo else {'id': i['id']} for i in prod['images']]
+        call(f"{root}/wc/v3/products/{pid}", wc, json.dumps({'images': imgs}).encode(), 'PUT', {'Content-Type': 'application/json'})
+        print(f"producto {prod['slug']}: {sum(1 for i in prod['images'] if i['id'] in nuevo)} imagen(es) reemplazada(s)")
+
 if __name__ == '__main__':
-    convertir(*sys.argv[2:4]) if sys.argv[1] == 'convertir' else subir(*sys.argv[2:5])
+    modo = sys.argv[1]
+    if modo == 'convertir': convertir(*sys.argv[2:4])
+    elif modo == 'catalogo': catalogo(*sys.argv[2:5])
+    else: subir(*sys.argv[2:5])

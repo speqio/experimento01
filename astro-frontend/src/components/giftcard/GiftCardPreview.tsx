@@ -61,7 +61,7 @@ export default function GiftCardPreview({ image, productName, summary, variant, 
               // del comprador no, así que se superpone acá (logo blanco, sin placa de
               // fondo detrás).
               <div className="absolute bottom-[5%] right-[5%] pointer-events-none">
-                <img src="/gift-card-logo.png" alt="Mándala Spa" className="h-8 sm:h-10 w-auto object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]" />
+                <img src="/gift-card-logo.webp" alt="Mándala Spa" className="h-8 sm:h-10 w-auto object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]" />
               </div>
             )}
             <div
