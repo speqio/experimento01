@@ -1,0 +1,40 @@
+---
+// Página no encontrada. La usa Astro cuando una ruta responde 404 sin cuerpo (ver [...page].astro).
+export const prerender = false;
+
+import ECommerceLayout from '../layouts/ECommerceLayout.astro';
+import { SITE_INFO } from '../lib/siteInfo';
+
+Astro.response.status = 404;
+const links = [
+  { href: '/tienda', label: 'Ver todos los servicios' },
+  { href: '/promociones', label: 'Promociones' },
+  { href: '/gift-cards', label: 'Gift cards' },
+  { href: '/masajes/', label: 'Masajes' },
+  { href: '/tratamientos-faciales/', label: 'Tratamientos faciales' },
+  { href: '/spa-day/', label: 'Spa day' },
+];
+---
+<ECommerceLayout title="Página no encontrada" description="La página que buscas no existe o cambió de lugar." noindex>
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center">
+    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Error 404</span>
+    <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal mb-5">No encontramos esta página</h1>
+    <p class="text-spa-taupe leading-relaxed max-w-xl mx-auto mb-10">
+      Puede que el enlace esté desactualizado o que el servicio haya cambiado de nombre. Busca lo que necesitas o escríbenos y te ayudamos.
+    </p>
+
+    <form action="/tienda" method="get" class="flex max-w-md mx-auto gap-2 mb-10" role="search">
+      <label for="buscar-404" class="sr-only">Buscar servicios</label>
+      <input id="buscar-404" name="q" type="search" placeholder="Buscar masajes, faciales…" class="flex-1 min-w-0 border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe" />
+      <button class="bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full px-6 text-xs font-semibold tracking-[0.18em] uppercase transition-colors">Buscar</button>
+    </form>
+
+    <ul class="flex flex-wrap justify-center gap-2 mb-12">
+      {links.map((l) => (
+        <li><a href={l.href} class="inline-block bg-white border border-[#E8E2D7] rounded-full px-4 py-2 text-xs font-semibold tracking-wide text-spa-taupe-dark hover:bg-spa-cream transition-colors">{l.label}</a></li>
+      ))}
+    </ul>
+
+    <a href={`https://wa.me/${SITE_INFO.whatsapp}`} target="_blank" rel="noopener" class="text-sm text-spa-charcoal underline underline-offset-4">Escríbenos por WhatsApp</a>
+  </div>
+</ECommerceLayout>

@@ -27,7 +27,7 @@ try {
 }
 
 if (!post) {
-  return Astro.redirect('/blog');
+  return new Response(null, { status: 404 });
 }
 
 const date = new Date(post.date).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' });

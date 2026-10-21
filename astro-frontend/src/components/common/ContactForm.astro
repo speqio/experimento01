@@ -1,0 +1,52 @@
+---
+// Formulario de contacto (mismos campos que el Contact Form 7 de producción); lo envía /api/contact.
+const inputClass =
+  'w-full border border-[#DDD5CA] rounded-2xl px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe placeholder:text-spa-taupe';
+---
+<form id="contact-form" class="space-y-4 bg-white rounded-2xl border border-[#E8E2D7] p-6 sm:p-8" novalidate>
+  <h2 class="font-editorial text-2xl text-spa-charcoal">Escríbenos</h2>
+  <div class="grid sm:grid-cols-2 gap-4">
+    <input name="name" required maxlength="120" autocomplete="name" placeholder="Nombre (requerido)" aria-label="Nombre" class={inputClass} />
+    <input name="phone" required maxlength="40" autocomplete="tel" inputmode="tel" placeholder="Celular (requerido)" aria-label="Celular" class={inputClass} />
+  </div>
+  <input name="email" type="email" required maxlength="160" autocomplete="email" placeholder="Correo electrónico (requerido)" aria-label="Correo electrónico" class={inputClass} />
+  <textarea name="message" required maxlength="5000" rows="5" placeholder="Mensaje (requerido)" aria-label="Mensaje" class={inputClass}></textarea>
+  <!-- Trampa para bots: oculta para las personas. -->
+  <div aria-hidden="true" class="absolute -left-[9999px]">
+    <label>No llenar <input name="website" tabindex="-1" autocomplete="off" /></label>
+  </div>
+  <p id="contact-status" role="status" class="text-sm text-spa-taupe-dark" hidden></p>
+  <button type="submit" class="w-full bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full py-3.5 text-xs font-semibold tracking-[0.2em] uppercase transition-colors disabled:opacity-60">
+    Enviar
+  </button>
+</form>
+
+<script>
+  const form = document.getElementById('contact-form') as HTMLFormElement;
+  const status = document.getElementById('contact-status') as HTMLParagraphElement;
+  const button = form.querySelector('button') as HTMLButtonElement;
+  const show = (text: string) => { status.textContent = text; status.hidden = false; };
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!form.reportValidity()) return;
+    button.disabled = true;
+    show('Enviando…');
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error);
+      form.reset();
+      show('¡Gracias! Recibimos tu mensaje y te responderemos a la brevedad.');
+      (window as any).dataLayer?.push({ event: 'generate_lead', form_name: 'contacto' });
+    } catch (err) {
+      show((err as Error).message || 'No pudimos enviar tu mensaje. Escríbenos por WhatsApp.');
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>

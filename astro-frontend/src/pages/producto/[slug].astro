@@ -39,7 +39,7 @@ try {
 }
 
 if (!product) {
-  return Astro.redirect('/tienda');
+  return new Response(null, { status: 404 });
 }
 
 const duration = getProductDuration(product.attributes) ?? extractDuration(product.shortDescription ?? '').duration;

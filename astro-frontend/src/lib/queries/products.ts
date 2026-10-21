@@ -19,7 +19,7 @@ const PRODUCT_CARD_FIELDS = /* GraphQL */ `
   ... on WithAcfUpsellerFields {
     upsellerFields {
       nombreProducto
-      productosPrincipalesIds { nodes { ... on Product { id name slug } } }
+      productosPrincipalesIds(first: 100) { nodes { ... on Product { id name slug } } }
     }
   }
 `;
@@ -51,7 +51,7 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       ... on WithAcfUpsellerFields {
         upsellerFields {
           nombreProducto
-          productosPrincipalesIds { nodes { ... on Product { id name slug } } }
+          productosPrincipalesIds(first: 100) { nodes { ... on Product { id name slug } } }
         }
       }
       ... on SimpleProduct {

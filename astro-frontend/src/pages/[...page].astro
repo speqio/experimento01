@@ -6,6 +6,7 @@ export const prerender = false;
 
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ProductGrid from '../components/catalog/ProductGrid.astro';
+import ContactForm from '../components/common/ContactForm.astro';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
 import { fetchLayoutData } from '../lib/layoutData';
 import { GET_PRODUCTS_BY_CATEGORIES } from '../lib/queries/products';
@@ -64,6 +65,12 @@ const breadcrumbs = segments.map((_, i) => {
   {page.html && (
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
       <article class="legal min-w-0" set:html={page.html} />
+    </div>
+  )}
+
+  {page.path === 'contacto' && (
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <ContactForm />
     </div>
   )}
 

@@ -26,7 +26,7 @@ const GET_UPSELL_CANDIDATES = /* GraphQL */ `
         ... on WithAcfUpsellerFields {
           upsellerFields {
             popupComplementoTexto
-            productosPrincipalesIds { nodes { ... on Product { databaseId } } }
+            productosPrincipalesIds(first: 100) { nodes { ... on Product { databaseId } } }
           }
         }
       }
