@@ -2,7 +2,8 @@
 /**
  * Plugin Name: Spa Mándala — Formulario de contacto
  * Description: Endpoint REST (mandala/v1/contacto) que recibe el formulario de /contacto del sitio Astro y lo
- *              envía por correo a contacto@spamandala.cl (mismo asunto que el Contact Form 7 de producción).
+ *              envía por correo (contacto@spamandala.cl al lanzar; en pruebas, al correo de desarrollo)
+ *              con el mismo asunto que el Contact Form 7 de producción.
  *              Solo lo llama el Worker, autenticado con la contraseña de aplicación del usuario de subidas.
  */
 
@@ -22,7 +23,8 @@ add_action('rest_api_init', function () {
                 return new WP_REST_Response(['ok' => false, 'error' => 'Faltan datos o el correo no es válido.'], 400);
             }
 
-            $to = apply_filters('mandala_contact_recipient', 'contacto@spamandala.cl');
+            // ponytail: entorno de pruebas — al lanzar (Fase B) volver a 'contacto@spamandala.cl'.
+            $to = apply_filters('mandala_contact_recipient', 'paolomoridesign@gmail.com');
             $body = "Nombre: {$name}\nCelular: {$phone}\nCorreo: {$email}\n\nMensaje:\n{$message}\n\n--\nEnviado desde el formulario de contacto del sitio web.";
             $sent = wp_mail($to, "Contacto sitioweb {$name}", $body, ["Reply-To: {$name} <{$email}>"]);
 
