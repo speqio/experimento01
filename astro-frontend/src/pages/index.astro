@@ -50,6 +50,7 @@ const hero = {
 <ECommerceLayout
   title="Mándala Spa | Bienestar & Masajes"
   layoutData={layoutDataPromise}
+  preloadImage={hero.image}
   schema={[
     businessSchema(Astro.url.origin),
     { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_INFO.name, url: `${Astro.url.origin}/`, potentialAction: { '@type': 'SearchAction', target: `${Astro.url.origin}/tienda?q={search_term_string}`, 'query-input': 'required name=search_term_string' } },

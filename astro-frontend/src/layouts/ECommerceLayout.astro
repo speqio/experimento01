@@ -25,6 +25,7 @@ interface Props {
   type?: 'website' | 'article' | 'product';
   noindex?: boolean;
   schema?: Record<string, unknown>[];
+  preloadImage?: string | null;
   /** Migas de pan sin "Inicio" (se agrega solo); también van al JSON-LD. */
   breadcrumbs?: Crumb[];
 }
