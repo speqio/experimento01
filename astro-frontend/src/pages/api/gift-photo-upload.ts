@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { wpRestUrl } from '../../lib/wp-graphql';
+import { isRateLimited } from '../../lib/rateLimit';
 
 // Sube la foto que el comprador elige para personalizar el diseño de su gift
 // card (ver components/giftcard/GiftCardModal.tsx). Corre en Cloudflare
@@ -32,6 +33,10 @@ function json(body: unknown, status = 200) {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
+    // Cada subida queda en Medios de WordPress: se limita para que un bot no la llene.
+    if (await isRateLimited(locals, request, 'gift-photo', 10, 3600)) {
+      return json({ error: 'Demasiadas subidas. Prueba de nuevo más tarde.' }, 429);
+    }
     const env = { ...import.meta.env, ...process.env, ...((locals as any).runtime?.env ?? {}) } as Record<
       string,
       string | undefined
@@ -57,14 +62,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const user = env.WP_MEDIA_APP_USER;
     const pass = env.WP_MEDIA_APP_PASSWORD;
     if (!wpOrigin || !user || !pass) {
-      // Temporal: dice cuál falta exactamente, para diagnosticar el binding de
-      // secretos en Cloudflare (Workers vs Pages, entorno Production/Preview, etc.).
-      const missing = [
-        !wpOrigin && 'PUBLIC_WPGRAPHQL_URL',
-        !user && 'WP_MEDIA_APP_USER',
-        !pass && 'WP_MEDIA_APP_PASSWORD',
-      ].filter(Boolean).join(', ');
-      return json({ error: `La subida de fotos no está configurada (falta: ${missing}). Avisa al administrador.` }, 500);
+      console.error('gift-photo-upload: faltan PUBLIC_WPGRAPHQL_URL / WP_MEDIA_APP_USER / WP_MEDIA_APP_PASSWORD');
+      return json({ error: 'La subida de fotos no está disponible. Avisa al administrador.' }, 500);
     }
 
     // Nombre generado por el servidor — nunca el nombre original del archivo.
@@ -91,18 +90,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
     } catch {
       console.error(`gift-photo-upload: WP respondió ${res.status}, no-JSON: ${rawBody.slice(0, 300)}`);
       return json(
-        { error: `WordPress no devolvió una respuesta válida (status ${res.status}). Puede ser un firewall/plugin de seguridad bloqueando la subida — revisa los logs.` },
+        { error: 'No se pudo subir la imagen. Inténtalo de nuevo.' },
         502,
       );
     }
 
     if (!res.ok || !media.source_url) {
       console.error(`gift-photo-upload: WP respondió ${res.status}: ${rawBody.slice(0, 300)}`);
-      return json({ error: media.message || 'No se pudo subir la imagen. Inténtalo de nuevo.' }, 502);
+      return json({ error: 'No se pudo subir la imagen. Inténtalo de nuevo.' }, 502);
     }
 
     return json({ url: media.source_url });
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    console.error('gift-photo-upload:', e);
+    return json({ error: 'No se pudo subir la imagen. Inténtalo de nuevo.' }, 500);
   }
 };

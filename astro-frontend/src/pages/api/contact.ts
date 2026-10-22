@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { wpRestUrl, WORKER_USER_AGENT } from '../../lib/wp-graphql';
+import { isRateLimited } from '../../lib/rateLimit';
 
 export const prerender = false;
 
@@ -15,6 +16,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const { name, phone, email, message, website } = await request.json();
     // Campo trampa invisible: los bots lo llenan, las personas no. Se responde "ok" para no darles pistas.
     if (website) return json({ ok: true });
+    if (await isRateLimited(locals, request, 'contact', 5, 3600)) {
+      return json({ ok: false, error: 'Demasiados mensajes. Escríbenos por WhatsApp.' }, 429);
+    }
     const clean = (v: unknown, max: number) => String(v ?? '').trim().slice(0, max);
     const data = { name: clean(name, 120), phone: clean(phone, 40), email: clean(email, 160), message: clean(message, 5000) };
     if (!data.name || !data.phone || !EMAIL.test(data.email) || data.message.length < 5) {

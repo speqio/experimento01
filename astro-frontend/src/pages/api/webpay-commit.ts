@@ -44,7 +44,8 @@ async function commitAndRedirect(request: Request, locals: any) {
     await updateOrderStatus(env, orderId, 'failed').catch(() => {});
     return fail();
   } catch (e) {
-    return fail((e as Error).message);
+    console.error('webpay-commit:', e);
+    return fail();
   }
 }
 

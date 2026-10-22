@@ -3,6 +3,7 @@ import type { CheckoutInput, WebpayInitResponse } from '../../types/checkout';
 import { createOrderFromCart, updateOrderStatus, setOrderMeta, getShippingOptions } from '../../lib/woo-server';
 import { validAddress } from '../../lib/comunas';
 import { webpayCreate } from '../../lib/webpay';
+import { isRateLimited } from '../../lib/rateLimit';
 
 export const prerender = false;
 
@@ -12,6 +13,10 @@ function json(body: unknown, status = 200) {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
+    // Cada intento crea un pedido en WooCommerce: se limita para que un bot no los llene de pedidos falsos.
+    if (await isRateLimited(locals, request, 'webpay-init', 15)) {
+      return json({ error: 'Demasiados intentos de pago. Espera unos minutos.' }, 429);
+    }
     const input: CheckoutInput = await request.json();
 
     // `locals.runtime.env` expone los secrets del Worker (Cloudflare adapter).
@@ -52,6 +57,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const body: WebpayInitResponse = { token: response.token, url: response.url };
     return json(body);
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    console.error('webpay-init:', e);
+    return json({ error: 'No pudimos iniciar el pago. Inténtalo de nuevo.' }, 500);
   }
 };

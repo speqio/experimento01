@@ -19,6 +19,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const options = await getShippingOptions(env, session, { state, city, address1: String(address1 ?? '') }, method || undefined);
     return json(options);
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    console.error('shipping:', e);
+    return json({ error: 'No pudimos calcular el envío. Inténtalo de nuevo.' }, 500);
   }
 };

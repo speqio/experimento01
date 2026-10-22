@@ -12,15 +12,9 @@ const REDIRECTS = redirecciones as Record<string, string>;
 // rutas se reenvían tal cual al origen de WordPress en vez de dar 404.
 // `WP_ORIGIN_HOST` nunca se hardcodea — mismo criterio de portabilidad que
 // `PUBLIC_WPGRAPHQL_URL` (ver docs/schema-spec.md §5).
-const PROXIED_PREFIXES = [
-  '/wp-content/',
-  '/wp-includes/',
-  '/wp-json/',
-  '/wp-admin/',
-  '/wp-login.php',
-  '/xmlrpc.php',
-  '/graphql',
-];
+// Solo /wp-content/ (imágenes viejas): login, admin, xmlrpc, REST y GraphQL de WordPress NO se
+// exponen en el dominio público, para no abrirle una puerta de fuerza bruta.
+const PROXIED_PREFIXES = ['/wp-content/'];
 
 // Páginas SSR (home, tienda, fichas de producto, blog, gift-cards, etc.) no
 // dependen de cookies/sesión — el carrito vive en localStorage del lado del
@@ -46,7 +40,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   try { key = decodeURIComponent(pathname); } catch {}
   const target = REDIRECTS[key.toLowerCase().replace(/\/+$/, '')];
   if (target) return context.redirect(target + search, 301);
-  const shouldProxy = PROXIED_PREFIXES.some(
+  const shouldProxy = ['GET', 'HEAD'].includes(context.request.method) && PROXIED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix)
   );
 
