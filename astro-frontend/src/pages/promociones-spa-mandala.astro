@@ -73,17 +73,17 @@ const nav = [['giftcard', 'Giftcard'], ...sections.filter((s) => s.id !== 'inter
               <img src={g.p.image?.sourceUrl} alt={g.p.image?.altText || g.p.name} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </a>
             <p class="text-[11px] font-bold tracking-[0.2em] uppercase text-spa-taupe mb-2">{g.tag}</p>
-            <h3 class="font-editorial text-2xl font-semibold text-spa-charcoal mb-3"><a href={`/producto/${g.p.slug}`}>{g.p.name}</a></h3>
-            <p class="mb-5 text-lg">
-              {g.price.original && <s class="text-[#A89E95] text-sm mr-2">{g.price.original}</s>}
-              <strong class="text-spa-charcoal">{g.price.current}</strong>
+            <h3 class="font-editorial text-xl font-semibold text-spa-charcoal mb-2 leading-snug line-clamp-2"><a href={`/producto/${g.p.slug}`} class="hover:text-spa-taupe transition-colors">{g.p.name}</a></h3>
+            <p class="flex items-baseline gap-2 mb-4">
+              {g.price.original && <s class="text-sm text-[#A89E95]">{g.price.original}</s>}
+              <strong class="text-lg font-bold text-spa-charcoal">{g.price.current}</strong>
             </p>
             <button
               type="button"
               data-gift-product={g.p.databaseId}
               data-gift-name={g.p.name}
               data-gift-image={g.p.image?.sourceUrl}
-              class="mt-auto bg-spa-charcoal hover:bg-[#433B36] text-white px-6 py-3 rounded-full text-[11px] font-semibold tracking-wider uppercase transition-colors"
+              class="mt-auto bg-spa-charcoal hover:bg-[#433B36] text-white py-2.5 px-6 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors"
             >Quiero esta Giftcard</button>
           </div>
         ))}
