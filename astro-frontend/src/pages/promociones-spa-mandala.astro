@@ -1,0 +1,139 @@
+---
+// /promociones-spa-mandala/: misma diagramación que spamandala.cl (3 giftcards destacadas + carruseles por categoría).
+// Las secciones solo guardan slugs; nombre, foto y precio salen en vivo de WooCommerce.
+// Reemplaza la versión genérica que servía [...page].astro para esta ruta.
+export const prerender = false;
+
+import ECommerceLayout from '../layouts/ECommerceLayout.astro';
+import ProductCard from '../components/catalog/ProductCard.astro';
+import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
+import { fetchLayoutData } from '../lib/layoutData';
+import { GET_PRODUCTS_BY_SLUGS } from '../lib/queries/products';
+import { getPriceDisplay } from '../lib/parse';
+import type { SimpleProduct } from '../types/catalog';
+
+const giftcards = [
+  { slug: 'masaje-de-relajacion-con-descontracturante-espalda', tag: 'Masajes' },
+  { slug: 'spa-de-lujo', tag: 'Spa Day' },
+  { slug: 'tratamiento-facial-hydra-shot', tag: 'Faciales' },
+];
+const carruseles = [
+  { id: 'masajes', title: 'Masajes', slugs: ['masaje-champi-craneal', 'reflexologia-podal-antiestres', 'masaje-descontracturante-lumbar-ciatica', 'masaje-descontracturante-presion-media', 'masaje-descontracturante-alta-presion', 'masaje-de-relajacion'] },
+  { id: 'faciales', title: 'Faciales', slugs: ['tratamiento-facial-antiage-con-radiofrecuencia', 'tratamiento-facial-hydra-shot', 'tratamiento-facial-coreano', 'limpieza-facial-profunda-con-hidratacion', 'tratamiento-facial-hidratante-y-descongestivo'] },
+  { id: 'spaday', title: 'Spa Day', slugs: ['spa-circuit-duo', 'spa-purify', 'spa-de-lujo'] },
+  { id: 'happyhour', title: 'Happy Hour', slugs: ['happy-hour-reductivo', 'happy-hour-facial', 'happy-hour-de-masajes'] },
+  { id: 'productos', title: 'Uso en hogar', slugs: ['almohadilla-de-cuarzo-terapeutica', 'formula-alivio-muscular-y-articular', 'gel-corporal-de-arnica', 'set-bienestar'] },
+  { id: 'interesarte', title: 'Pueden interesarte', subtitle: 'Jornadas completas de bienestar y relajación', slugs: ['happy-hour-de-masajes', 'masaje-de-relajacion', 'tratamiento-facial-hydra-shot', 'para-dos-masaje-relajacion-cuerpo-completo', 'spa-de-lujo', 'masaje-de-relajacion-con-descontracturante-espalda'] },
+];
+
+const slugs = [...new Set([...giftcards.map((g) => g.slug), ...carruseles.flatMap((c) => c.slugs)])];
+const cache = kvCacheFrom(Astro);
+const layoutDataPromise = fetchLayoutData(cache);
+let bySlug = new Map<string, SimpleProduct>();
+try {
+  const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({ query: GET_PRODUCTS_BY_SLUGS, variables: { slugs }, cache });
+  bySlug = new Map(data.products.nodes.map((p) => [p.slug, p]));
+} catch {
+  // Sin WordPress la página queda solo con títulos.
+}
+// Un slug despublicado se omite en vez de dejar una tarjeta rota.
+const pick = (list: string[]) => list.flatMap((s) => bySlug.get(s) ?? []);
+const gifts = giftcards.flatMap((g) => {
+  const p = bySlug.get(g.slug);
+  return p ? [{ ...g, p, price: getPriceDisplay(p.price, p.regularPrice) }] : [];
+});
+const sections = carruseles.map((c) => ({ ...c, products: pick(c.slugs) })).filter((c) => c.products.length);
+const nav = [['giftcard', 'Giftcard'], ...sections.filter((s) => s.id !== 'interesarte').map((s) => [s.id, s.title])];
+---
+<ECommerceLayout
+  title="Promociones Spa Mandala"
+  description="Conoce nuestros productos especializados en el cuidado de tu piel, para el mejor cuidado de tu rostro y cuerpo."
+  layoutData={layoutDataPromise}
+  breadcrumbs={[{ name: 'Promociones Spa Mandala', path: '/promociones-spa-mandala/' }]}
+>
+  <section class="bg-spa-sand py-14 sm:py-20 px-4 text-center">
+    <h1 class="font-editorial text-4xl sm:text-5xl font-light text-spa-charcoal">Promociones y servicios destacados</h1>
+  </section>
+
+  <nav aria-label="Secciones" class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-spa-cream">
+    <ul class="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto py-3 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
+      {nav.map(([id, label]) => (
+        <li><a href={`#${id}`} class="block px-4 py-2 rounded-full border border-[#E8E2D7] text-spa-charcoal hover:bg-spa-charcoal hover:text-white transition-colors">{label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  {gifts.length > 0 && (
+    <section id="giftcard" class="scroll-mt-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <h2 class="flex items-center gap-4 text-xs font-bold tracking-[0.25em] uppercase text-spa-taupe mb-10 before:flex-1 before:h-px before:bg-[#E8E2D7] after:flex-1 after:h-px after:bg-[#E8E2D7]">Giftcard</h2>
+      <div class="grid gap-8 md:grid-cols-3">
+        {gifts.map((g) => (
+          <div class="group flex flex-col items-center text-center">
+            <a href={`/producto/${g.p.slug}`} class="block w-full aspect-[1129/800] rounded-2xl overflow-hidden shadow-md mb-5">
+              <img src={g.p.image?.sourceUrl} alt={g.p.image?.altText || g.p.name} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            </a>
+            <p class="text-[11px] font-bold tracking-[0.2em] uppercase text-spa-taupe mb-2">{g.tag}</p>
+            <h3 class="font-editorial text-2xl font-semibold text-spa-charcoal mb-3"><a href={`/producto/${g.p.slug}`}>{g.p.name}</a></h3>
+            <p class="mb-5 text-lg">
+              {g.price.original && <s class="text-[#A89E95] text-sm mr-2">{g.price.original}</s>}
+              <strong class="text-spa-charcoal">{g.price.current}</strong>
+            </p>
+            <button
+              type="button"
+              data-gift-product={g.p.databaseId}
+              data-gift-name={g.p.name}
+              data-gift-image={g.p.image?.sourceUrl}
+              class="mt-auto bg-spa-charcoal hover:bg-[#433B36] text-white px-6 py-3 rounded-full text-[11px] font-semibold tracking-wider uppercase transition-colors"
+            >Quiero esta Giftcard</button>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+
+  {sections.map((s) => (
+    <section id={s.id} class={`scroll-mt-16 py-14 ${s.id === 'interesarte' ? 'bg-spa-sand' : ''}`}>
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {s.subtitle ? (
+          <div class="text-center mb-8">
+            <h2 class="font-editorial text-4xl text-spa-charcoal">{s.title}</h2>
+            <p class="text-spa-taupe mt-2">{s.subtitle}</p>
+          </div>
+        ) : (
+          <h2 class="flex items-center gap-4 text-xs font-bold tracking-[0.25em] uppercase text-spa-taupe mb-8 before:flex-1 before:h-px before:bg-[#E8E2D7] after:flex-1 after:h-px after:bg-[#E8E2D7]">{s.title}</h2>
+        )}
+        <div class="relative">
+          <div data-carousel class="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 [scrollbar-width:thin]">
+            {s.products.map((p) => (
+              <div class="snap-start shrink-0 w-[85%] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
+                <ProductCard product={p} href={`/producto/${p.slug}`} />
+              </div>
+            ))}
+          </div>
+          {s.products.length > 3 && (
+            <div class="hidden lg:flex justify-end gap-2 mt-2">
+              <button type="button" data-carousel-prev aria-label={`Anterior en ${s.title}`} class="w-10 h-10 rounded-full border border-spa-charcoal text-spa-charcoal hover:bg-spa-charcoal hover:text-white transition-colors">‹</button>
+              <button type="button" data-carousel-next aria-label={`Siguiente en ${s.title}`} class="w-10 h-10 rounded-full border border-spa-charcoal text-spa-charcoal hover:bg-spa-charcoal hover:text-white transition-colors">›</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  ))}
+</ECommerceLayout>
+
+<script>
+  import { addToCart } from '../store/cartStore';
+  document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
+    btn.addEventListener('click', () => addToCart(Number(btn.dataset.addToCart), 1));
+  });
+  // Flechas de escritorio: desplazan el carrusel un ancho visible; en celular se desliza con el dedo.
+  document.querySelectorAll<HTMLButtonElement>('[data-carousel-prev], [data-carousel-next]').forEach((btn) => {
+    const track = btn.closest('.relative')?.querySelector<HTMLElement>('[data-carousel]');
+    btn.addEventListener('click', () => {
+      if (!track) return;
+      const dir = btn.hasAttribute('data-carousel-next') ? 1 : -1;
+      track.scrollBy({ left: dir * track.clientWidth, behavior: 'smooth' });
+    });
+  });
+</script>

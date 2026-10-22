@@ -1,36 +1,114 @@
 ---
-// Promociones = productos con precio rebajado (regularPrice ≠ price en
-// WooCommerce). No hay categoría/campo dedicado "promoción" en producción.
+// Promociones: secciones editoriales (misma diagramación que spamandala.cl/promociones)
+// + grilla automática con todo lo rebajado (regularPrice ≠ price en WooCommerce).
+// Las secciones solo guardan slug y texto; nombre, foto y precio salen en vivo de WooCommerce.
+// Para cambiar la campaña del mes se editan los arreglos de abajo; el hero, desde wp-admin → Banners.
 export const prerender = false;
 
-import { hasAnyDiscount } from '../lib/parse';
+import { hasAnyDiscount, getPriceDisplay, getProductDuration } from '../lib/parse';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ProductGrid from '../components/catalog/ProductGrid.astro';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
 import { fetchLayoutData } from '../lib/layoutData';
-import { GET_PRODUCTS } from '../lib/queries/products';
+import { GET_PRODUCTS_PAGE, GET_PRODUCTS_BY_SLUGS } from '../lib/queries/products';
 import { GET_SITE_BANNER } from '../lib/queries/banners';
 import type { SimpleProduct } from '../types/catalog';
 import type { SiteBanner } from '../types/banner';
 
+type Promo = { slug: string; desc: string; tag?: string; note?: string };
+
+const destacados: Promo[] = [
+  { slug: 'spa-oriental-para-dos', tag: 'Para compartir', desc: '150 min de bienestar en habitación compartida. Incluye Fusion Massage, Facial Antiage, reflexología y masaje Champi: técnicas holísticas que liberan tensiones y revitalizan cuerpo y rostro.' },
+  { slug: 'tratamiento-facial-coreano-para-dos', tag: 'Bienestar y belleza natural', desc: 'Inspirado en la cosmética coreana y su efecto Glass Skin. Hidratación profunda en varios pasos y masaje facial, craneal y cervical.' },
+  { slug: 'happy-hour-de-masajes', tag: 'Relajación y bienestar', note: 'Lunes a viernes · 10:00 a 17:00', desc: 'Masaje Mixto Premium: relajación, descontracturante de espalda, drenaje de piernas y reflexología podal.' },
+];
+const esencia: Promo[] = [
+  { slug: 'fusion-massage', desc: 'Masaje de cuerpo completo que fusiona técnicas suecas, shiatsu, tuina, hawaianas y tailandesas para liberar tensiones y alcanzar un descanso profundo.' },
+  { slug: 'tratamiento-facial-global-lifting', desc: 'Facial antiedad que estimula el colágeno y mejora la firmeza. Masaje, radiofrecuencia y peeling para un rostro más firme y luminoso.' },
+  { slug: 'spa-circuit-duo', desc: 'Spa para dos con cuidados faciales y corporales, masajes, piedras volcánicas y pausas de integración para reconectar a otro ritmo.' },
+];
+const temporada = {
+  eyebrow: 'Prepara tu cuerpo',
+  title: 'Especial de temporada',
+  desc: 'Terapias para modelar la silueta, liberar la retención de líquidos y aliviar la pesadez, con el cuerpo listo para los días cálidos.',
+  items: [
+    { slug: 'spa-face-body-para-dos', desc: 'Drenaje de cuerpo completo para dos con exfoliación e hidratación facial y corporal. Desintoxica y alivia la inflamación.' },
+    { slug: 'drenaje-linfatico-piernas-abdomen-brazos', desc: 'Favorece la circulación linfática y moviliza líquidos retenidos para recuperar la sensación de ligereza.' },
+    { slug: 'tratamiento-reductivo-y-o-anticelulitis', desc: 'Reduce la adiposidad localizada y mejora la apariencia de la celulitis. Reafirma, tonifica y modela la silueta.' },
+  ] as Promo[],
+};
+const giftcards: Promo[] = [
+  { slug: 'masaje-de-relajacion', desc: 'Una pausa de calma para liberar tensiones, bajar el ritmo y reconectar con el bienestar.' },
+  { slug: 'masaje-mixto-premium', desc: 'Relajación, descontracturante de espalda y cuello, drenaje de piernas y reflexología podal.' },
+  { slug: 'limpieza-facial-profunda-con-hidratacion', desc: 'Limpia, descongestiona e hidrata para devolver suavidad, frescura y luminosidad a la piel.' },
+];
+const happyHour: Promo[] = [
+  { slug: 'happy-hour-de-masajes', desc: 'Relajación cuerpo completo con drenaje de piernas y descontracturante de espalda y cuello.' },
+  { slug: 'happy-hour-facial', desc: 'Limpieza facial premium para revitalizar y rejuvenecer tu piel.' },
+  { slug: 'happy-hour-reductivo', desc: 'Tratamiento reductivo en horario preferencial para modelar y reafirmar.' },
+];
+
 const cache = kvCacheFrom(Astro);
 const layoutDataPromise = fetchLayoutData(cache);
-let onSale: SimpleProduct[] = [];
+const slugs = [...new Set([destacados, esencia, temporada.items, giftcards, happyHour].flat().map((p) => p.slug))];
+type Nodes = { products: { nodes: SimpleProduct[] } };
+type Page = { products: { nodes: SimpleProduct[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } };
+let products: SimpleProduct[] = [];
+let curated: SimpleProduct[] = [];
 try {
-  const data = await wpQuery<{ products: { nodes: SimpleProduct[] } }>({
-    query: GET_PRODUCTS,
-    variables: { first: 100 }, // máximo de WPGraphQL por página; con muchas ofertas habría que paginar
-    cache,
-  });
-  onSale = data.products.nodes.filter(
-    (p) => hasAnyDiscount(p.price, p.regularPrice)
-  );
+  const allPages = async () => {
+    const out: SimpleProduct[] = [];
+    let after: string | null = null;
+    // Tope de 20 páginas (2.000 productos) por si el cursor no avanzara.
+    for (let i = 0; i < 20; i++) {
+      const page: Page = await wpQuery<Page>({ query: GET_PRODUCTS_PAGE, variables: { after }, cache });
+      out.push(...page.products.nodes);
+      if (!page.products.pageInfo.hasNextPage) break;
+      after = page.products.pageInfo.endCursor;
+    }
+    return out;
+  };
+  const [all, picked] = await Promise.all([
+    allPages(),
+    wpQuery<Nodes>({ query: GET_PRODUCTS_BY_SLUGS, variables: { slugs }, cache }),
+  ]);
+  products = all;
+  curated = picked.products.nodes;
 } catch {
-  // WordPress aún no configurado/disponible en build time.
+  // WordPress aún no configurado/disponible.
 }
+const onSale = products.filter((p) => hasAnyDiscount(p.price, p.regularPrice));
+const bySlug = new Map(curated.map((p) => [p.slug, p]));
 
-// Banner (wp-admin → Banners → Promociones). Página SSR: los cambios se ven
-// al recargar, sin esperar un deploy (a diferencia del Hero del Home).
+// Un producto despublicado o con otro slug se omite en vez de dejar una tarjeta rota.
+const resolve = (list: Promo[]) =>
+  list.flatMap((promo) => {
+    const p = bySlug.get(promo.slug);
+    if (!p) return [];
+    const { current, original } = getPriceDisplay(p.price, p.regularPrice);
+    const n = (s: string) => Number(s.replace(/^Desde /, '').replace(/[^0-9]/g, ''));
+    const off = original ? Math.round((1 - n(current) / n(original)) * 100) : 0;
+    return [{
+      ...promo,
+      p,
+      href: `/producto/${p.slug}`,
+      img: p.image?.sourceUrl ?? '',
+      alt: p.image?.altText || p.name,
+      price: current,
+      original,
+      off: off > 0 ? `${off}% OFF` : null,
+      duration: getProductDuration(p.attributes),
+      variable: p.__typename === 'VariableProduct',
+    }];
+  });
+
+const [featured, ...side] = resolve(destacados);
+const esenciaCards = resolve(esencia);
+const temporadaCards = resolve(temporada.items);
+const giftCards = resolve(giftcards);
+const hhCards = resolve(happyHour);
+
+// Banner (wp-admin → Banners → Promociones). Página SSR: los cambios se ven al recargar.
 let banner: Partial<SiteBanner> = {};
 try {
   const data = await wpQuery<{ siteBanner: SiteBanner | null }>({
@@ -49,24 +127,222 @@ const hero = {
   description: banner.description || 'Tratamientos con descuento por tiempo limitado en Las Condes, Santiago de Chile.',
   image: banner.image || '',
 };
+const nav = [
+  ['#descuentos', 'Descuentos'],
+  ['#esencia', 'Experiencias'],
+  ['#temporada', 'Temporada'],
+  ['#giftcards', 'Giftcards'],
+  ['#happy-hour', 'Happy Hour'],
+  ['#todas', 'Ver todas'],
+];
+const eyebrow = 'text-[11px] font-bold tracking-[0.25em] uppercase text-spa-taupe';
+const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] uppercase text-spa-charcoal group-hover:gap-3 transition-all';
 ---
 <ECommerceLayout title="Promociones" layoutData={layoutDataPromise}>
-  <div class="relative bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+  <section class="relative bg-spa-sand py-14 sm:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
     {hero.image && <img src={hero.image} alt="" class="absolute inset-0 w-full h-full object-cover opacity-25" />}
     <div class="relative max-w-3xl mx-auto text-center">
-      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">{hero.eyebrow}</span>
-      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal">{hero.title}</h1>
-      <p class="mt-4 text-spa-taupe leading-relaxed">
-        {hero.description}
-      </p>
+      <span class={`${eyebrow} block mb-3`}>{hero.eyebrow}</span>
+      <h1 class="font-editorial text-4xl sm:text-6xl font-light text-spa-charcoal">{hero.title}</h1>
+      <p class="mt-4 text-spa-taupe leading-relaxed">{hero.description}</p>
     </div>
-  </div>
+  </section>
 
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+  <nav aria-label="Secciones de promociones" class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-spa-cream">
+    <ul class="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto py-3 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
+      {nav.map(([href, label]) => (
+        <li><a href={href} class="block px-4 py-2 rounded-full border border-[#E8E2D7] text-spa-charcoal hover:bg-spa-charcoal hover:text-white transition-colors">{label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  {featured && (
+    <section id="descuentos" class="scroll-mt-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <h2 class="font-editorial text-4xl sm:text-5xl font-semibold text-spa-charcoal">Descuentos especiales</h2>
+      <p class="mt-2 mb-10 italic text-spa-taupe">Oportunidades únicas para renovar tu bienestar este mes.</p>
+      <div class="grid gap-6 md:grid-cols-[7fr_5fr]">
+        <a href={featured.href} class="group bg-[#F5EFE6] rounded-2xl overflow-hidden flex flex-col hover:-translate-y-1.5 hover:shadow-xl transition-all duration-500">
+          <div class="h-72 md:h-80 overflow-hidden">
+            <img src={featured.img} alt={featured.alt} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+          </div>
+          <div class="p-8 flex flex-col flex-1">
+            <div class="flex justify-between items-start gap-4 mb-3">
+              <h3 class="font-editorial text-3xl font-bold text-spa-charcoal leading-tight">{featured.p.name}</h3>
+              {featured.off && <span class="bg-spa-charcoal text-white text-[11px] font-bold px-3.5 py-1.5 rounded-full whitespace-nowrap">{featured.off}</span>}
+            </div>
+            <p class="text-[15px] text-[#4e453e] leading-relaxed">{featured.desc}</p>
+            <div class="mt-auto pt-6 flex flex-wrap justify-between items-center gap-3">
+              <span class="text-sm">
+                {featured.original && <s class="text-[#A89E95] mr-2">{featured.original}</s>}
+                <strong class="text-spa-charcoal text-lg">{featured.price}</strong>
+                {featured.duration && <span class="text-xs uppercase tracking-wider text-[#AAA396] ml-3">{featured.duration}</span>}
+              </span>
+              <span class={cta}>Reservar mi experiencia →</span>
+            </div>
+          </div>
+        </a>
+        <div class="flex flex-col gap-6">
+          {side.map((c, i) => {
+            const dark = i % 2 === 1;
+            return (
+              <a href={c.href} class={`group flex-1 rounded-2xl p-8 flex flex-col hover:-translate-y-1.5 hover:shadow-xl transition-all duration-500 ${dark ? 'bg-[#403123] text-white' : 'bg-white border border-[#E8E2D7]'}`}>
+                <div class="flex justify-between items-start gap-4 mb-2">
+                  <span class={`text-[11px] font-bold tracking-[0.12em] uppercase ${dark ? 'text-[#cdb6a3]' : 'text-[#6e5b3f]'}`}>{c.tag}</span>
+                  {c.off && <span class={`text-[11px] font-bold px-3 py-1 rounded-full ${dark ? 'bg-[#cdb6a3] text-[#403123]' : 'bg-spa-sand text-spa-charcoal'}`}>{c.off}</span>}
+                </div>
+                <h3 class={`font-editorial text-[28px] font-bold leading-tight mb-2 ${dark ? 'text-[#f7deca]' : 'text-spa-charcoal'}`}>{c.p.name}</h3>
+                <p class={`text-sm leading-relaxed ${dark ? 'text-white/80' : 'text-[#4e453e]'}`}>{c.desc}</p>
+                <div class={`mt-auto pt-5 border-t flex justify-between items-center gap-3 ${dark ? 'border-white/15' : 'border-black/10'}`}>
+                  <span class={`text-xs uppercase tracking-wider ${dark ? 'text-white/60 italic' : 'text-[#AAA396]'}`}>{c.note ?? c.duration ?? c.price}</span>
+                  <span class={`text-xs font-bold uppercase tracking-wider ${dark ? 'underline underline-offset-4' : ''}`}>Reservar · {c.price}</span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {esenciaCards.length > 0 && (
+    <section id="esencia" class="scroll-mt-16 bg-[#faf3e3] py-20 px-4 sm:px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-14">
+          <span class={`${eyebrow} block mb-3`}>Nuestra esencia</span>
+          <h2 class="font-editorial text-4xl font-medium text-spa-charcoal">Experiencias con sello Mandala</h2>
+        </div>
+        <div class="grid gap-12 md:grid-cols-3 md:gap-10">
+          {esenciaCards.map((c) => (
+            <a href={c.href} class="group flex flex-col">
+              <div class="h-96 rounded-t-[200px] overflow-hidden shadow-lg mb-6">
+                <img src={c.img} alt={c.alt} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              </div>
+              <div class="flex justify-between items-baseline gap-3 mb-3">
+                <h3 class="font-editorial text-[22px] font-bold uppercase tracking-wide text-spa-charcoal">{c.p.name}</h3>
+                {c.duration && <span class="text-xs font-bold tracking-wider text-[#6e5b3f] whitespace-nowrap uppercase">{c.duration}</span>}
+              </div>
+              <p class="text-[15px] text-[#4e453e] leading-relaxed mb-5">{c.desc}</p>
+              <span class={`${cta} mt-auto`}>Descubrir experiencia →</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {temporadaCards.length > 0 && (
+    <section id="temporada" class="scroll-mt-16 bg-[#fcf8f2] py-20 px-4 sm:px-6">
+      <div class="max-w-6xl mx-auto grid gap-12 lg:grid-cols-[320px_1fr] lg:gap-16">
+        <div>
+          <span class={`${eyebrow} block mb-6`}>{temporada.eyebrow}</span>
+          <h2 class="font-editorial text-4xl text-spa-charcoal mb-6">{temporada.title}</h2>
+          <p class="text-sm italic text-[#5a524a] leading-relaxed">{temporada.desc}</p>
+        </div>
+        <div class="flex flex-col gap-9">
+          {temporadaCards.map((c) => (
+            <div class="group grid gap-5 sm:grid-cols-[240px_1fr] sm:gap-7 items-center">
+              <a href={c.href} class="block h-40 rounded-xl overflow-hidden">
+                <img src={c.img} alt={c.alt} loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
+              </a>
+              <div>
+                <h3 class="font-editorial text-2xl text-spa-charcoal mb-2"><a href={c.href} class="hover:opacity-80">{c.p.name}</a></h3>
+                <p class="text-sm text-[#5a524a] leading-relaxed mb-4">{c.desc}</p>
+                <div class="flex flex-wrap justify-between items-center gap-3">
+                  <span class="text-[11px] font-bold tracking-widest uppercase text-spa-charcoal">
+                    {c.duration && `${c.duration} • `}{c.original && <s class="text-[#A89E95] mr-1">{c.original}</s>}{c.price}
+                  </span>
+                  <a href={c.href} class="px-5 py-2 border border-spa-charcoal rounded-full text-[10px] font-bold tracking-[0.15em] uppercase text-spa-charcoal hover:bg-spa-charcoal hover:text-white transition-colors">Reservar hora</a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {giftCards.length > 0 && (
+    <section id="giftcards" class="scroll-mt-16 bg-[#f7f2e9] py-20 px-4 sm:px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-end gap-5 mb-12">
+          <div>
+            <h2 class="font-editorial text-4xl font-medium text-spa-charcoal mb-1">Giftcards más regaladas</h2>
+            <p class="text-[#62584e]">Un regalo pensado para sorprender, disfrutar y recordar.</p>
+          </div>
+          <a href="/gift-cards" class="self-start md:self-auto bg-[#372d24] hover:bg-[#241d17] text-white px-7 py-3.5 rounded-full text-[11px] font-bold tracking-[0.15em] uppercase transition-colors">Ver todas las giftcards</a>
+        </div>
+        <div class="grid gap-8 md:grid-cols-3">
+          {giftCards.map((c) => (
+            <div class="bg-white rounded-[20px] p-6 shadow-sm hover:-translate-y-1.5 hover:shadow-lg transition-all duration-300 flex flex-col">
+              <a href={c.href} class="block h-44 rounded-xl overflow-hidden mb-5">
+                <img src={c.img} alt={c.alt} loading="lazy" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              </a>
+              <h3 class="font-editorial text-[22px] font-semibold uppercase tracking-wide text-spa-charcoal mb-3"><a href={c.href}>{c.p.name}</a></h3>
+              <p class="text-sm text-[#62584e] leading-relaxed mb-6">{c.desc}</p>
+              <div class="mt-auto flex justify-between items-center gap-3">
+                <span class="font-editorial text-xl text-spa-charcoal">{c.duration && `${c.duration} • `}{c.price}</span>
+                {c.variable || c.p.giftCardEnabled === false ? (
+                  <a href={c.href} class="bg-spa-charcoal text-white px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-wide">Ver opciones</a>
+                ) : (
+                  <button type="button" data-gift-product={c.p.databaseId} data-gift-name={c.p.name} data-gift-image={c.img} class="bg-spa-charcoal hover:bg-[#433B36] text-white px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-wide transition-colors">Regalar</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {hhCards.length > 0 && (
+    <section id="happy-hour" class="scroll-mt-16 bg-[#f4efe6] py-24 px-4 sm:px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="text-center max-w-xl mx-auto mb-14">
+          <span class="text-[11px] uppercase tracking-[0.25em] text-[#b38e5d] font-semibold block mb-3">Lunes a viernes · 10:00 a 17:00</span>
+          <h2 class="font-editorial text-5xl text-spa-charcoal mb-3">Happy Hour</h2>
+          <p class="text-[#6e645a] font-light">Tarifas preferenciales en horario de semana.</p>
+        </div>
+        <div class="grid gap-8 md:grid-cols-3">
+          {hhCards.map((c) => (
+            <article class="group bg-[#faf7f2] border border-[#b38e5d]/20 hover:border-[#b38e5d] rounded-t-[100px] rounded-b-2xl p-4 pb-7 flex flex-col hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
+              <a href={c.href} class="relative block h-80 rounded-t-[84px] rounded-b-xl overflow-hidden mb-6">
+                <img src={c.img} alt={c.alt} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                {c.duration && <span class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#faf7f2]/90 backdrop-blur px-4 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wider text-spa-charcoal border border-[#b38e5d]/30 whitespace-nowrap">{c.duration}</span>}
+              </a>
+              <div class="px-3 text-center flex flex-col flex-1">
+                <h3 class="font-editorial text-2xl font-medium text-spa-charcoal mb-3"><a href={c.href} class="hover:text-[#b38e5d]">{c.p.name}</a></h3>
+                <p class="text-[13px] text-[#6e645a] leading-relaxed mb-6">{c.desc}</p>
+                <div class="w-10 h-px bg-[#b38e5d]/50 mx-auto mb-5"></div>
+                <div class="mt-auto flex justify-between items-center">
+                  <span class="font-editorial text-2xl font-semibold text-spa-charcoal">{c.original && <s class="text-base text-[#A89E95] mr-1">{c.original}</s>}{c.price}</span>
+                  {c.variable ? (
+                    <a href={c.href} class="bg-spa-charcoal hover:bg-[#b38e5d] text-white px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-wide transition-colors">Elegir</a>
+                  ) : (
+                    <button type="button" data-add-to-cart={c.p.databaseId} class="bg-spa-charcoal hover:bg-[#b38e5d] text-white px-4 py-2.5 rounded-full text-[11px] font-semibold uppercase tracking-wide transition-colors">Agregar</button>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <section id="todas" class="scroll-mt-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <h2 class="font-editorial text-4xl text-spa-charcoal text-center mb-10">Todas las promociones</h2>
     {onSale.length > 0 ? (
       <ProductGrid products={onSale} basePath="/producto" />
     ) : (
       <p class="text-sm text-spa-taupe text-center">No hay promociones activas por el momento.</p>
     )}
-  </div>
+  </section>
 </ECommerceLayout>
+
+<script>
+  import { addToCart } from '../store/cartStore';
+  // Solo los botones Happy Hour; los de la grilla los conecta ProductGrid.
+  document.querySelectorAll<HTMLButtonElement>('#happy-hour [data-add-to-cart]').forEach((btn) => {
+    btn.addEventListener('click', () => addToCart(Number(btn.dataset.addToCart), 1));
+  });
+</script>

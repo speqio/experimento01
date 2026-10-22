@@ -2,7 +2,7 @@
 // `price`/`regularPrice` y `stockStatus` no: el catálogo real tiene tanto
 // SimpleProduct como VariableProduct (productos con variaciones), así que
 // hay que pedirlos con fragmentos inline para ambos tipos o quedan null.
-const PRODUCT_CARD_FIELDS = /* GraphQL */ `
+export const PRODUCT_CARD_FIELDS = /* GraphQL */ `
   __typename
   id
   databaseId
@@ -132,5 +132,24 @@ export const GET_PRODUCTS_BY_CATEGORIES = /* GraphQL */ `
 export const GET_GIFT_CARD_SETTINGS = /* GraphQL */ `
   query GetGiftCardSettings {
     giftCardSettings { enabled imageUrl }
+  }
+`;
+
+// Productos elegidos a mano por slug (secciones de /promociones), sin depender del límite de 100.
+export const GET_PRODUCTS_BY_SLUGS = /* GraphQL */ `
+  query GetProductsBySlugs($slugs: [String], $first: Int = 50) {
+    products(first: $first, where: { status: "publish", slugIn: $slugs }) {
+      nodes { ${PRODUCT_CARD_FIELDS} }
+    }
+  }
+`;
+
+// Catálogo completo por páginas de 100 (máximo de WPGraphQL), para listar todas las ofertas.
+export const GET_PRODUCTS_PAGE = /* GraphQL */ `
+  query GetProductsPage($after: String) {
+    products(first: 100, after: $after, where: { status: "publish" }) {
+      pageInfo { hasNextPage endCursor }
+      nodes { ${PRODUCT_CARD_FIELDS} }
+    }
   }
 `;
