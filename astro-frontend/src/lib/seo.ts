@@ -33,7 +33,9 @@ export function wpSeo(path: string): WpSeo {
  */
 export function titleFor(path: string, title: string) {
   const key = path === '/' ? '/' : `/${path.replace(/^\/+|\/+$/g, '').toLowerCase()}/`;
-  const exact = (titulosWp as Record<string, string>)[key];
+  // Las entradas de spamandala.cl viven en /slug/ y aquí se sirven con un rewrite a /blog/slug.
+  const post = path.match(/^\/blog\/([^/]+)\/?$/);
+  const exact = (titulosWp as Record<string, string>)[key] ?? (post && (titulosWp as Record<string, string>)[`/${post[1]}/`]);
   if (exact) return exact;
   return /m[aá]ndala/i.test(title) ? title : `${title} | Spa Mandala`;
 }
