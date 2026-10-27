@@ -22,7 +22,7 @@ export const PRODUCT_CARD_FIELDS = /* GraphQL */ `
       productosPrincipalesIds(first: 100) { nodes { ... on Product { id name slug } } }
     }
   }
-  productCategories { nodes { name slug } }
+  ... on Product { productCategories { nodes { name slug } } }
 `;
 
 export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
