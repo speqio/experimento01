@@ -4,6 +4,7 @@
 // (wp-admin → Marketing → Gift Cards → Productos) se ve al instante, sin deploy.
 export const prerender = false;
 
+import PageBanner from '../../components/common/PageBanner.astro';
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import ProductCard from '../../components/catalog/ProductCard.astro';
 import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
@@ -35,18 +36,13 @@ try {
 }
 ---
 <ECommerceLayout title="Gift Cards" layoutData={layoutDataPromise}>
-  <div class="bg-spa-taupe-dark text-white py-16 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-2xl mx-auto text-center">
-      <span class="text-xs font-semibold tracking-[0.2em] uppercase text-white/70 block mb-3">Un detalle que se transforma en experiencia</span>
-      <h1 class="font-editorial text-3xl sm:text-5xl font-light">Gift Cards</h1>
-      <p class="mt-4 text-white/80 leading-relaxed">
-        Regala una experiencia de bienestar: el destinatario canjea su código y disfruta el tratamiento sin costo.
-      </p>
-    </div>
-  </div>
+  <PageBanner title="Gift Cards" inverse
+    description="Regala una experiencia de bienestar: el destinatario canjea su código y disfruta el tratamiento sin costo."
+    context="Un detalle que se transforma en experiencia"
+  />
 
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-    <ol class="grid sm:grid-cols-2 gap-5">
+    <ol data-stagger class="grid sm:grid-cols-2 gap-5">
       {steps.map((step, i) => (
         <li class="bg-white rounded-2xl border border-[#E8E2D7] p-6">
           <span class="font-editorial text-2xl text-spa-taupe">{i + 1}</span>

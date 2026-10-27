@@ -28,8 +28,9 @@ interface Props {
   preloadImage?: string | null;
   /** Migas de pan sin "Inicio" (se agrega solo); también van al JSON-LD. */
   breadcrumbs?: Crumb[];
+  breadcrumbsInBanner?: boolean;
 }
-const { title, description, layoutData, breadcrumbs, schema = [], ...seo } = Astro.props;
+const { title, description, layoutData, breadcrumbs, breadcrumbsInBanner = false, schema = [], ...seo } = Astro.props;
 const crumbs = breadcrumbs?.length ? [{ name: 'Inicio', path: '/' }, ...breadcrumbs] : null;
 const allSchema = crumbs ? [...schema, breadcrumbSchema(Astro.url.origin, crumbs)] : schema;
 const currentPath = Astro.url.pathname;
@@ -37,9 +38,9 @@ const currentPath = Astro.url.pathname;
 const { categoryGroups, giftCardImageUrl } = await (layoutData ?? fetchLayoutData(kvCacheFrom(Astro)));
 ---
 <BaseLayout title={title} description={description} schema={allSchema} {...seo}>
-  <Header currentPath={currentPath} categoryGroups={categoryGroups} client:idle />
+  <Header currentPath={currentPath} currentCategory={Astro.url.searchParams.get('cat')} categoryGroups={categoryGroups} client:idle />
   <main class="flex-grow">
-    {crumbs && <Breadcrumbs crumbs={crumbs} />}
+    {crumbs && !breadcrumbsInBanner && <Breadcrumbs crumbs={crumbs} />}
     <slot />
   </main>
   <Footer />

@@ -1,5 +1,6 @@
 ---
 // Envoltorio común de las páginas de políticas: encabezado, índice y tipografía del texto.
+import PageBanner from './PageBanner.astro';
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 
 interface Props {
@@ -11,11 +12,7 @@ interface Props {
 const { title, description, updated, sections } = Astro.props;
 ---
 <ECommerceLayout title={title} description={description}>
-  <div class="bg-spa-sand py-14 sm:py-16 px-4 sm:px-6 lg:px-8 text-center">
-    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Información importante</span>
-    <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal">{title}</h1>
-    <p class="text-xs text-spa-taupe mt-4">Última actualización: {updated}</p>
-  </div>
+  <PageBanner title={title} context={`Última actualización: ${updated}`} />
 
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 grid lg:grid-cols-[220px_minmax(0,1fr)] gap-10">
     <nav aria-label="Índice" class="hidden lg:block">

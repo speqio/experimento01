@@ -1,20 +1,56 @@
 ---
 import ProductCard from './ProductCard.astro';
 import type { SimpleProduct } from '../../types/catalog';
+import { getProductBadge, getProductDuration, extractDuration, hasAnyDiscount } from '../../lib/parse';
 
 interface Props {
   products: Pick<
     SimpleProduct,
-    'databaseId' | 'name' | 'slug' | 'price' | 'regularPrice' | 'image' | 'shortDescription' | 'attributes'
+    'databaseId' | 'name' | 'slug' | 'price' | 'regularPrice' | 'image' | 'shortDescription' | 'attributes' | 'productCategories'
   >[];
   basePath: string;
 }
 const { products, basePath } = Astro.props;
+
+function durationToMinutes(str: string): number {
+  const s = str.toLowerCase();
+  let hours = 0, mins = 0;
+  const hMatch = s.match(/(\d+(?:\.\d+)?)\s*hora/);
+  if (hMatch) hours = parseFloat(hMatch[1]);
+  if (/y\s*media/.test(s)) mins += 30;
+  const mMatch = s.match(/(\d+)\s*min/);
+  if (mMatch) mins += parseInt(mMatch[1]);
+  if (s.includes('media hora') && !hMatch) return 30;
+  return hours * 60 + mins;
+}
+
+function getFilters(p: typeof products[0]) {
+  const badge = getProductBadge(p.name);
+  const audience = badge === 'Cabina Doble' ? 'pareja' : 'solo';
+
+  const { duration: descDur } = extractDuration(p.shortDescription ?? '');
+  const durStr = getProductDuration(p.attributes) ?? descDur;
+  let durationBucket: string | null = null;
+  if (durStr) {
+    const mins = durationToMinutes(durStr);
+    if (mins > 0) durationBucket = mins <= 45 ? 'short' : mins <= 70 ? 'medium' : 'long';
+  }
+
+  const discount = hasAnyDiscount(p.price, p.regularPrice) ? 'true' : 'false';
+  const categories = (p.productCategories?.nodes ?? []).map(c => c.slug);
+
+  return { audience, duration: durationBucket, discount, category: categories };
+}
 ---
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-  {products.map((product) => (
-    <ProductCard product={product} href={`${basePath}/${product.slug}`} />
-  ))}
+<div data-stagger class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+  {products.map((product) => {
+    const filters = getFilters(product);
+    return (
+      <div data-product-filters={JSON.stringify(filters)}>
+        <ProductCard product={product} href={`${basePath}/${product.slug}`} />
+      </div>
+    );
+  })}
 </div>
 
 <script>

@@ -6,6 +6,7 @@
 export const prerender = false;
 
 import { hasAnyDiscount, getPriceDisplay, getProductDuration } from '../lib/parse';
+import PageBanner from '../components/common/PageBanner.astro';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ProductGrid from '../components/catalog/ProductGrid.astro';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
@@ -139,14 +140,7 @@ const eyebrow = 'text-[11px] font-bold tracking-[0.25em] uppercase text-spa-taup
 const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] uppercase text-spa-charcoal group-hover:gap-3 transition-all';
 ---
 <ECommerceLayout title="Promociones" layoutData={layoutDataPromise}>
-  <section class="relative bg-spa-sand py-14 sm:py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-    {hero.image && <img src={hero.image} alt="" class="absolute inset-0 w-full h-full object-cover opacity-25" />}
-    <div class="relative max-w-3xl mx-auto text-center">
-      <span class={`${eyebrow} block mb-3`}>{hero.eyebrow}</span>
-      <h1 class="font-editorial text-4xl sm:text-6xl font-light text-spa-charcoal">{hero.title}</h1>
-      <p class="mt-4 text-spa-taupe leading-relaxed">{hero.description}</p>
-    </div>
-  </section>
+  <PageBanner title={hero.title} description={hero.description} context={hero.eyebrow} image={hero.image} />
 
   <nav aria-label="Secciones de promociones" class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-spa-cream">
     <ul class="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto py-3 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
@@ -160,7 +154,7 @@ const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] 
     <section id="descuentos" class="scroll-mt-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
       <h2 class="font-editorial text-4xl sm:text-5xl font-semibold text-spa-charcoal">Descuentos especiales</h2>
       <p class="mt-2 mb-10 italic text-spa-taupe">Oportunidades únicas para renovar tu bienestar este mes.</p>
-      <div class="grid gap-6 md:grid-cols-[7fr_5fr]">
+      <div data-stagger class="grid gap-6 md:grid-cols-[7fr_5fr]">
         <a href={featured.href} class="group bg-[#F5EFE6] rounded-2xl overflow-hidden flex flex-col hover:-translate-y-1.5 hover:shadow-xl transition-all duration-500">
           <div class="h-72 md:h-80 overflow-hidden">
             <img src={featured.img} alt={featured.alt} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -190,7 +184,7 @@ const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] 
                   <span class={`text-[11px] font-bold tracking-[0.12em] uppercase ${dark ? 'text-[#cdb6a3]' : 'text-[#6e5b3f]'}`}>{c.tag}</span>
                   {c.off && <span class={`text-[11px] font-bold px-3 py-1 rounded-full ${dark ? 'bg-[#cdb6a3] text-[#403123]' : 'bg-spa-sand text-spa-charcoal'}`}>{c.off}</span>}
                 </div>
-                <h3 class={`font-editorial text-[28px] font-bold leading-tight mb-2 ${dark ? 'text-[#f7deca]' : 'text-spa-charcoal'}`}>{c.p.name}</h3>
+                <h3 class={`font-sans text-lg font-bold leading-tight mb-2 ${dark ? 'text-[#f7deca]' : 'text-spa-charcoal'}`}>{c.p.name}</h3>
                 <p class={`text-sm leading-relaxed ${dark ? 'text-white/80' : 'text-[#4e453e]'}`}>{c.desc}</p>
                 <div class={`mt-auto pt-5 border-t flex justify-between items-center gap-3 ${dark ? 'border-white/15' : 'border-black/10'}`}>
                   <span class={`text-xs uppercase tracking-wider ${dark ? 'text-white/60 italic' : 'text-[#AAA396]'}`}>{c.note ?? c.duration ?? c.price}</span>
@@ -211,14 +205,14 @@ const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] 
           <span class={`${eyebrow} block mb-3`}>Nuestra esencia</span>
           <h2 class="font-editorial text-4xl font-medium text-spa-charcoal">Experiencias con sello Mandala</h2>
         </div>
-        <div class="grid gap-12 md:grid-cols-3 md:gap-10">
+        <div data-stagger class="grid gap-12 md:grid-cols-3 md:gap-10">
           {esenciaCards.map((c) => (
             <a href={c.href} class="group flex flex-col">
               <div class="h-96 rounded-t-[200px] overflow-hidden shadow-lg mb-6">
                 <img src={c.img} alt={c.alt} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
               <div class="flex justify-between items-baseline gap-3 mb-3">
-                <h3 class="font-editorial text-[22px] font-bold uppercase tracking-wide text-spa-charcoal">{c.p.name}</h3>
+                <h3 class="font-sans text-base font-bold uppercase tracking-wide text-spa-charcoal">{c.p.name}</h3>
                 {c.duration && <span class="text-xs font-bold tracking-wider text-[#6e5b3f] whitespace-nowrap uppercase">{c.duration}</span>}
               </div>
               <p class="text-[15px] text-[#4e453e] leading-relaxed mb-5">{c.desc}</p>
@@ -238,14 +232,14 @@ const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] 
           <h2 class="font-editorial text-4xl text-spa-charcoal mb-6">{temporada.title}</h2>
           <p class="text-sm italic text-[#5a524a] leading-relaxed">{temporada.desc}</p>
         </div>
-        <div class="flex flex-col gap-9">
+        <div data-stagger class="flex flex-col gap-9">
           {temporadaCards.map((c) => (
             <div class="group grid gap-5 sm:grid-cols-[240px_1fr] sm:gap-7 items-center">
               <a href={c.href} class="block h-40 rounded-xl overflow-hidden">
                 <img src={c.img} alt={c.alt} loading="lazy" class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500" />
               </a>
               <div>
-                <h3 class="font-editorial text-2xl text-spa-charcoal mb-2"><a href={c.href} class="hover:opacity-80">{c.p.name}</a></h3>
+                <h3 class="font-sans text-lg text-spa-charcoal mb-2"><a href={c.href} class="hover:opacity-80">{c.p.name}</a></h3>
                 <p class="text-sm text-[#5a524a] leading-relaxed mb-4">{c.desc}</p>
                 <div class="flex flex-wrap justify-between items-center gap-3">
                   <span class="text-[11px] font-bold tracking-widest uppercase text-spa-charcoal">
@@ -271,13 +265,13 @@ const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] 
           </div>
           <a href="/gift-cards" class="self-start md:self-auto bg-[#372d24] hover:bg-[#241d17] text-white px-7 py-3.5 rounded-full text-[11px] font-bold tracking-[0.15em] uppercase transition-colors">Ver todas las giftcards</a>
         </div>
-        <div class="grid gap-8 md:grid-cols-3">
+        <div data-stagger class="grid gap-8 md:grid-cols-3">
           {giftCards.map((c) => (
             <div class="bg-white rounded-[20px] p-6 shadow-sm hover:-translate-y-1.5 hover:shadow-lg transition-all duration-300 flex flex-col">
-              <a href={c.href} class="block h-44 rounded-xl overflow-hidden mb-5">
+              <a href={c.href} class="relative block h-44 rounded-xl overflow-hidden mb-5">
                 <img src={c.img} alt={c.alt} loading="lazy" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
               </a>
-              <h3 class="font-editorial text-[22px] font-semibold uppercase tracking-wide text-spa-charcoal mb-3"><a href={c.href}>{c.p.name}</a></h3>
+              <h3 class="font-sans text-base font-semibold uppercase tracking-wide text-spa-charcoal mb-3"><a href={c.href}>{c.p.name}</a></h3>
               <p class="text-sm text-[#62584e] leading-relaxed mb-6">{c.desc}</p>
               <div class="mt-auto flex justify-between items-center gap-3">
                 <span class="font-editorial text-xl text-spa-charcoal">{c.duration && `${c.duration} • `}{c.price}</span>
@@ -302,7 +296,7 @@ const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] 
           <h2 class="font-editorial text-5xl text-spa-charcoal mb-3">Happy Hour</h2>
           <p class="text-[#6e645a] font-light">Tarifas preferenciales en horario de semana.</p>
         </div>
-        <div class="grid gap-8 md:grid-cols-3">
+        <div data-stagger class="grid gap-8 md:grid-cols-3">
           {hhCards.map((c) => (
             <article class="group bg-[#faf7f2] border border-[#b38e5d]/20 hover:border-[#b38e5d] rounded-t-[100px] rounded-b-2xl p-4 pb-7 flex flex-col hover:-translate-y-2 hover:shadow-xl transition-all duration-500">
               <a href={c.href} class="relative block h-80 rounded-t-[84px] rounded-b-xl overflow-hidden mb-6">
@@ -310,7 +304,7 @@ const cta = 'inline-flex items-center gap-2 text-xs font-bold tracking-[0.12em] 
                 {c.duration && <span class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-[#faf7f2]/90 backdrop-blur px-4 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wider text-spa-charcoal border border-[#b38e5d]/30 whitespace-nowrap">{c.duration}</span>}
               </a>
               <div class="px-3 text-center flex flex-col flex-1">
-                <h3 class="font-editorial text-2xl font-medium text-spa-charcoal mb-3"><a href={c.href} class="hover:text-[#b38e5d]">{c.p.name}</a></h3>
+                <h3 class="font-sans text-lg font-medium text-spa-charcoal mb-3"><a href={c.href} class="hover:text-[#b38e5d]">{c.p.name}</a></h3>
                 <p class="text-[13px] text-[#6e645a] leading-relaxed mb-6">{c.desc}</p>
                 <div class="w-10 h-px bg-[#b38e5d]/50 mx-auto mb-5"></div>
                 <div class="mt-auto flex justify-between items-center">

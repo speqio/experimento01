@@ -2,17 +2,22 @@
 // Migas de pan visibles; el mismo listado va como BreadcrumbList en el JSON-LD (ver ECommerceLayout).
 import type { Crumb } from '../../lib/seo';
 
-interface Props { crumbs: Crumb[] }
-const { crumbs } = Astro.props;
+interface Props { crumbs: Crumb[]; inBanner?: boolean; inverse?: boolean }
+
+const { crumbs, inBanner = false, inverse = false } = Astro.props;
 ---
-<nav aria-label="Migas de pan" class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 text-xs text-spa-taupe">
+<nav aria-label="Migas de pan" class:list={[
+  'w-full max-w-6xl mx-auto text-left text-xs',
+  inBanner ? 'pb-4 border-b border-current/20' : 'px-4 sm:px-6 lg:px-8 pt-4',
+  inverse ? 'text-white' : 'text-spa-taupe-dark',
+]}>
   <ol class="flex flex-wrap items-center gap-1.5">
     {crumbs.map((c, i) => (
       <li class="flex items-center gap-1.5 min-w-0">
         {i > 0 && <span aria-hidden="true">›</span>}
         {i < crumbs.length - 1
-          ? <a href={c.path} class="hover:text-spa-charcoal transition-colors">{c.name}</a>
-          : <span aria-current="page" class="text-spa-charcoal truncate">{c.name}</span>}
+          ? <a href={c.path} class:list={['transition-colors underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 rounded-sm', inverse ? 'hover:text-white hover:underline' : 'hover:text-spa-charcoal']}>{c.name}</a>
+          : <span aria-current="page" class:list={['break-words', inverse ? 'text-white' : 'text-spa-charcoal']}>{c.name}</span>}
       </li>
     ))}
   </ol>

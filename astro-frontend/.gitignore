@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+.codex/
+.vscode/
+.impeccable/
+.aws/
+.env
+.env.*
+!.env.example
+output/
+*.zip
+*.patch
+*.bak
+*.tmp
+*.orig
+*.pem
+*.key
+*.pfx
+entrega/
+# Originales de trabajo: el frontend utiliza las versiones WebP.
+public/images/servicios/*-v1.png
+public/images/servicios/*-v2.png
+public/images/servicios/coleccion-*.json

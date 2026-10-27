@@ -1,0 +1,67 @@
+﻿---
+import Breadcrumbs from './Breadcrumbs.astro';
+import { categoryGroupForLocation } from '../../lib/categoryGroups';
+import type { Crumb } from '../../lib/seo';
+interface Props {
+  title: string;
+  description?: string;
+  context?: string;
+  breadcrumbs?: Crumb[];
+  inverse?: boolean;
+  image?: string;
+  class?: string;
+}
+const { title, description, context, breadcrumbs, image: providedImage, class: className } = Astro.props;
+const family = categoryGroupForLocation(Astro.url.pathname, Astro.url.searchParams.get('cat'));
+const photos: Record<string, { file: string; position: string }> = {
+  Faciales: { file: 'faciales', position: 'center 60%' },
+  Corporales: { file: 'corporales', position: 'center 58%' },
+  Masajes: { file: 'masajes', position: 'center 62%' },
+  'Spa Day': { file: 'spa-day', position: 'center 58%' },
+};
+const photo = photos[family ?? ''] ?? (Astro.url.pathname.startsWith('/sobre-nosotras')
+  ? { file: 'bienestar', position: 'center 60%' }
+  : { file: 'spa-day', position: 'center 58%' });
+const image = providedImage || `/images/servicios/${photo.file}-natural-v2-960.webp`;
+---
+<div class:list={['page-banner-shell', className]}>
+  <section class="page-banner" aria-labelledby="page-banner-title">
+    <img src={image} alt="" class="page-banner__image" style={{ objectPosition: photo.position }} loading="eager" fetchpriority="high" />
+    <div class="page-banner__shade" aria-hidden="true"></div>
+    <div class="page-banner__inner">
+      {breadcrumbs?.length && <Breadcrumbs crumbs={[{ name: 'Inicio', path: '/' }, ...breadcrumbs]} inBanner inverse />}
+      <div class="page-banner__content">
+        <h1 id="page-banner-title" class="font-editorial">{title}</h1>
+        {description && <p class="page-banner__description">{description}</p>}
+        {context && <p class="page-banner__context">{context}</p>}
+        {Astro.slots.has('default') && <div class="page-banner__actions"><slot /></div>}
+      </div>
+    </div>
+  </section>
+</div>
+<style>
+  .page-banner-shell { padding: .75rem .75rem 0; }
+  .page-banner { position: relative; isolation: isolate; overflow: hidden; border-radius: 1.25rem; background: #675647; color: #fff8ee; }
+  .page-banner__image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .page-banner__shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgb(35 29 24 / .82), rgb(35 29 24 / .68) 55%, rgb(35 29 24 / .32)); }
+  .page-banner__inner { min-height: 20rem; position: relative; max-width: 72rem; margin-inline: auto; padding: 1.25rem 1.25rem 0; display: flex; flex-direction: column; }
+  .page-banner__content { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 2rem 0 2.5rem; text-align: left; }
+  .page-banner h1 { max-width: 22ch; margin: 0; font-size: clamp(2.375rem, 4.2vw, 3.5rem); font-weight: 400; line-height: 1.06; letter-spacing: -.025em; text-wrap: balance; overflow-wrap: anywhere; }
+  .page-banner__description { max-width: 52ch; margin-top: 1.25rem; font-size: .9375rem; line-height: 1.75; color: #f3eade; text-wrap: pretty; }
+  .page-banner__context { margin-top: 1rem; color: #f3eade; font-size: .75rem; line-height: 1.6; letter-spacing: .04em; }
+  .page-banner__actions { margin-top: 1.5rem; }
+  .page-banner__actions :global(a) { color: #fff8ee; text-decoration-color: rgb(255 248 238 / .6); }
+  .page-banner__actions :global(a:focus-visible) { outline-color: #fff8ee; }
+  @media (max-width: 639px) { .page-banner__shade { background: rgb(35 29 24 / .65); } }
+  @media (min-width: 640px) {
+    .page-banner-shell { padding: 1rem 1.5rem 0; }
+    .page-banner { border-radius: 1.75rem; }
+    .page-banner__inner { min-height: 21rem; padding: 1.5rem 1.5rem 0; }
+    .page-banner__content { padding-block: 2.5rem 3rem; }
+  }
+  @media (min-width: 1024px) {
+    .page-banner-shell { padding: 1.5rem 2rem 0; }
+    .page-banner { border-radius: 2.25rem; }
+    .page-banner__inner { min-height: 22rem; padding-inline: 2rem; }
+  }
+</style>

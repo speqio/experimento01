@@ -2,6 +2,7 @@
 // /contacto/ (misma URL que spamandala.cl). Tiene prioridad sobre [...page].astro; título y descripción de Yoast.
 export const prerender = false;
 
+import PageBanner from '../components/common/PageBanner.astro';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ContactForm from '../components/common/ContactForm.astro';
 import { SITE_INFO, RESERVO_URL } from '../lib/siteInfo';
@@ -14,18 +15,19 @@ const whatsappUrl = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompone
 const card = 'bg-white rounded-2xl border border-[#E8E2D7] p-6 flex gap-4';
 const iconBox = 'w-11 h-11 rounded-full bg-spa-sand text-spa-taupe-dark flex items-center justify-center shrink-0';
 const label = 'text-[11px] font-semibold tracking-[0.2em] text-spa-taupe uppercase mb-1';
+const breadcrumbs = [{ name: 'Contacto', path: '/contacto/' }];
 ---
 <ECommerceLayout
   title="Contacto"
   description={wp?.description || 'Agenda por WhatsApp o escríbenos. Presidente Errázuriz 2933, Oficina B, Las Condes.'}
-  breadcrumbs={[{ name: 'Contacto', path: '/contacto/' }]}
+  breadcrumbs={breadcrumbs} breadcrumbsInBanner
   schema={[businessSchema(Astro.url.origin)]}
 >
-  <div class="bg-spa-sand py-14 sm:py-16 px-4 sm:px-6 lg:px-8 text-center">
-    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Contáctanos</span>
-    <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal max-w-3xl mx-auto leading-tight">Hoy es el mejor día para dedicarte a ti</h1>
-    <p class="text-spa-taupe max-w-xl mx-auto mt-4 leading-relaxed">Agenda tu hora por WhatsApp o en línea, o déjanos tus dudas y te responderemos a la brevedad.</p>
-  </div>
+  <PageBanner
+    title="Hoy es el mejor día para dedicarte a ti"
+    description="Agenda tu hora por WhatsApp o en línea, o déjanos tus dudas y te responderemos a la brevedad."
+    breadcrumbs={breadcrumbs}
+  />
 
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-8 lg:gap-12 items-start">
     <div class="space-y-4">

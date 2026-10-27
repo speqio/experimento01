@@ -4,6 +4,7 @@
 // Reemplaza la versión genérica que servía [...page].astro para esta ruta.
 export const prerender = false;
 
+import PageBanner from '../components/common/PageBanner.astro';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ProductCard from '../components/catalog/ProductCard.astro';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
@@ -44,16 +45,15 @@ const gifts = giftcards.flatMap((g) => {
 });
 const sections = carruseles.map((c) => ({ ...c, products: pick(c.slugs) })).filter((c) => c.products.length);
 const nav = [['giftcard', 'Giftcard'], ...sections.filter((s) => s.id !== 'interesarte').map((s) => [s.id, s.title])];
+const breadcrumbs = [{ name: 'Promociones Spa Mandala', path: '/promociones-spa-mandala/' }];
 ---
 <ECommerceLayout
   title="Promociones Spa Mandala"
   description="Conoce nuestros productos especializados en el cuidado de tu piel, para el mejor cuidado de tu rostro y cuerpo."
   layoutData={layoutDataPromise}
-  breadcrumbs={[{ name: 'Promociones Spa Mandala', path: '/promociones-spa-mandala/' }]}
+  breadcrumbs={breadcrumbs} breadcrumbsInBanner
 >
-  <section class="bg-spa-sand py-14 sm:py-20 px-4 text-center">
-    <h1 class="font-editorial text-4xl sm:text-5xl font-light text-spa-charcoal">Promociones y servicios destacados</h1>
-  </section>
+  <PageBanner title="Promociones y servicios destacados" breadcrumbs={breadcrumbs} />
 
   <nav aria-label="Secciones" class="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-spa-cream">
     <ul class="max-w-6xl mx-auto px-4 flex gap-2 overflow-x-auto py-3 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap">
@@ -73,7 +73,7 @@ const nav = [['giftcard', 'Giftcard'], ...sections.filter((s) => s.id !== 'inter
               <img src={g.p.image?.sourceUrl} alt={g.p.image?.altText || g.p.name} loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </a>
             <p class="text-[11px] font-bold tracking-[0.2em] uppercase text-spa-taupe mb-2">{g.tag}</p>
-            <h3 class="font-editorial text-xl font-semibold text-spa-charcoal mb-2 leading-snug line-clamp-2"><a href={`/producto/${g.p.slug}`} class="hover:text-spa-taupe transition-colors">{g.p.name}</a></h3>
+            <h3 class="font-sans text-base font-semibold text-spa-charcoal mb-2 leading-snug line-clamp-2"><a href={`/producto/${g.p.slug}`} class="hover:text-spa-taupe transition-colors">{g.p.name}</a></h3>
             <p class="flex items-baseline gap-2 mb-4">
               {g.price.original && <s class="text-sm text-[#A89E95]">{g.price.original}</s>}
               <strong class="text-lg font-bold text-spa-charcoal">{g.price.current}</strong>

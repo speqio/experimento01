@@ -1,0 +1,42 @@
+﻿---
+// Invitación a reservar, con la misma fotografía y paleta natural del home.
+---
+<section class="wellness-callout" aria-labelledby="wellness-callout-title">
+  <div class="wellness-callout__panel">
+    <div class="wellness-callout__copy">
+      <h2 id="wellness-callout-title" class="font-editorial">Hoy es un buen día para <em>dedicarte tiempo</em></h2>
+      <p>Permite que nuestras especialistas cuiden de ti en un ambiente diseñado para desconectar de la rutina y reconectar con tu calma.</p>
+      <a href="/tienda" class="wellness-callout__cta">
+        Agenda tu momento
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+      </a>
+    </div>
+    <div class="wellness-callout__photo">
+      <img src="/images/servicios/spa-day-natural-v2-960.webp"
+        srcset="/images/servicios/spa-day-natural-v2-480.webp 480w, /images/servicios/spa-day-natural-v2-960.webp 960w"
+        sizes="(min-width: 1024px) 510px, (min-width: 768px) 42vw, 100vw"
+        alt="" width="960" height="1200" loading="lazy" decoding="async" />
+    </div>
+  </div>
+</section>
+<style>
+  .wellness-callout { max-width: 80rem; margin-inline: auto; padding-inline: 1rem; }
+  .wellness-callout__panel { display: grid; overflow: hidden; border-radius: 1.5rem; background: #675647; color: #fff8ee; }
+  .wellness-callout__copy { padding: 2.5rem 1.5rem; min-width: 0; }
+  .wellness-callout h2 { max-width: 18ch; font-size: clamp(2.5rem, 4vw, 3.75rem); font-weight: 400; line-height: 1.07; letter-spacing: -.025em; text-wrap: balance; }
+  .wellness-callout h2 em { font-weight: 400; color: #f0e1cd; }
+  .wellness-callout__copy p { max-width: 43ch; margin-top: 1.5rem; color: #f3eade; font-size: .9375rem; line-height: 1.8; text-wrap: pretty; }
+  .wellness-callout__cta { display: inline-flex; align-items: center; justify-content: center; gap: 1.75rem; margin-top: 2rem; min-height: 48px; padding: .9rem 1.5rem; border-radius: 999px; background: #f8f6f0; color: #2c2724; font-size: .75rem; font-weight: 600; letter-spacing: .06em; transition: background-color .2s; }
+  .wellness-callout__cta:hover { background: #e9dfd2; }
+  .wellness-callout__cta:focus-visible { outline: 2px solid #fff8ee; outline-offset: 5px; }
+  .wellness-callout__photo { position: relative; min-height: 240px; }
+  .wellness-callout__photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 65%; }
+  @media (min-width: 640px) { .wellness-callout { padding-inline: 1.5rem; } .wellness-callout__copy { padding: 3rem; } }
+  @media (min-width: 768px) {
+    .wellness-callout__panel { grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); }
+    .wellness-callout__photo { order: -1; min-height: 440px; }
+    .wellness-callout__copy { padding: 3.5rem 2.5rem; }
+  }
+  @media (min-width: 1024px) { .wellness-callout { padding-inline: 2rem; } .wellness-callout__copy { padding: 4rem; } }
+  @media (prefers-reduced-motion: reduce) { .wellness-callout__cta { transition: none; } }
+</style>

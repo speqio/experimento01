@@ -48,6 +48,7 @@ export const cartItemCount = persistentAtom<number>('cart-item-count', 0, {
 
 export const cartSummary = atom<CartSummary>(emptySummary);
 export const isCartLoading = atom<boolean>(false);
+export const cartNotification = atom<{ message: string } | null>(null);
 
 function applySummary(cart: {
   total: string;
@@ -111,6 +112,7 @@ export async function addToCart(productId: number, quantity = 1, variationId?: n
       variables: { productId, quantity, variationId },
     });
     const summary = applySummary(data.addToCart.cart);
+    cartNotification.set({ message: 'Producto agregado al carrito' });
     emitAddToCart(productId, quantity, summary);
     return summary;
   } finally {

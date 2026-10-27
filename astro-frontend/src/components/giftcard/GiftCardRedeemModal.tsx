@@ -1,3 +1,4 @@
+import { useModalDialog } from '../../lib/useModalDialog';
 import { useState } from 'react';
 import { useCardTilt, REST_SHADOW } from '../../lib/useCardTilt';
 
@@ -24,6 +25,7 @@ const thumb = (url: string) => (/\/wp-content\/uploads\/.+\.(webp|jpe?g|png)$/i.
 export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
   const full = cardImageUrl || '/gift-card.webp';
   const [open, setOpen] = useState(false);
+  const dialogRef = useModalDialog(open);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -66,17 +68,18 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Usa tu giftcard disponible"
-        className="fixed bottom-24 right-2 z-40 flex items-end gap-2"
+        className="fixed bottom-24 right-2 z-40 flex flex-col items-end gap-1.5 xl:flex-row xl:gap-2"
       >
-        {/* Etiqueta siempre visible — no depende de hover ni click */}
-        <span className="mb-1 bg-spa-charcoal text-white text-[10px] font-semibold uppercase tracking-wide px-3 py-1.5 rounded-full shadow-lg whitespace-nowrap">
+        {/* Etiqueta siempre visible — no depende de hover ni click. Bajo 1280 px va encima de la tarjeta y en dos
+            líneas, para que el botón ocupe solo el borde derecho y no tape el contenido (p. ej. los CTA del hero). */}
+        <span className="max-w-[96px] text-center leading-tight rounded-xl xl:mb-1 xl:max-w-none xl:leading-normal xl:rounded-full xl:whitespace-nowrap bg-spa-charcoal text-white text-[11px] font-semibold uppercase tracking-wide px-3 py-1.5 shadow-lg">
           Usa tu giftcard disponible
         </span>
         <div style={{ perspective: '800px' }}>
           <div
             ref={wrapperRef}
-            className="gc-float relative"
-            style={{ width: '140px', aspectRatio: '1748 / 1240', transformStyle: 'preserve-3d', touchAction: 'pan-y' }}
+            className="gc-float relative w-[96px] xl:w-[140px]"
+            style={{ aspectRatio: '1748 / 1240', transformStyle: 'preserve-3d', touchAction: 'pan-y' }}
             onMouseMove={onMouse}
             onMouseLeave={leave}
             onTouchMove={onTouch}
@@ -124,26 +127,26 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="bg-spa-bg rounded-2xl w-full max-w-md p-6 sm:p-7">
+        <dialog ref={dialogRef} aria-labelledby="gift-redeem-title" aria-modal="true" className="fixed inset-0 z-[100] m-0 w-full h-full max-w-none max-h-none border-0 bg-black/50 flex items-center justify-center p-4" onCancel={(e) => { e.preventDefault(); setOpen(false); }} onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+          <div onClick={(e) => e.stopPropagation()} className="bg-spa-bg rounded-2xl w-full max-w-md max-h-full overflow-y-auto p-6 sm:p-7">
             <div className="flex items-start justify-between gap-4 mb-5">
-              <h2 className="font-editorial text-2xl text-spa-charcoal">Verifica tu gift card</h2>
+              <h2 id="gift-redeem-title" className="font-editorial text-2xl text-spa-charcoal">Verifica tu gift card</h2>
               <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar" className="text-spa-taupe text-3xl leading-none">×</button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2">Tu nombre</label>
-                <input required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe" />
+                <label htmlFor="gift-redeem-field-1" className="block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2">Tu nombre</label>
+                <input id="gift-redeem-field-1" required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spa-taupe-dark focus:ring-offset-2 focus:border-spa-taupe" />
               </div>
               <div>
-                <label className="block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2">Correo donde la recibiste</label>
-                <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe" />
+                <label htmlFor="gift-redeem-field-2" className="block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2">Correo donde la recibiste</label>
+                <input id="gift-redeem-field-2" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spa-taupe-dark focus:ring-offset-2 focus:border-spa-taupe" />
               </div>
               <div>
-                <label className="block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2">Código de regalo</label>
-                <input required value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe font-mono tracking-widest" />
+                <label htmlFor="gift-redeem-field-3" className="block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2">Código de regalo</label>
+                <input id="gift-redeem-field-3" required value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spa-taupe-dark focus:ring-offset-2 focus:border-spa-taupe font-mono tracking-widest" />
               </div>
-              {error && <p className="text-sm text-red-600">{error}</p>}
+              {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
               <button
                 type="submit"
                 disabled={loading}
@@ -153,7 +156,7 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
               </button>
             </form>
           </div>
-        </div>
+        </dialog>
       )}
     </>
   );

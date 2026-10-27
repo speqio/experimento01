@@ -5,7 +5,7 @@ import { cartItemCount, cartSummary } from '../../store/cartStore';
 import { SITE_INFO } from '../../lib/siteInfo';
 import { wpQuery } from '../../lib/wp-graphql';
 import { GET_PRODUCTS_BY_CATEGORIES, SEARCH_PRODUCTS } from '../../lib/queries/products';
-import type { CategoryGroup } from '../../lib/categoryGroups';
+import { categoryGroupHref, categoryGroupForLocation, type CategoryGroup } from '../../lib/categoryGroups';
 import type { SimpleProduct } from '../../types/catalog';
 
 const NAV_LINKS = [
@@ -15,15 +15,23 @@ const NAV_LINKS = [
 
 interface HeaderProps {
   currentPath: string;
+  currentCategory?: string | null;
   categoryGroups: CategoryGroup[];
 }
+
+// Subrayado que crece desde el centro al hacer hover; queda fijo cuando el link está activo
+const navItemClass = (active: boolean) =>
+  `relative py-1 transition-colors hover:text-spa-charcoal after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-px after:bg-spa-taupe after:origin-center after:scale-x-0 after:transition-transform after:duration-300 after:ease-out hover:after:scale-x-100 ${
+    active ? 'text-spa-charcoal after:scale-x-100' : ''
+  }`;
 
 const MIN_SEARCH_CHARS = 2;
 const SEARCH_DEBOUNCE_MS = 250;
 
 type Suggestion = Pick<SimpleProduct, 'id' | 'name' | 'slug' | 'price' | 'image'>;
 
-function SearchBox({ className = '' }: { className?: string }) {
+// panelAlign: hacia qué lado se abre el panel de sugerencias (a la derecha del header debe abrirse hacia la izquierda).
+function SearchBox({ className = '', panelAlign = 'left' }: { className?: string; panelAlign?: 'left' | 'right' }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -103,22 +111,22 @@ function SearchBox({ className = '' }: { className?: string }) {
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder="Buscar..."
+          placeholder="Buscar…"
           autoComplete="off"
           aria-label="Buscar productos"
-          className="w-full bg-transparent border border-[#DDD5CA] rounded-full py-1.5 pl-4 pr-10 text-xs text-spa-charcoal placeholder-[#8A7C6F] focus:outline-none focus:border-spa-taupe transition-colors"
+          className="w-full h-9 bg-[#F1EDE6] border border-transparent rounded-full pl-9 pr-4 text-xs text-spa-charcoal placeholder-[#7D6E61] hover:border-[#E2DBD0] focus:outline-none focus:bg-white focus:border-[#D6CCBF] transition-colors"
         />
         <button
           type="submit"
-          className="absolute right-1 w-6 h-6 rounded-full bg-[#EAE4D9] hover:bg-[#DDD5CA] flex items-center justify-center text-[#594A3D] transition-colors"
+          className="absolute left-1 w-7 h-7 rounded-full flex items-center justify-center text-[#6E5C4E] hover:text-spa-charcoal transition-colors"
           aria-label="Buscar"
         >
-          <Search className="w-3 h-3" />
+          <Search className="w-3.5 h-3.5" />
         </button>
       </form>
 
       {showPanel && (
-        <div className="absolute left-0 top-full mt-2 w-[20rem] max-w-[calc(100vw-2rem)] bg-[#FDFBF7] border border-[#E8E2D7] rounded-2xl shadow-2xl z-50 overflow-hidden">
+        <div className={`absolute ${panelAlign === 'right' ? 'right-0' : 'left-0'} top-full mt-2 w-[20rem] max-w-[calc(100vw-2rem)] bg-[#FDFBF7] border border-[#E8E2D7] rounded-2xl shadow-2xl z-50 overflow-hidden`}>
           {loading && suggestions.length === 0 ? (
             <div className="px-4 py-3 text-xs text-spa-taupe">Buscando…</div>
           ) : suggestions.length === 0 ? (
@@ -168,7 +176,10 @@ function SearchBox({ className = '' }: { className?: string }) {
   );
 }
 
-export default function Header({ currentPath, categoryGroups }: HeaderProps) {
+export default function Header({ currentPath, currentCategory, categoryGroups }: HeaderProps) {
+  const currentGroup = categoryGroups.find((group) => group.items.some((category) => category.slug === currentCategory))?.label
+    ?? categoryGroupForLocation(currentPath, currentCategory);
+  const isShopActive = currentPath.replace(/\/+$/, '') === '/tienda' && !currentGroup;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [mobileOpenGroup, setMobileOpenGroup] = useState<string | null>(null);
@@ -206,44 +217,50 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 sm:h-24">
+        {/* Tres columnas con los lados del mismo ancho: así el logo queda centrado de verdad */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 h-20 sm:h-24 lg:h-28">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen((v) => !v)}
-              className="p-2 text-spa-charcoal hover:bg-spa-sand rounded-full lg:hidden transition-colors"
+              className="min-w-11 min-h-11 p-2 text-spa-charcoal hover:bg-spa-sand rounded-full lg:hidden transition-colors"
               aria-label="Abrir menú de navegación"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
 
-            <SearchBox className="hidden sm:block w-44 md:w-56 lg:w-64" />
+            {/* En escritorio el buscador va en la fila del menú; bajo 768 px no cabe junto al logo y va en el menú móvil */}
+            <SearchBox className="hidden md:block lg:hidden w-44" />
+
+            <a
+              href="/agenda"
+              className="hidden lg:inline-flex items-center gap-2 h-9 px-5 rounded-full border border-[#DDD5CA] text-xs font-medium tracking-wide text-spa-charcoal hover:bg-spa-sand transition-colors"
+            >
+              <Calendar className="w-3.5 h-3.5 text-spa-taupe" />
+              <span>agenda</span>
+            </a>
           </div>
 
-          <a href="/" className="flex flex-col items-center group py-1 text-center select-none">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 mb-1 text-spa-charcoal group-hover:text-spa-taupe transition-colors">
-              <svg viewBox="0 0 100 100" className="w-full h-full stroke-current fill-none" strokeWidth="2.5">
-                <circle cx="50" cy="50" r="45" strokeOpacity="0.4" />
-                <circle cx="50" cy="50" r="32" strokeOpacity="0.6" />
-                <circle cx="50" cy="50" r="16" />
-                <path d="M 50 18 C 42 32, 42 42, 50 50 C 58 42, 58 32, 50 18 Z" />
-                <path d="M 50 82 C 42 68, 42 58, 50 50 C 58 58, 58 68, 50 82 Z" />
-                <path d="M 18 50 C 32 42, 42 42, 50 50 C 42 58, 32 58, 18 50 Z" />
-                <path d="M 82 50 C 68 42, 58 42, 50 50 C 58 58, 68 58, 82 50 Z" />
-                <circle cx="50" cy="50" r="4" fill="currentColor" />
-              </svg>
-            </div>
-            <span className="font-editorial text-2xl sm:text-3xl lg:text-4xl tracking-[0.25em] font-medium text-spa-charcoal uppercase">
-              MÁNDALA
-            </span>
-            <span className="text-[9px] sm:text-[10px] tracking-[0.3em] text-spa-taupe font-semibold uppercase mt-0.5">
-              SPA &middot; MASAJES &middot; TERAPIAS
-            </span>
+          <a href="/" className="flex items-center justify-center py-1 select-none" aria-label="Mándala Spa — inicio">
+            <img
+              src="/images/servicios/Spa mandala - Logos.png"
+              alt="Mándala Spa"
+              width="180"
+              height="60"
+              style={{ maxWidth: '150px', height: 'auto' }}
+              className="block"
+            />
           </a>
 
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center justify-end gap-3 sm:gap-5">
+            <a
+              href="/promociones"
+              className="hidden lg:inline-flex items-center h-9 px-5 rounded-full bg-spa-charcoal hover:bg-[#4A403A] text-white text-xs font-medium tracking-wide transition-colors"
+            >
+              Promociones
+            </a>
             <a
               href="/carrito"
-              className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-spa-sand transition-colors group"
+              className="min-w-11 min-h-11 flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-spa-sand transition-colors group"
             >
               <span className="text-xs sm:text-sm font-serif font-medium text-spa-charcoal">
                 {/* cart.total llega ya formateado desde WooGraphQL (ej. "$65.000"), no un número crudo */}
@@ -263,17 +280,41 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
 
         <div
           className="hidden lg:block relative border-t border-[#ECE6DC]"
-          onMouseLeave={() => setActiveGroup(null)}
+          onMouseLeave={(e) => { if (!e.currentTarget.contains(document.activeElement)) setActiveGroup(null); }}
+          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setActiveGroup(null); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && activeGroup) {
+              e.preventDefault();
+              document.getElementById(`category-trigger-${categoryGroups.findIndex((g) => g.label === activeGroup)}`)?.focus();
+              setActiveGroup(null);
+            }
+          }}
         >
-          <div className="flex items-center justify-between py-2">
-            <nav className="flex items-center gap-7 text-xs tracking-wider font-medium text-[#4A3E34]">
+          {/* Entre 1024 y 1280 px el menú va más compacto para que quepa en una sola línea */}
+          <div className="flex items-center justify-between gap-8 h-14">
+            <nav className="flex items-center gap-5 xl:gap-9 whitespace-nowrap text-xs xl:text-[13px] tracking-[0.04em] font-medium text-[#4A3E34]">
               {categoryGroups.map((group) => (
                 <button
                   key={group.label}
+                  id={`category-trigger-${categoryGroups.indexOf(group)}`}
+                  type="button"
+                  aria-current={currentGroup === group.label ? 'page' : undefined}
+                  aria-expanded={activeGroup === group.label}
+                  aria-controls={activeGroup === group.label ? `category-panel-${categoryGroups.indexOf(group)}` : undefined}
+                  onClick={() => handleHoverGroup(group)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleHoverGroup(group);
+                    }
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      handleHoverGroup(group);
+                      requestAnimationFrame(() => document.querySelector<HTMLAnchorElement>(`#category-panel-${categoryGroups.indexOf(group)} a`)?.focus());
+                    }
+                  }}
                   onMouseEnter={() => handleHoverGroup(group)}
-                  className={`flex items-center gap-1 py-1 hover:text-spa-charcoal transition-colors ${
-                    activeGroup === group.label ? 'text-spa-charcoal' : ''
-                  }`}
+                  className={`flex items-center gap-1 ${navItemClass(currentGroup === group.label)}`}
                 >
                   <span>{group.label}</span>
                   <ChevronDown
@@ -286,46 +327,29 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
               <a
                 href="/tienda"
                 onMouseEnter={() => setActiveGroup(null)}
-                className={`py-1 hover:text-spa-charcoal transition-colors ${
-                  currentPath === '/tienda' ? 'text-spa-charcoal font-bold underline underline-offset-8 decoration-spa-taupe' : ''
-                }`}
+                aria-current={isShopActive ? 'page' : undefined}
+                className={`${navItemClass(isShopActive)} ${isShopActive ? 'font-bold' : ''}`}
               >
                 Tienda
               </a>
               <a
                 href="/sobre-nosotras"
                 onMouseEnter={() => setActiveGroup(null)}
-                className={`py-1 hover:text-spa-charcoal transition-colors ${
-                  currentPath === '/sobre-nosotras' ? 'text-spa-charcoal font-bold underline underline-offset-8 decoration-spa-taupe' : ''
-                }`}
+                className={`${navItemClass(currentPath === '/sobre-nosotras')} ${currentPath === '/sobre-nosotras' ? 'font-bold' : ''}`}
               >
                 Sobre Nosotras
               </a>
               <a
                 href="/blog"
                 onMouseEnter={() => setActiveGroup(null)}
-                className={`py-1 hover:text-spa-charcoal transition-colors ${
-                  currentPath.startsWith('/blog') ? 'text-spa-charcoal font-bold underline underline-offset-8 decoration-spa-taupe' : ''
-                }`}
+                className={`${navItemClass(currentPath.startsWith('/blog'))} ${currentPath.startsWith('/blog') ? 'font-bold' : ''}`}
               >
                 Blog
               </a>
             </nav>
 
-            <div className="flex items-center gap-3">
-              <a
-                href="/promociones"
-                className="bg-spa-charcoal hover:bg-[#4A403A] text-white px-5 py-1.5 rounded-full text-xs font-medium tracking-wide transition-colors shadow-sm"
-              >
-                Promociones
-              </a>
-              <a
-                href="/agenda"
-                className="bg-transparent hover:bg-spa-sand text-spa-charcoal border border-[#DDD5CA] px-5 py-1.5 rounded-full text-xs font-medium tracking-wide flex items-center gap-1.5 transition-colors"
-              >
-                <Calendar className="w-3.5 h-3.5 text-spa-taupe" />
-                <span>agenda</span>
-              </a>
+            <div onMouseEnter={() => setActiveGroup(null)}>
+              <SearchBox className="w-44 xl:w-60" panelAlign="right" />
             </div>
           </div>
 
@@ -334,10 +358,11 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
             if (!group) return null;
             const featured = featuredByGroup[group.label];
             const primarySlug = group.items[0]?.slug;
+            const familyHref = categoryGroupHref(group.label);
             const promoProduct = featured?.[0];
 
             return (
-              <div className="absolute left-0 right-0 top-full mt-px bg-[#FDFBF7] border border-[#E8E2D7] border-t-0 shadow-2xl z-50 animate-in fade-in slide-in-from-top-3 duration-200">
+              <div id={`category-panel-${categoryGroups.indexOf(group)}`} aria-labelledby={`category-trigger-${categoryGroups.indexOf(group)}`} className="absolute left-0 right-0 top-full mt-px bg-[#FDFBF7] border border-[#E8E2D7] border-t-0 shadow-2xl z-50 animate-in fade-in slide-in-from-top-3 duration-200">
                 <div className="grid grid-cols-12 gap-10 p-8">
                   <div className="col-span-3 border-r border-[#ECE6DC] pr-8">
                     <span className="text-[10px] font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-4">
@@ -348,7 +373,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
                         <li key={category.slug}>
                           <a
                             href={`/tienda?cat=${category.slug}`}
-                            className="text-sm text-[#54463A] hover:text-spa-charcoal transition-colors"
+                            className="inline-block text-sm text-[#54463A] hover:text-spa-charcoal hover:translate-x-1 transition-all duration-200"
                           >
                             {category.name}
                           </a>
@@ -357,7 +382,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
                     </ul>
                     {primarySlug && (
                       <a
-                        href={`/tienda?cat=${primarySlug}`}
+                        href={familyHref}
                         className="mt-6 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-spa-charcoal hover:text-spa-taupe transition-colors"
                       >
                         <span>Ver todo {group.label}</span>
@@ -442,7 +467,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
 
       {mobileMenuOpen && (
         <div className="lg:hidden bg-[#FAF8F5] border-b border-[#ECE6DC] px-6 py-6 space-y-4 text-sm font-medium text-spa-charcoal animate-in fade-in slide-in-from-top-3 duration-200 max-h-[70vh] overflow-y-auto">
-          <SearchBox className="sm:hidden w-full" />
+          <SearchBox className="md:hidden w-full" />
           <a href="/" className="block py-2.5 border-b border-spa-sand">
             Inicio
           </a>
@@ -452,7 +477,7 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
                 type="button"
                 onClick={() => setMobileOpenGroup((g) => (g === group.label ? null : group.label))}
                 aria-expanded={mobileOpenGroup === group.label}
-                className="w-full flex items-center justify-between text-xs uppercase tracking-wider text-spa-taupe py-1.5"
+                className={`w-full flex items-center justify-between text-xs uppercase tracking-wider py-1.5 ${currentGroup === group.label ? 'text-spa-charcoal underline underline-offset-4' : 'text-spa-taupe'}`}
               >
                 <span>{group.label}</span>
                 <ChevronDown
@@ -461,6 +486,9 @@ export default function Header({ currentPath, categoryGroups }: HeaderProps) {
                   }`}
                 />
               </button>
+              {mobileOpenGroup === group.label && (
+                <a href={categoryGroupHref(group.label)} className="block pl-3 py-2.5 text-sm font-semibold text-spa-charcoal">Ver todo {group.label}</a>
+              )}
               {mobileOpenGroup === group.label &&
                 group.items.map((category) => (
                   <a

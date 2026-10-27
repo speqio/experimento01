@@ -4,6 +4,7 @@
 // los productos de cada página se leen en vivo de WooCommerce según su categoría.
 export const prerender = false;
 
+import PageBanner from '../components/common/PageBanner.astro';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ProductGrid from '../components/catalog/ProductGrid.astro';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
@@ -45,15 +46,79 @@ const breadcrumbs = segments.map((_, i) => {
   const sub = segments.slice(0, i + 1).join('/');
   return { name: wpSeo(sub).crumb ?? pages.find((p) => p.path === sub)?.title ?? sub, path: `/${sub}/` };
 });
+
+/**
+ * Limpia el HTML migrado de WP para páginas de categoría.
+ * Elimina: bloque nav inicial (h2 + ul), h2 vacíos (sin p/ul siguiente),
+ * secciones de gift card/regalos/interesarte, y el h2 duplicado del título.
+ * Separa el bloque FAQ si existe.
+ */
+function cleanPageHtml(html: string, pageTitle: string): { main: string; faq: string } {
+  const blockRe = /<(h[2-4]|ul|ol|p)\b[^>]*>[\s\S]*?<\/\1>/g;
+  const blocks = (html.match(blockRe) ?? []).map((raw) => ({
+    raw,
+    tag: (raw.match(/^<(\w+)/) ?? [])[1] ?? '',
+    text: raw.replace(/<[^>]+>/g, '').trim(),
+  }));
+
+  const isHeading = (t: string) => /^h[2-4]$/.test(t);
+  const skip = (text: string) =>
+    /pueden interesarte|ideas para regalar|giftcard y regalos|giftcard/i.test(text);
+
+  let i = 0;
+
+  // Saltar primer h2 si es el título de la página (duplicado)
+  if (i < blocks.length && isHeading(blocks[i].tag)) {
+    const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+    if (norm(blocks[i].text).includes(norm(pageTitle).slice(0, 10))) i++;
+  }
+  // Saltar ul de navegación que sigue al título
+  if (i < blocks.length && blocks[i].tag === 'ul') i++;
+
+  const mainBlocks: string[] = [];
+  const faqBlocks: string[] = [];
+  let inFaq = false;
+
+  while (i < blocks.length) {
+    const { raw, tag, text } = blocks[i];
+
+    // Detener en secciones irrelevantes
+    if (isHeading(tag) && skip(text)) break;
+
+    // Detectar inicio de FAQ
+    if (isHeading(tag) && /preguntas frecuentes/i.test(text)) {
+      inFaq = true;
+      i++;
+      continue; // el h2 de FAQ no se muestra, solo su contenido
+    }
+
+    // Saltar h2 vacíos (sin p/ul entre este y el siguiente h2)
+    if (isHeading(tag) && !inFaq) {
+      const next = blocks[i + 1];
+      if (!next || isHeading(next.tag)) {
+        i++;
+        continue;
+      }
+    }
+
+    if (inFaq) faqBlocks.push(raw);
+    else mainBlocks.push(raw);
+    i++;
+  }
+
+  return { main: mainBlocks.join('\n'), faq: faqBlocks.join('\n') };
+}
+
+const { main: pageMain, faq: pageFaq } = page.html
+  ? cleanPageHtml(page.html, title)
+  : { main: '', faq: '' };
+
+// Con productos, el main (descripciones de servicio) duplica las cards y tiene
+// encabezados desincronizados del WXR de origen — solo se muestra en páginas sin productos.
+const showMain = !products.length;
 ---
-<ECommerceLayout title={title} description={page.description || undefined} layoutData={layoutDataPromise} breadcrumbs={breadcrumbs}>
-  <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 mb-10">
-    <div class="max-w-6xl mx-auto text-center">
-      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Las Condes · Santiago de Chile</span>
-      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal uppercase tracking-wide">{title}</h1>
-      {page.description && <p class="text-spa-taupe max-w-2xl mx-auto mt-4 leading-relaxed">{page.description}</p>}
-    </div>
-  </div>
+<ECommerceLayout title={title} description={page.description || undefined} layoutData={layoutDataPromise} breadcrumbs={breadcrumbs} breadcrumbsInBanner>
+  <PageBanner title={title} description={page.description || undefined} context="Las Condes · Santiago de Chile" breadcrumbs={breadcrumbs} class="mb-10" />
 
   {products.length > 0 && (
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
@@ -61,12 +126,18 @@ const breadcrumbs = segments.map((_, i) => {
     </div>
   )}
 
-  {page.html && (
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-      <article class="legal min-w-0" set:html={page.html} />
+  {showMain && pageMain && (
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <article class="legal page-content min-w-0" set:html={pageMain} />
     </div>
   )}
 
+  {pageFaq && (
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <h2 class="font-editorial text-xl font-light text-spa-charcoal mb-6 pb-4 border-b border-[#E8E2D7]">Preguntas frecuentes</h2>
+      <div class="faq-list space-y-0" set:html={pageFaq} />
+    </div>
+  )}
 
   <div class="bg-spa-taupe-dark text-white py-14 px-4 sm:px-6 lg:px-8 text-center">
     <h2 class="font-editorial text-2xl sm:text-3xl font-light mb-6">¿Tienes dudas o quieres agendar?</h2>
@@ -78,6 +149,42 @@ const breadcrumbs = segments.map((_, i) => {
 </ECommerceLayout>
 
 <style is:global>
-  /* Mismo estilo de texto que las políticas (.legal en LegalArticle), sin el filete de los h2. */
-  .legal h2 { border-top: 0; padding-top: 0; margin-top: 2rem; }
+  /* Estilos para el contenido de páginas WP limpiado */
+  .page-content h2 {
+    font-family: var(--font-editorial, serif);
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: #3D3530;
+    margin-top: 2rem;
+    margin-bottom: .5rem;
+    border-top: 0;
+    padding-top: 0;
+  }
+  .page-content p {
+    font-size: .9rem;
+    line-height: 1.75;
+    color: #675647;
+    margin-bottom: .75rem;
+  }
+  .page-content ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin-bottom: .75rem;
+  }
+  .page-content li {
+    font-size: .9rem;
+    color: #675647;
+    line-height: 1.7;
+    margin-bottom: .25rem;
+  }
+
+  /* FAQ: cada párrafo como ítem con separador */
+  .faq-list p {
+    font-size: .9rem;
+    line-height: 1.75;
+    color: #675647;
+    padding: 1rem 0;
+    border-bottom: 1px solid #EDE8E0;
+  }
+  .faq-list p:first-child { padding-top: 0; }
 </style>

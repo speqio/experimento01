@@ -2,6 +2,7 @@
 // SSR: canonical, robots y JSON-LD necesitan el dominio real de cada request.
 export const prerender = false;
 
+import PageBanner from '../components/common/PageBanner.astro';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import { SITE_INFO } from '../lib/siteInfo';
 import { businessSchema } from '../lib/seo';
@@ -28,14 +29,10 @@ const hours = [
   ...SITE_INFO.hours.map((h) => [h.label, `${h.opens} – ${h.closes} hrs`]),
   ['Domingo', 'Cerrado'],
 ];
+const breadcrumbs = [{ name: "Sobre nosotras", path: "/sobre-nosotras/" }];
 ---
-<ECommerceLayout title="Sobre Nosotras" schema={[businessSchema(Astro.url.origin)]} breadcrumbs={[{ name: "Sobre nosotras", path: "/sobre-nosotras/" }]} description="Spa Mandala: expertas en masajes, limpiezas faciales y terapias para restablecer tu bienestar en Las Condes, Santiago.">
-  <div class="bg-spa-sand py-16 sm:py-20 px-4 sm:px-6 lg:px-8 text-center">
-    <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Sobre nosotras</span>
-    <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal max-w-3xl mx-auto leading-tight">
-      Un espacio dedicado a tu bienestar
-    </h1>
-  </div>
+<ECommerceLayout title="Sobre Nosotras" schema={[businessSchema(Astro.url.origin)]} breadcrumbs={breadcrumbs} breadcrumbsInBanner description="Spa Mandala: expertas en masajes, limpiezas faciales y terapias para restablecer tu bienestar en Las Condes, Santiago.">
+  <PageBanner title="Un espacio dedicado a tu bienestar" breadcrumbs={breadcrumbs} />
 
   <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-16 text-center space-y-5">
     <p class="font-editorial text-xl sm:text-2xl text-spa-charcoal leading-relaxed">
@@ -44,7 +41,7 @@ const hours = [
     <p class="text-spa-taupe leading-relaxed">
       Tratamos las somatizaciones del estrés, tanto anímicas como tensiones musculares, y otras afecciones que afectan tu belleza y bienestar. Somos un refugio para descansar el cuerpo y la mente, rejuvenecer y recuperar energía para el día a día.
     </p>
-    <ul class="flex flex-wrap justify-center gap-2 pt-2">
+    <ul data-stagger class="flex flex-wrap justify-center gap-2 pt-2">
       {services.map((s) => (
         <li class="bg-white border border-[#E8E2D7] rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide text-spa-taupe-dark uppercase">{s}</li>
       ))}
@@ -57,7 +54,7 @@ const hours = [
         <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Experiencia Mandala</span>
         <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Lo que nos mueve</h2>
       </div>
-      <div class="grid md:grid-cols-3 gap-6">
+      <div data-stagger class="grid md:grid-cols-3 gap-6">
         {pillars.map((p) => (
           <div class="bg-white rounded-2xl border border-[#E8E2D7] p-7">
             <h3 class="font-editorial text-xl text-spa-charcoal mb-3">{p.title}</h3>
@@ -73,7 +70,7 @@ const hours = [
       <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Visítanos</span>
       <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Contáctanos</h2>
     </div>
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
+    <div data-stagger class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
       <div>
         <p class="text-[11px] font-semibold tracking-[0.2em] text-spa-taupe uppercase mb-2">Dirección</p>
         <p class="text-spa-charcoal">Presidente Errázuriz 2933, Oficina B<br />Las Condes, Santiago</p>

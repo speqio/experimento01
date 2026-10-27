@@ -1,0 +1,211 @@
+---
+import type { SimpleProduct } from '../../types/catalog';
+import { getProductBadge, getProductDuration, extractDuration, hasAnyDiscount } from '../../lib/parse';
+
+interface Props {
+  products: Pick<SimpleProduct, 'databaseId' | 'name' | 'price' | 'regularPrice' | 'shortDescription' | 'attributes' | 'productCategories'>[];
+}
+const { products } = Astro.props;
+
+function durationToMinutes(str: string): number {
+  const s = str.toLowerCase();
+  let hours = 0, mins = 0;
+  const hMatch = s.match(/(\d+(?:\.\d+)?)\s*hora/);
+  if (hMatch) hours = parseFloat(hMatch[1]);
+  if (/y\s*media/.test(s)) mins += 30;
+  const mMatch = s.match(/(\d+)\s*min/);
+  if (mMatch) mins += parseInt(mMatch[1]);
+  if (s.includes('media hora') && !hMatch) return 30;
+  return hours * 60 + mins;
+}
+
+function getDurationBucket(p: typeof products[0]): string | null {
+  const { duration: descDur } = extractDuration(p.shortDescription ?? '');
+  const durStr = getProductDuration(p.attributes) ?? descDur;
+  if (!durStr) return null;
+  const mins = durationToMinutes(durStr);
+  if (mins <= 0) return null;
+  if (mins <= 45) return 'short';
+  if (mins <= 70) return 'medium';
+  return 'long';
+}
+
+// Compute which filter groups are useful (have at least one product matching)
+const showParaDos = products.some(p => getProductBadge(p.name) === 'Cabina Doble');
+const showParaUno = products.some(p => !getProductBadge(p.name));
+const showAudienceFilter = showParaDos && showParaUno;
+
+const durationBuckets = new Set(products.map(getDurationBucket).filter(Boolean));
+const showDurationFilter = durationBuckets.size > 1;
+
+const showDiscountFilter = products.some(p => hasAnyDiscount(p.price, p.regularPrice));
+
+// Unique categories (sorted by frequency)
+const catCount: Record<string, { name: string; count: number }> = {};
+for (const p of products) {
+  for (const cat of p.productCategories?.nodes ?? []) {
+    if (!catCount[cat.slug]) catCount[cat.slug] = { name: cat.name, count: 0 };
+    catCount[cat.slug].count++;
+  }
+}
+const categories = Object.entries(catCount)
+  .filter(([, v]) => v.count > 0)
+  .sort((a, b) => b[1].count - a[1].count)
+  .slice(0, 6)
+  .map(([slug, v]) => ({ slug, name: v.name }));
+const showCategoryFilter = categories.length > 1;
+
+const hasAnyFilter = showAudienceFilter || showDurationFilter || showDiscountFilter || showCategoryFilter;
+if (!hasAnyFilter) return;
+---
+
+<div id="shop-filters" class="mb-8 space-y-3" data-total={products.length}>
+  <div class="flex flex-wrap gap-x-6 gap-y-3 items-start">
+
+    {showAudienceFilter && (
+      <div class="filter-group flex items-center gap-2 flex-wrap" data-group="audience">
+        <span class="text-xs font-semibold text-spa-taupe-dark uppercase tracking-widest shrink-0">Para</span>
+        <button class="filter-chip" data-value="solo">Solo</button>
+        <button class="filter-chip" data-value="pareja">Pareja</button>
+      </div>
+    )}
+
+    {showDurationFilter && (
+      <div class="filter-group flex items-center gap-2 flex-wrap" data-group="duration">
+        <span class="text-xs font-semibold text-spa-taupe-dark uppercase tracking-widest shrink-0">Duración</span>
+        {durationBuckets.has('short') && <button class="filter-chip" data-value="short">Hasta 45 min</button>}
+        {durationBuckets.has('medium') && <button class="filter-chip" data-value="medium">1 hora</button>}
+        {durationBuckets.has('long') && <button class="filter-chip" data-value="long">Más de 1 hora</button>}
+      </div>
+    )}
+
+    {showCategoryFilter && (
+      <div class="filter-group flex items-center gap-2 flex-wrap" data-group="category">
+        <span class="text-xs font-semibold text-spa-taupe-dark uppercase tracking-widest shrink-0">Tipo</span>
+        {categories.map(cat => (
+          <button class="filter-chip" data-value={cat.slug}>{cat.name}</button>
+        ))}
+      </div>
+    )}
+
+    {showDiscountFilter && (
+      <div class="filter-group flex items-center gap-2 flex-wrap" data-group="discount">
+        <button class="filter-chip" data-value="true">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline -mt-0.5 mr-0.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" /></svg>
+          Con descuento
+        </button>
+      </div>
+    )}
+  </div>
+
+  <div id="filter-status" class="hidden items-center gap-3 text-sm text-spa-taupe">
+    <span id="filter-count"></span>
+    <button id="filter-clear" class="underline underline-offset-4 decoration-spa-taupe/40 hover:text-spa-charcoal transition-colors">Limpiar filtros</button>
+  </div>
+</div>
+
+<style>
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: .35rem .85rem;
+    border-radius: 9999px;
+    border: 1.5px solid #D8D0C5;
+    background: white;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #675647;
+    letter-spacing: .04em;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, color .15s;
+    line-height: 1.4;
+  }
+  .filter-chip:hover {
+    border-color: #675647;
+    background: #F7F4EF;
+  }
+  .filter-chip.active {
+    background: #3D3530;
+    border-color: #3D3530;
+    color: white;
+  }
+  .filter-chip:focus-visible {
+    outline: 2px solid #675647;
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+  (() => {
+    const filtersEl = document.getElementById('shop-filters');
+    if (!filtersEl) return;
+
+    // Build per-product filter data from each card's data-filters attribute
+    const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-product-filters]'));
+    if (!cards.length) return;
+
+    // Active filters: { group: Set<value> }
+    const active: Record<string, Set<string>> = {};
+
+    function applyFilters() {
+      const groups = Object.entries(active).filter(([, vals]) => vals.size > 0);
+      let visible = 0;
+      for (const card of cards) {
+        const raw = card.dataset.productFilters ?? '{}';
+        let data: Record<string, string | string[]>;
+        try { data = JSON.parse(raw); } catch { data = {}; }
+
+        const matches = groups.every(([group, vals]) => {
+          const cardVal = data[group];
+          if (!cardVal) return false;
+          if (Array.isArray(cardVal)) return cardVal.some(v => vals.has(v));
+          return vals.has(String(cardVal));
+        });
+
+        card.hidden = !matches;
+        if (matches) visible++;
+      }
+
+      const statusEl = document.getElementById('filter-status');
+      const countEl = document.getElementById('filter-count');
+      if (statusEl && countEl) {
+        const hasActive = groups.length > 0;
+        statusEl.classList.toggle('hidden', !hasActive);
+        statusEl.classList.toggle('flex', hasActive);
+        if (hasActive) {
+          countEl.textContent = `${visible} ${visible === 1 ? 'producto' : 'productos'}`;
+        }
+      }
+    }
+
+    filtersEl.querySelectorAll<HTMLButtonElement>('.filter-chip').forEach(chip => {
+      const group = chip.closest<HTMLElement>('[data-group]')?.dataset.group;
+      if (!group) return;
+      chip.addEventListener('click', () => {
+        if (!active[group]) active[group] = new Set();
+        if (active[group].has(chip.dataset.value!)) {
+          active[group].delete(chip.dataset.value!);
+          chip.classList.remove('active');
+          chip.setAttribute('aria-pressed', 'false');
+        } else {
+          active[group].add(chip.dataset.value!);
+          chip.classList.add('active');
+          chip.setAttribute('aria-pressed', 'true');
+        }
+        applyFilters();
+      });
+    });
+
+    document.getElementById('filter-clear')?.addEventListener('click', () => {
+      for (const key of Object.keys(active)) active[key].clear();
+      filtersEl.querySelectorAll('.filter-chip.active').forEach(c => {
+        c.classList.remove('active');
+        c.setAttribute('aria-pressed', 'false');
+      });
+      for (const card of cards) card.hidden = false;
+      const statusEl = document.getElementById('filter-status');
+      statusEl?.classList.add('hidden');
+      statusEl?.classList.remove('flex');
+    });
+  })();
+</script>

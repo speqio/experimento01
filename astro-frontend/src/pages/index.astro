@@ -4,26 +4,40 @@
 // mismo criterio que /tienda, /promociones y /blog.
 export const prerender = false;
 
+import ProductCard from '../components/catalog/ProductCard.astro';
+import GiftCardBanner from '../components/giftcard/GiftCardBanner.astro';
+import WellnessCallout from '../components/common/WellnessCallout.astro';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
 import { fetchLayoutData } from '../lib/layoutData';
-import { GET_PRODUCTS } from '../lib/queries/products';
+import { GET_PRODUCTS, GET_PRODUCT_IMAGES } from '../lib/queries/products';
+import { groupOf, categoryGroupHref } from '../lib/categoryGroups';
 import { SITE_INFO, RESERVO_URL } from '../lib/siteInfo';
 import { businessSchema } from '../lib/seo';
-import { getProductDuration, getProductBadge, extractDuration, getCardSummary, getPriceDisplay, formatPriceDisplay, hasAnyDiscount } from '../lib/parse';
 import { GET_SITE_BANNER } from '../lib/queries/banners';
 import type { SimpleProduct } from '../types/catalog';
 import type { SiteBanner } from '../types/banner';
 
+const mapsQuery = encodeURIComponent(`${SITE_INFO.streetAddress.split(',')[0]}, ${SITE_INFO.address}`);
+const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
 const cache = kvCacheFrom(Astro);
 // Arranca YA (sin await) para que corra en paralelo con las consultas propias
 // de esta página, en vez de que ECommerceLayout la dispare recién cuando le
 // toque renderizar — eso sumaba los tiempos en vez de solaparlos.
 const layoutDataPromise = fetchLayoutData(cache);
-const [productsResult, bannerResult] = await Promise.allSettled([
+type ProductImage = { id: string; image: SimpleProduct['image']; productCategories: { nodes: { slug: string }[] } };
+const bannerQuery = (key: string) => wpQuery<{ siteBanner: SiteBanner | null }>({ query: GET_SITE_BANNER, variables: { key }, cache });
+const [productsResult, bannerResult, banner2Result, banner3Result, banner4Result, banner5Result, imagesResult, layoutResult] = await Promise.allSettled([
   wpQuery<{ products: { nodes: SimpleProduct[] } }>({ query: GET_PRODUCTS, variables: { first: 12 }, cache }),
-  // Banner del Hero (wp-admin → Marketing → Banners → Home). SSR: se ve al instante.
-  wpQuery<{ siteBanner: SiteBanner | null }>({ query: GET_SITE_BANNER, variables: { key: 'home' }, cache }),
+  // Banners del carrusel del Hero (wp-admin → Marketing → Banners → Home). SSR: se ven al instante.
+  // "home-2" a "home-5" aún no existen en wp-admin: mientras tanto esas diapositivas usan el contenido de fábrica.
+  bannerQuery('home'),
+  bannerQuery('home-2'),
+  bannerQuery('home-3'),
+  bannerQuery('home-4'),
+  bannerQuery('home-5'),
+  wpQuery<{ products: { nodes: ProductImage[] } }>({ query: GET_PRODUCT_IMAGES, cache }),
+  layoutDataPromise,
 ]);
 
 // WordPress aún no disponible en build time — se deja vacío.
@@ -31,21 +45,115 @@ const products: SimpleProduct[] = productsResult.status === 'fulfilled' ? produc
 const featured = products.slice(0, 3);
 const rituals = products.slice(3, 6);
 
-// Sin WordPress en build time — se usa el contenido de fábrica de abajo.
-const banner: Partial<SiteBanner> = bannerResult.status === 'fulfilled' ? (bannerResult.value.siteBanner ?? {}) : {};
-
-const hero = {
-  eyebrow: banner.eyebrow || 'Un refugio de bienestar',
-  title: banner.title || 'Masajes, tratamientos faciales y corporales',
-  description:
-    banner.description ||
-    'Sesiones terapéuticas y experiencias de spa diseñadas para renovar tu cuerpo y tu calma en un ambiente sereno.',
-  image: banner.image || '',
-  primaryText: banner.primaryText || 'Ver servicios',
-  primaryLink: banner.primaryLink || '/tienda',
-  secondaryText: banner.secondaryText || 'Regalar Gift Card',
-  secondaryLink: banner.secondaryLink || '/gift-cards',
+// Familias del menú con imágenes editoriales locales. El CMS sigue aportando categorías y enlaces.
+const withImage = imagesResult.status === 'fulfilled' ? imagesResult.value.products.nodes.filter((p) => p.image?.sourceUrl) : [];
+const shownBelow = new Set(featured.map((p) => p.id));
+const usedImages = new Set<string>();
+const serviceImages: Record<string, { file: string; altText: string; position: string }> = {
+  Faciales: { file: 'faciales', altText: 'Aplicación profesional de una mascarilla facial con brocha.', position: 'center' },
+  Corporales: { file: 'corporales', altText: 'Tratamiento manual de piernas en una camilla de spa.', position: 'center' },
+  Masajes: { file: 'masajes', altText: 'Masaje profesional de hombros sobre una camiseta de algodón.', position: 'center' },
+  'Spa Day': { file: 'spa-day', altText: 'Rincón de relajación con butaca de lino, madera clara y una taza de infusión.', position: 'center' },
 };
+const families = (layoutResult.status === 'fulfilled' ? layoutResult.value.categoryGroups : [])
+  .filter((g) => g.label !== 'Promociones')
+  .map((group) => {
+    const candidates = withImage.filter(
+      (p) => p.productCategories.nodes.some((c) => groupOf(c.slug) === group.label) && !usedImages.has(p.image!.sourceUrl),
+    );
+    const pick = candidates.find((p) => !shownBelow.has(p.id)) ?? candidates[0];
+    if (pick) usedImages.add(pick.image!.sourceUrl);
+    const editorial = serviceImages[group.label];
+    return {
+      label: group.label,
+      href: categoryGroupHref(group.label),
+      image: editorial ? { sourceUrl: `/images/servicios/${editorial.file}-natural-v2-960.webp`, altText: editorial.altText } : pick?.image ?? null,
+      srcSet: editorial ? `/images/servicios/${editorial.file}-natural-v2-480.webp 480w, /images/servicios/${editorial.file}-natural-v2-960.webp 960w` : undefined,
+      imagePosition: editorial?.position ?? 'center',
+    };
+  });
+
+// Foto de "Nuestra filosofía": otra sesión real, distinta de las de arriba y de Destacados.
+const unusedImage = () => {
+  const pick = withImage.find((p) => !usedImages.has(p.image!.sourceUrl) && !shownBelow.has(p.id));
+  if (pick) usedImages.add(pick.image!.sourceUrl);
+  return pick?.image?.sourceUrl ?? '';
+};
+const philosophySrc = unusedImage();
+const philosophyImage = {
+  ...(withImage.find((p) => p.image!.sourceUrl === philosophySrc)?.image ?? withImage[0]?.image ?? {}),
+  sourceUrl: '/images/servicios/bienestar-natural-v2-960.webp',
+  altText: 'Sesión de reflexología podal en Mándala Spa.',
+};
+const specialties = ['Masajes', 'Limpiezas faciales', 'Terapias complementarias', 'Tratamientos postoperatorios'];
+
+// Carrusel del Hero: cada diapositiva toma de wp-admin lo que esté cargado y completa el resto con su contenido de
+// fábrica (textos que el sitio ya usa en otras secciones). Sin WordPress en build time, queda todo de fábrica.
+const bannerOf = (r: typeof bannerResult): Partial<SiteBanner> => (r.status === 'fulfilled' ? (r.value.siteBanner ?? {}) : {});
+type Slide = { tagline: string; title: string; description: string; image: string; primaryText: string; primaryLink: string; secondaryText: string; secondaryLink: string };
+const slideFrom = (b: Partial<SiteBanner>, d: Slide): Slide => ({
+  tagline: b.eyebrow || d.tagline,
+  title: b.title || d.title,
+  description: b.description || d.description,
+  image: b.image || d.image,
+  primaryText: b.primaryText || d.primaryText,
+  primaryLink: b.primaryLink || d.primaryLink,
+  secondaryText: b.secondaryText || d.secondaryText,
+  secondaryLink: b.secondaryLink || d.secondaryLink,
+});
+const slides: Slide[] = [
+  slideFrom(bannerOf(bannerResult), {
+    tagline: 'Un refugio de bienestar',
+    title: 'Masajes, tratamientos faciales y corporales',
+    description: 'Sesiones terapéuticas y experiencias de spa diseñadas para renovar tu cuerpo y tu calma en un ambiente sereno.',
+    image: '',
+    primaryText: 'Ver servicios',
+    primaryLink: '/tienda',
+    secondaryText: 'Regalar Gift Card',
+    secondaryLink: '/gift-cards',
+  }),
+  slideFrom(bannerOf(banner2Result), {
+    tagline: 'Regala bienestar',
+    title: 'Un detalle que se transforma en una experiencia',
+    description: 'Personaliza tu Gift Card, elige el monto o el tratamiento ideal y envíala al instante.',
+    image: unusedImage(),
+    primaryText: 'Comprar Gift Card',
+    primaryLink: '/gift-cards',
+    secondaryText: 'Ver promociones',
+    secondaryLink: '/promociones',
+  }),
+  slideFrom(bannerOf(banner3Result), {
+    tagline: 'Agenda tu momento',
+    title: 'Hoy es un buen día para dedicarte tiempo',
+    description: 'Permite que nuestras especialistas cuiden de ti en un ambiente diseñado para desconectar de la rutina y reconectar con tu calma.',
+    image: unusedImage(),
+    primaryText: 'Agendar ahora',
+    primaryLink: RESERVO_URL,
+    secondaryText: 'Ver servicios',
+    secondaryLink: '/tienda',
+  }),
+  slideFrom(bannerOf(banner4Result), {
+    tagline: 'Tratamientos faciales',
+    title: 'Tu piel merece un ritual de cuidado profesional',
+    description: 'Limpiezas profundas, hidratación intensa y tratamientos anti-edad con productos de alta cosmética en manos expertas.',
+    image: '/images/servicios/faciales-editorial-v1-960.webp',
+    primaryText: 'Ver faciales',
+    primaryLink: '/tratamientos-faciales/',
+    secondaryText: 'Agendar hora',
+    secondaryLink: RESERVO_URL,
+  }),
+  slideFrom(bannerOf(banner5Result), {
+    tagline: 'Spa Day',
+    title: 'Una jornada completa de descanso y renovación',
+    description: 'Combina tus tratamientos favoritos en una experiencia personalizada para desconectar por completo y salir transformada.',
+    image: '/images/servicios/spa-day-editorial-v1-960.webp',
+    primaryText: 'Descubrir Spa Day',
+    primaryLink: '/spa-day/',
+    secondaryText: 'Ver promociones',
+    secondaryLink: '/promociones',
+  }),
+];
+const isExternal = (href: string) => /^https?:\/\//.test(href);
 ---
 <ECommerceLayout
   title="Mándala Spa | Bienestar & Masajes"
@@ -57,63 +165,221 @@ const hero = {
 >
   <div class="space-y-16 sm:space-y-24 pb-16">
     <!-- 1. HERO (wp-admin → Banners → Home) -->
-    <section class="relative w-full h-[480px] sm:h-[560px] lg:h-[620px] bg-spa-charcoal overflow-hidden">
-      {hero.image ? (
-        <img src={hero.image} alt="" class="absolute inset-0 w-full h-full object-cover" loading="eager" fetchpriority="high" />
-      ) : null}
-      <div class="absolute inset-0 bg-gradient-to-br from-[#3a332d] to-spa-charcoal" style={hero.image ? 'opacity:0.55' : undefined} />
-      <div class="relative max-w-7xl mx-auto h-full px-6 sm:px-8 flex flex-col justify-center items-center text-center text-white">
-        <span class="text-xs sm:text-sm font-semibold tracking-[0.25em] uppercase text-[#D4C3B3] mb-3">
-          {hero.eyebrow}
-        </span>
-        <h1 class="font-editorial text-3xl sm:text-5xl lg:text-6xl font-light tracking-wide max-w-4xl leading-tight uppercase mb-4">
-          {hero.title}
-        </h1>
-        <p class="font-sans text-sm sm:text-base text-[#E5DFD7] max-w-2xl font-light leading-relaxed mb-8">
-          {hero.description}
-        </p>
-        <div class="flex flex-col sm:flex-row items-center gap-4">
-          {hero.primaryText && (
-            <a
-              href={hero.primaryLink}
-              class="bg-transparent hover:bg-white/10 text-spa-bg border border-[#E5DFD7] px-8 py-3.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300"
-            >
-              {hero.primaryText}
-            </a>
-          )}
-          {hero.secondaryText && (
-            <a
-              href={hero.secondaryLink}
-              class="bg-[#D4C3B3] hover:bg-[#E5D7C9] text-spa-charcoal px-8 py-3.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md"
-            >
-              {hero.secondaryText}
-            </a>
-          )}
-        </div>
+    <!-- Contenedor redondeado a todo el ancho disponible, con un margen lateral adaptable. Su alto es la pantalla bajo el header (≈7rem en celular,
+         ≈12rem en escritorio) menos el margen de arriba y de abajo, para que el borde inferior se vea al cargar. -->
+    <div class="w-full px-3 sm:px-6 lg:px-8 pt-3 sm:pt-4 lg:pt-6">
+    <!-- Carrusel vertical (lib/heroCarousel.ts): la diapositiva que entra sube y cubre a la anterior. -->
+    <section
+      data-hero
+      data-carousel
+      aria-roledescription="carrusel"
+      aria-label="Destacados de Mándala Spa"
+      class="relative isolate w-full min-h-[520px] h-[calc(100svh-8.5rem)] sm:h-[calc(100svh-9.5rem)] lg:h-[calc(100svh-15rem)] max-h-[820px] rounded-[1.25rem] sm:rounded-[1.75rem] lg:rounded-[2.25rem] bg-spa-charcoal overflow-hidden"
+    >
+      {slides.map((slide, i) => {
+        // Solo la primera diapositiva lleva el h1 de la página.
+        const Title = i === 0 ? 'h1' : 'h2';
+        return (
+          <div
+            data-slide
+            role="group"
+            aria-roledescription="diapositiva"
+            aria-label={`${i + 1} de ${slides.length}`}
+            aria-hidden={i === 0 ? undefined : 'true'}
+            inert={i !== 0}
+            class="absolute inset-0 overflow-hidden bg-spa-charcoal"
+            style={`opacity:${i === 0 ? 1 : 0}; z-index:${i === 0 ? 1 : 0};`}
+          >
+            <div data-slide-media class="absolute inset-0">
+              {slide.image ? (
+                <>
+                  <img
+                    data-hero-media
+                    src={slide.image}
+                    alt=""
+                    class="absolute inset-0 w-full h-full object-cover"
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    fetchpriority={i === 0 ? 'high' : undefined}
+                    decoding={i === 0 ? undefined : 'async'}
+                  />
+                  {/* En vez de un velo plano: oscurece donde va el texto y deja respirar la foto en los bordes. */}
+                  <div class="absolute inset-0 bg-[radial-gradient(ellipse_95%_60%_at_50%_50%,rgba(28,24,21,0.66),rgba(28,24,21,0.34)_72%,rgba(28,24,21,0.42))] sm:bg-[radial-gradient(ellipse_62%_58%_at_50%_50%,rgba(28,24,21,0.64),rgba(28,24,21,0.26)_74%,rgba(28,24,21,0.38))]" />
+                  <div class="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-[#1C1815]/55 to-transparent" />
+                </>
+              ) : (
+                <div class="absolute inset-0 bg-gradient-to-br from-[#3a332d] to-spa-charcoal" />
+              )}
+            </div>
+            {/* Padding lateral amplio para no chocar con los puntos de la derecha */}
+            <div data-hero-content class="relative h-full px-12 sm:px-20 py-16 flex flex-col justify-center items-center text-center text-white">
+              <Title data-hero-title class="font-editorial font-normal text-[2.4rem] leading-[1.05] sm:text-6xl sm:leading-[1.04] lg:text-7xl tracking-[-0.01em] max-w-4xl text-balance">
+                {slide.title}
+              </Title>
+              {slide.tagline && (
+                <p data-hero-tagline class="font-editorial italic text-xl sm:text-2xl text-[#E2D3C1] mt-4 sm:mt-5">
+                  {slide.tagline}
+                </p>
+              )}
+              <p data-hero-copy class="mt-5 max-w-xl text-[0.95rem] sm:text-base text-[#EDE6DD] leading-relaxed text-pretty">
+                {slide.description}
+              </p>
+              <div data-hero-cta class="mt-10 flex flex-col sm:flex-row items-center gap-5 sm:gap-9">
+                {slide.primaryText && (
+                  <a
+                    href={slide.primaryLink}
+                    {...(isExternal(slide.primaryLink) ? { target: '_blank', rel: 'noopener' } : {})}
+                    class="inline-flex items-center justify-center bg-[#F4EDE4] hover:bg-white text-spa-charcoal px-9 py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase shadow-[0_12px_32px_-14px_rgba(0,0,0,0.6)] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4EDE4] focus-visible:ring-offset-4 focus-visible:ring-offset-[#2C2724]"
+                  >
+                    {slide.primaryText}
+                  </a>
+                )}
+                {slide.secondaryText && (
+                  <a
+                    href={slide.secondaryLink}
+                    {...(isExternal(slide.secondaryLink) ? { target: '_blank', rel: 'noopener' } : {})}
+                    class="group inline-flex items-center gap-2.5 py-2 text-xs font-semibold tracking-[0.18em] uppercase text-[#F4EDE4] hover:text-white transition-colors duration-300 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4EDE4] focus-visible:ring-offset-4 focus-visible:ring-offset-[#2C2724]"
+                  >
+                    <span class="relative after:absolute after:inset-x-0 after:-bottom-1.5 after:h-px after:bg-current after:opacity-50 after:transition-opacity after:duration-300 group-hover:after:opacity-100">
+                      {slide.secondaryText}
+                    </span>
+                    <svg viewBox="0 0 24 24" class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Puntos en vertical a la derecha: el activo se alarga y se va llenando mientras corre el tiempo de la diapositiva */}
+      <div data-dots class="absolute right-3 sm:right-6 lg:right-8 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-1">
+        {slides.map((_, i) => (
+          <button
+            type="button"
+            data-dot={i}
+            aria-label={`Ir a la diapositiva ${i + 1}`}
+            aria-current={i === 0 ? 'true' : undefined}
+            class="group/dot flex items-center justify-center w-11 h-11 aria-[current=true]:h-12 rounded-full transition-[height] duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+          >
+            <span class="relative block w-1.5 h-1.5 rounded-full overflow-hidden bg-white/45 group-hover/dot:bg-white/80 group-aria-[current=true]/dot:h-10 group-aria-[current=true]/dot:bg-white/30 transition-[height,background-color] duration-500">
+              <span data-dot-fill class="absolute inset-0 bg-white origin-top scale-y-0" />
+            </span>
+          </button>
+        ))}
+        <button
+          type="button"
+          data-carousel-toggle
+          aria-label="Pausar el carrusel"
+          class="mt-3 w-11 h-11 rounded-full border border-white/40 text-white/90 flex items-center justify-center hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+        >
+          <svg data-icon-pause viewBox="0 0 24 24" class="w-3 h-3" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+          <svg data-icon-play viewBox="0 0 24 24" class="w-3 h-3 hidden" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5Z" /></svg>
+        </button>
       </div>
     </section>
+    </div>
 
-    <!-- 2. CATEGORÍAS -->
-    <section class="reveal max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-        <a href="/tienda" class="group bg-spa-sand rounded-2xl overflow-hidden border border-[#E2DDD3] shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 p-8 text-center">
-          <span class="font-editorial text-lg tracking-[0.15em] font-medium text-spa-charcoal uppercase block">Servicios de Spa</span>
-          <span class="text-xs text-spa-taupe mt-2 block">Masajes, faciales y corporales</span>
-        </a>
-        <a href="/tienda" class="group bg-spa-sand rounded-2xl overflow-hidden border border-[#E2DDD3] shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 p-8 text-center">
-          <span class="font-editorial text-lg tracking-[0.15em] font-medium text-spa-charcoal uppercase block">Tienda</span>
-          <span class="text-xs text-spa-taupe mt-2 block">Productos de cuidado personal</span>
-        </a>
-        <a href="/gift-cards" class="group bg-spa-sand rounded-2xl overflow-hidden border border-[#E2DDD3] shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 p-8 text-center">
-          <span class="font-editorial text-lg tracking-[0.15em] font-medium text-spa-charcoal uppercase block">Gift Cards</span>
-          <span class="text-xs text-spa-taupe mt-2 block">Regala una experiencia</span>
-        </a>
+    <!-- 2. FAMILIAS DE SERVICIOS (las del menú; la foto sale de un tratamiento de cada una) -->
+    {families.length > 0 && (
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between gap-4 mb-10 sm:mb-12 pb-4 border-b border-[#E8E2D7]">
+          <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Nuestros servicios</h2>
+          <a href="/tienda" class="shrink-0 text-xs font-semibold tracking-wider uppercase text-[#6E5C4E] hover:text-spa-charcoal border border-[#DDD5CA] px-4 py-2 rounded-full hover:bg-white transition-colors">
+            Ver todos
+          </a>
+        </div>
+        <ul data-stagger class={`grid grid-cols-2 gap-x-5 gap-y-10 sm:gap-x-8 ${families.length >= 4 ? 'lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
+          {families.map((family) => (
+            <li>
+              <a href={family.href} class="group block text-center focus-visible:outline-none">
+                {/* Arco (mismo motivo que .arch-card) con un halo fino al pasar el mouse, como los anillos del mándala.
+                    Radios en %: 40% del alto en un 4:5 = medio ancho, o sea un semicírculo exacto, sin anular las esquinas de abajo. */}
+                <div class="relative isolate aspect-[4/5] rounded-[50%_50%_1rem_1rem/40%_40%_1rem_1rem] overflow-hidden bg-spa-sand ring-1 ring-transparent ring-offset-[6px] ring-offset-spa-bg transition-shadow duration-500 group-hover:ring-[#CDBFAF] group-focus-visible:ring-spa-taupe">
+                  {family.image && (
+                    <>
+                      <img
+                        src={family.image.sourceUrl}
+                        srcset={family.srcSet}
+                        sizes="(min-width: 1024px) 280px, (min-width: 640px) 30vw, 45vw"
+                        style={{ objectPosition: family.imagePosition }}
+                        alt={family.image.altText || family.label}
+                        width="400"
+                        height="500"
+                        loading="lazy"
+                        decoding="async"
+                        class="w-full h-full object-cover transition-transform duration-[900ms] ease-out group-hover:scale-105"
+                      />
+                    </>
+                  )}
+                </div>
+                <span class="relative inline-block mt-5 font-editorial text-xl sm:text-2xl text-spa-charcoal after:absolute after:left-0 after:right-0 after:-bottom-0.5 after:h-px after:bg-spa-taupe after:origin-center after:scale-x-0 after:transition-transform after:duration-300 after:ease-out group-hover:after:scale-x-100 group-focus-visible:after:scale-x-100">
+                  {family.label}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <!-- 2b. NUESTRA FILOSOFÍA (mismo texto que /sobre-nosotras) -->
+    <section class="bg-[#F1ECE4] py-20 lg:py-28 px-4 sm:px-6 lg:px-8">
+      <div class="max-w-6xl mx-auto grid lg:grid-cols-12 gap-14 lg:gap-10 items-center">
+        <div data-reveal class="relative lg:col-span-5 max-w-md w-full mx-auto lg:mx-0">
+          <div class="relative isolate aspect-[4/5] rounded-[1.25rem] overflow-hidden bg-spa-sand">
+            {philosophyImage && (
+              <>
+                <img src={philosophyImage.sourceUrl} srcset="/images/servicios/bienestar-natural-v2-480.webp 480w, /images/servicios/bienestar-natural-v2-960.webp 960w" sizes="(min-width: 1024px) 440px, (min-width: 640px) 448px, 90vw" alt={philosophyImage.altText || 'Sesión en Mándala Spa'} width="480" height="600" loading="lazy" decoding="async" class="w-full h-full object-cover" />
+              </>
+            )}
+          </div>
+          {/* Sello circular: el anillo de texto gira con el scroll (data-spin) alrededor del mándala del logo */}
+          <div class="absolute -top-10 right-4 lg:-right-14 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-[#F1ECE4] text-spa-taupe-dark shadow-[0_10px_30px_-14px_rgba(44,39,36,0.45)]" aria-hidden="true">
+            <svg data-spin viewBox="0 0 100 100" class="absolute inset-0 w-full h-full">
+              <defs><path id="sello-filosofia" d="M 50 50 m -38 0 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" /></defs>
+              <text class="fill-current uppercase" style="font-size:7.4px;letter-spacing:0.18em;font-weight:600">
+                <textPath href="#sello-filosofia" textLength="236" lengthAdjust="spacing">Mándala Spa · Refugio de bienestar · Las Condes ·</textPath>
+              </text>
+            </svg>
+            <svg viewBox="0 0 100 100" class="absolute inset-[34%] stroke-current fill-none" stroke-width="3">
+              <circle cx="50" cy="50" r="45" stroke-opacity="0.4" />
+              <circle cx="50" cy="50" r="16" />
+              <path d="M 50 18 C 42 32, 42 42, 50 50 C 58 42, 58 32, 50 18 Z" />
+              <path d="M 50 82 C 42 68, 42 58, 50 50 C 58 58, 58 68, 50 82 Z" />
+              <path d="M 18 50 C 32 42, 42 42, 50 50 C 42 58, 32 58, 18 50 Z" />
+              <path d="M 82 50 C 68 42, 58 42, 50 50 C 58 58, 68 58, 82 50 Z" />
+              <circle cx="50" cy="50" r="4" fill="currentColor" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="lg:col-span-6 lg:col-start-7">
+          <h2 class="font-editorial text-4xl lg:text-5xl font-normal leading-[1.08] text-spa-charcoal text-balance">Un espacio dedicado a tu bienestar</h2>
+          <p class="mt-6 font-editorial text-xl lg:text-2xl leading-snug text-[#4A3E34] text-pretty">
+            Somos expertas en masajes y terapias. Creamos experiencias de relajación para restablecer tu biorritmo.
+          </p>
+          <p class="mt-5 text-[0.95rem] leading-relaxed text-[#6E5C4E] max-w-[60ch] text-pretty">
+            Tratamos las somatizaciones del estrés, tanto anímicas como tensiones musculares, y otras afecciones que afectan tu belleza y bienestar. Somos un refugio para descansar el cuerpo y la mente, rejuvenecer y recuperar energía para el día a día.
+          </p>
+          <ul data-stagger class="mt-9 grid sm:grid-cols-2 gap-x-8 border-t border-[#DDD3C6]">
+            {specialties.map((s) => (
+              <li class="flex items-center gap-3 py-3.5 border-b border-[#DDD3C6] text-sm font-medium text-spa-charcoal">
+                <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0 text-spa-taupe" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="8" cy="8" r="6.5" /><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" /></svg>
+                {s}
+              </li>
+            ))}
+          </ul>
+          <a href="/sobre-nosotras" class="group mt-9 inline-flex items-center gap-2.5 py-2 text-xs font-semibold tracking-[0.18em] uppercase text-spa-charcoal rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-spa-taupe focus-visible:ring-offset-4 focus-visible:ring-offset-[#F1ECE4]">
+            <span class="relative after:absolute after:inset-x-0 after:-bottom-1.5 after:h-px after:bg-current after:opacity-40 after:transition-opacity after:duration-300 group-hover:after:opacity-100">Conoce más sobre nosotras</span>
+            <svg viewBox="0 0 24 24" class="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </a>
+        </div>
       </div>
     </section>
 
     <!-- 3. DESTACADOS -->
     {featured.length > 0 && (
-      <section class="reveal max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-[#E8E2D7]">
           <div>
             <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block">Relajación profunda</span>
@@ -123,108 +389,18 @@ const hero = {
             Ver todos
           </a>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {featured.map((product) => {
-            const { duration: descDuration } = extractDuration(product.shortDescription ?? '');
-            const summary = getCardSummary(product.shortDescription ?? '');
-            const priceInfo = getPriceDisplay(product.price, product.regularPrice);
-            const duration = getProductDuration(product.attributes) ?? descDuration;
-            const badge = getProductBadge(product.name);
-            return (
-              <div class="bg-white rounded-2xl border border-[#E8E2D7] shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
-                <a href={`/producto/${product.slug}`} class="relative h-56 overflow-hidden block">
-                  {product.image?.sourceUrl ? (
-                    <img src={product.image.sourceUrl} alt={product.image.altText || product.name} width="400" height="224" loading="lazy" decoding="async" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                  ) : (
-                    <div class="w-full h-full bg-spa-sand" />
-                  )}
-                  {hasAnyDiscount(product.price, product.regularPrice) && (
-                    <span class="absolute top-3 left-3 bg-[#C94D3F] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-xs">Oferta</span>
-                  )}
-                  {badge && (
-                    <span class="absolute top-3 right-3 bg-spa-charcoal text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                      {badge}
-                    </span>
-                  )}
-                </a>
-                <div class="p-6 flex flex-col flex-1">
-                  <h3 class="font-editorial text-xl font-semibold text-spa-charcoal mb-2 leading-snug line-clamp-2">
-                    <a href={`/producto/${product.slug}`} class="hover:text-spa-taupe transition-colors">{product.name}</a>
-                  </h3>
-                  <p class="text-sm text-[#6E5C4E] leading-relaxed line-clamp-3 mb-3">{summary}</p>
-                  {duration && (
-                    <div class="flex items-center gap-2 text-xs text-spa-taupe mb-4">
-                      <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9" />
-                        <path d="M12 7v5l3 3" />
-                      </svg>
-                      <span>{duration} de duración</span>
-                    </div>
-                  )}
-
-                  <div class="mt-auto pt-4 border-t border-spa-cream">
-                    <div class="flex items-baseline gap-2 mb-4">
-                      {priceInfo.original && (
-                        <span class="text-sm line-through text-[#A89E95]">{priceInfo.original}</span>
-                      )}
-                      <span class="text-lg font-bold text-spa-charcoal">{priceInfo.current}</span>
-                    </div>
-                    {product.__typename === 'VariableProduct' ? (
-                      <a href={`/producto/${product.slug}`} class="block bg-spa-charcoal hover:bg-[#433B36] text-white py-2.5 px-2 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors text-center">
-                        Elegir opciones
-                      </a>
-                    ) : (
-                    <div class={`grid gap-2 ${product.giftCardEnabled === false ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                      <button
-                        type="button"
-                        data-add-to-cart={product.databaseId}
-                        class="bg-spa-sand hover:bg-[#E2DDD3] text-spa-charcoal py-2.5 px-2 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors text-center"
-                      >
-                        Agregar al carrito
-                      </button>
-                      {product.giftCardEnabled !== false && (
-                      <button
-                        type="button"
-                        data-gift-product={product.databaseId}
-                        data-gift-name={product.name}
-                        data-gift-image={product.image?.sourceUrl}
-                        class="bg-spa-charcoal hover:bg-[#433B36] text-white py-2.5 px-2 rounded-full text-[11px] font-semibold tracking-wide uppercase transition-colors text-center"
-                      >
-                        Quiero mi giftcard
-                      </button>
-                      )}
-                    </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div data-stagger class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {featured.map((product) => <ProductCard product={product} href={`/producto/${product.slug}`} />)}
         </div>
       </section>
     )}
 
     <!-- 4. CALLOUT -->
-    <section class="reveal max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="bg-[#8A7968] text-white rounded-3xl p-10 sm:p-14 text-center shadow-lg relative overflow-hidden">
-        <div class="absolute -top-12 -right-12 w-48 h-48 rounded-full border border-white/10" />
-        <div class="absolute -bottom-12 -left-12 w-48 h-48 rounded-full border border-white/10" />
-        <span class="text-xs sm:text-sm font-semibold tracking-[0.25em] uppercase text-[#E8DFD7] block mb-2">
-          Hoy es un buen día para
-        </span>
-        <h2 class="font-editorial text-4xl sm:text-5xl font-light tracking-wide text-white mb-6">dedicarte tiempo</h2>
-        <p class="text-xs sm:text-sm text-[#F0EBE4] max-w-md mx-auto mb-8 font-light leading-relaxed">
-          Permite que nuestras especialistas cuiden de ti en un ambiente diseñado para desconectar de la rutina y reconectar con tu calma.
-        </p>
-        <a href="/tienda" class="inline-flex items-center gap-2 bg-[#E2DDD3] hover:bg-white text-spa-charcoal px-8 py-3.5 rounded-full text-xs sm:text-sm font-semibold tracking-[0.15em] uppercase transition-all duration-300 shadow-md">
-          Agenda tu momento
-        </a>
-      </div>
-    </section>
+    <WellnessCallout />
 
     <!-- 5. RITUALES / PRODUCTOS -->
     {rituals.length > 0 && (
-      <section class="reveal max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-[#E8E2D7]">
           <div>
             <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block">Productos especializados</span>
@@ -234,56 +410,25 @@ const hero = {
             Ver catálogo
           </a>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {rituals.map((product) => (
-            <div class="bg-white rounded-2xl border border-[#E8E2D7] shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col justify-between">
-              <a href={`/producto/${product.slug}`} class="h-60 overflow-hidden bg-spa-cream block">
-                {product.image?.sourceUrl && (
-                  <img src={product.image.sourceUrl} alt={product.image.altText || product.name} width="400" height="240" loading="lazy" decoding="async" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                )}
-              </a>
-              <div class="p-6 pt-4">
-                <h3 class="font-editorial text-xl font-semibold text-spa-charcoal mb-2">
-                  <a href={`/producto/${product.slug}`} class="hover:text-spa-taupe transition-colors">{product.name}</a>
-                </h3>
-                <div class="text-lg font-bold text-spa-charcoal mb-3">{formatPriceDisplay(product.price)}</div>
-                <a href={`/producto/${product.slug}`} class="block w-full text-center bg-spa-sand hover:bg-spa-charcoal hover:text-white text-spa-charcoal py-2.5 px-4 rounded-lg text-xs font-semibold tracking-wider uppercase transition-colors">
-                  Ver producto
-                </a>
-              </div>
-            </div>
-          ))}
+        <div data-stagger class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {rituals.map((product) => <ProductCard product={product} href={`/producto/${product.slug}`} />)}
         </div>
       </section>
     )}
 
     <!-- 6. GIFT CARD BANNER -->
-    <section class="reveal relative w-full bg-spa-taupe-dark text-white py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
-      <div class="absolute inset-0 opacity-15 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
-      <div class="relative max-w-4xl mx-auto text-center space-y-4">
-        <span class="text-xs font-semibold tracking-[0.25em] uppercase text-[#D4C3B3]">Regala Bienestar</span>
-        <h2 class="font-editorial text-3xl sm:text-5xl font-light">Un detalle que se transforma en una experiencia</h2>
-        <p class="text-xs sm:text-sm text-[#EAE4D9] font-light max-w-xl mx-auto leading-relaxed">
-          Personaliza tu Gift Card, elige el monto o el tratamiento ideal y envíala al instante.
-        </p>
-        <div class="pt-4">
-          <a href="/gift-cards" class="inline-block bg-white hover:bg-spa-bg text-spa-charcoal px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition-all shadow-md">
-            Comprar Gift Card
-          </a>
-        </div>
-      </div>
-    </section>
+    <GiftCardBanner imageUrl={layoutResult.status === 'fulfilled' ? layoutResult.value.giftCardImageUrl : undefined} />
 
     <!-- 7. UBICACIÓN -->
-    <section class="reveal max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="bg-white rounded-3xl border border-[#E8E2D7] shadow-sm overflow-hidden">
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div data-reveal class="bg-white rounded-3xl border border-[#E8E2D7] shadow-sm overflow-hidden">
         <div class="grid grid-cols-1 lg:grid-cols-12">
           <div class="lg:col-span-5 p-8 sm:p-10 flex flex-col justify-between space-y-8 bg-[#FAF8F5]">
             <div>
               <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-1">Encuéntranos</span>
               <h2 class="font-editorial text-3xl text-spa-charcoal font-medium mb-4">Ubicación &amp; Horarios</h2>
               <div class="space-y-4 text-xs sm:text-sm text-[#4A4036]">
-                <p><strong class="text-spa-charcoal block">Dirección</strong>{SITE_INFO.streetAddress}, Las Condes</p>
+                <p><strong class="text-spa-charcoal block">Dirección</strong><a href={mapsUrl} target="_blank" rel="noopener" class="underline decoration-spa-taupe/40 underline-offset-4 hover:text-spa-charcoal">{SITE_INFO.streetAddress}, Las Condes</a></p>
                 <p><strong class="text-spa-charcoal block">Horarios</strong>{SITE_INFO.schedule}</p>
                 <p><strong class="text-spa-charcoal block">Contacto</strong>
                   <a href={`tel:${SITE_INFO.phone}`} class="hover:text-spa-taupe transition-colors">{SITE_INFO.phone}</a>
@@ -291,21 +436,31 @@ const hero = {
               </div>
             </div>
             <div class="pt-4 border-t border-spa-sand flex flex-col sm:flex-row gap-3">
-              <a href={RESERVO_URL} target="_blank" rel="noopener" class="w-full bg-spa-charcoal hover:bg-[#433B36] text-white py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-colors text-center">
+              <a href={RESERVO_URL} target="_blank" rel="noopener" class="w-full bg-spa-taupe-dark hover:bg-[#5A4A3C] text-white py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-colors text-center">
                 Agendar ahora
               </a>
               <a
                 href={`https://wa.me/${SITE_INFO.whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                class="w-full bg-[#25D366] hover:bg-[#20BA5A] text-white py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-colors text-center"
+                class="w-full bg-spa-sand hover:bg-[#E5E0D5] text-spa-taupe-dark py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-colors text-center flex items-center justify-center gap-2"
               >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.985-1.407A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.522 2 11.999 2zm0 18a7.96 7.96 0 0 1-4.076-1.115l-.292-.174-3.045.859.822-3.001-.19-.308A7.96 7.96 0 0 1 4 12c0-4.418 3.582-8 8-8 4.419 0 8 3.582 8 8s-3.581 8-7.999 8z"/></svg>
                 WhatsApp
               </a>
             </div>
           </div>
-          <div class="lg:col-span-7 h-64 lg:h-auto min-h-[280px] bg-spa-sand flex items-center justify-center text-spa-taupe text-sm">
-            {SITE_INFO.address}
+          <div class="relative lg:col-span-7 min-h-[320px] sm:min-h-[360px] lg:min-h-[440px] bg-spa-sand">
+            <iframe
+              src={`https://maps.google.com/maps?q=${mapsQuery}&z=16&output=embed`}
+              title="Ubicación de Mándala Spa: Presidente Errázuriz 2933, Las Condes"
+              width="800"
+              height="440"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+              class="spa-location-map absolute inset-0 w-full h-full border-0"
+            ></iframe>
           </div>
         </div>
       </div>
@@ -322,3 +477,164 @@ const hero = {
     });
   });
 </script>
+
+<script>
+  // ── Hero carousel ────────────────────────────────────────────────────────────
+  // Maneja el carrusel vertical del hero: avanza automáticamente, llena los
+  // puntos de progreso y permite navegar manualmente con los dots o el teclado.
+  const carousel = document.querySelector<HTMLElement>('[data-carousel]');
+  if (carousel) {
+    const slides   = Array.from(carousel.querySelectorAll<HTMLElement>('[data-slide]'));
+    const dots     = Array.from(carousel.querySelectorAll<HTMLButtonElement>('[data-dot]'));
+    const fills    = Array.from(carousel.querySelectorAll<HTMLElement>('[data-dot-fill]'));
+    const toggle   = carousel.querySelector<HTMLButtonElement>('[data-carousel-toggle]');
+    const iconPause = toggle?.querySelector<SVGElement>('[data-icon-pause]');
+    const iconPlay  = toggle?.querySelector<SVGElement>('[data-icon-play]');
+
+    const DURATION = 6000; // ms por slide
+    let current = 0;
+    let paused  = false;
+    let raf: number | null = null;
+    let startTs: number | null = null;
+    let elapsed = 0;
+
+    const FADE = 900; // ms del crossfade
+
+    function showSlide(index: number, instant = false) {
+      const prev = current;
+      const next = slides[index];
+      const old  = slides[prev];
+
+      if (instant || prev === index) {
+        slides.forEach((s, i) => {
+          s.style.opacity = i === index ? '1' : '0';
+          s.style.transition = 'none';
+          s.toggleAttribute('inert', i !== index);
+          s.setAttribute('aria-hidden', i === index ? 'false' : 'true');
+        });
+      } else {
+        // La nueva slide sube al frente y aparece; la anterior se queda atrás y se desvanece
+        slides.forEach((s) => { s.style.zIndex = '0'; });
+        next.style.zIndex    = '2';
+        old.style.zIndex     = '1';
+
+        next.style.transition = 'none';
+        next.style.opacity    = '0';
+        next.removeAttribute('inert');
+        next.setAttribute('aria-hidden', 'false');
+
+        // Un frame para que el navegador pinte opacity:0 antes de arrancar la transición
+        requestAnimationFrame(() => {
+          next.style.transition = `opacity ${FADE}ms cubic-bezier(0.4,0,0.2,1)`;
+          next.style.opacity    = '1';
+          old.style.transition  = `opacity ${FADE}ms cubic-bezier(0.4,0,0.2,1)`;
+          old.style.opacity     = '0';
+
+          setTimeout(() => {
+            old.toggleAttribute('inert', true);
+            old.setAttribute('aria-hidden', 'true');
+            old.style.transition = 'none';
+          }, FADE);
+        });
+      }
+
+      dots.forEach((d, i) => {
+        d.setAttribute('aria-current', i === index ? 'true' : 'false');
+      });
+      fills.forEach((f, i) => {
+        f.style.transition = 'none';
+        f.style.transform  = i < index ? 'scaleY(1)' : 'scaleY(0)';
+      });
+      if (instant) {
+        fills[index].style.transform = 'scaleY(1)';
+      }
+      current = index;
+    }
+
+    function startFill() {
+      if (raf) cancelAnimationFrame(raf);
+      const fill = fills[current];
+      if (!fill) return;
+      fill.style.transition = 'none';
+      fill.style.transform  = `scaleY(${elapsed / DURATION})`;
+
+      const tick = (ts: number) => {
+        if (startTs === null) startTs = ts;
+        const delta = ts - startTs + elapsed;
+        const progress = Math.min(delta / DURATION, 1);
+        fill.style.transition = 'none';
+        fill.style.transform  = `scaleY(${progress})`;
+        if (progress < 1) {
+          raf = requestAnimationFrame(tick);
+        } else {
+          elapsed = 0;
+          startTs = null;
+          goTo((current + 1) % slides.length);
+        }
+      };
+      startTs = null;
+      raf = requestAnimationFrame(tick);
+    }
+
+    function goTo(index: number) {
+      elapsed = 0;
+      startTs = null;
+      showSlide(index);
+      if (!paused) startFill();
+    }
+
+    function pause() {
+      paused = true;
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+      // Congela el progreso actual
+      if (startTs !== null) elapsed += performance.now() - startTs;
+      startTs = null;
+      iconPause?.classList.add('hidden');
+      iconPlay?.classList.remove('hidden');
+      toggle?.setAttribute('aria-label', 'Reanudar el carrusel');
+    }
+
+    function resume() {
+      paused = false;
+      iconPause?.classList.remove('hidden');
+      iconPlay?.classList.add('hidden');
+      toggle?.setAttribute('aria-label', 'Pausar el carrusel');
+      startFill();
+    }
+
+    // Dots manuales
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        elapsed = 0; startTs = null;
+        showSlide(i);
+        if (!paused) startFill();
+      });
+    });
+
+    // Botón pausa/play
+    toggle?.addEventListener('click', () => { paused ? resume() : pause(); });
+
+    // Teclado: ← → en el carrusel o sus controles
+    carousel.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') goTo((current + 1) % slides.length);
+      if (e.key === 'ArrowLeft')  goTo((current - 1 + slides.length) % slides.length);
+    });
+
+    // Pausa en hover/focus para no correr el tiempo mientras se lee
+    carousel.addEventListener('mouseenter', pause);
+    carousel.addEventListener('mouseleave', () => { if (!toggle?.dataset.manualPause) resume(); });
+    // Pausa manual con el botón se mantiene aunque el ratón salga
+    toggle?.addEventListener('click', () => { toggle.dataset.manualPause = paused ? '1' : ''; });
+
+    // Arranca
+    showSlide(0);
+    // Espera a que motion.ts termine su animación de entrada (~1.5 s) antes de comenzar
+    setTimeout(() => { if (!paused) startFill(); }, 1600);
+  }
+</script>
+
+<style>
+  .spa-location-map {
+    filter: grayscale(1) sepia(.2) saturate(.65) contrast(.94);
+  }
+</style>

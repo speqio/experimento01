@@ -1,3 +1,4 @@
+import { useModalDialog } from '../../lib/useModalDialog';
 import { useEffect, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { addGiftCardToCart, isCartLoading } from '../../store/cartStore';
@@ -7,7 +8,7 @@ import GiftCardPreview from './GiftCardPreview';
 
 const MESSAGE_LIMIT = 145;
 const inputClass =
-  'w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe placeholder:text-spa-taupe';
+  'w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spa-taupe-dark focus:ring-offset-2 focus:border-spa-taupe placeholder:text-spa-taupe';
 const labelClass = 'block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2';
 
 const empty: GiftCardInput = { buyerEmail: '', recipientEmail: '', message: '', deliveryDate: '' };
@@ -73,6 +74,7 @@ interface ModalProps {
 // Se abre al hacer click en cualquier [data-gift-product] de la página.
 export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   const [target, setTarget] = useState<Target | null>(null);
+  const dialogRef = useModalDialog(!!target);
   const [form, setForm] = useState<GiftCardInput>(empty);
   const [selectedAddons, setSelectedAddons] = useState<number[]>([]);
   // true = los complementos ya se eligieron en la ficha: el modal los muestra incluidos, sin poder cambiarlos.
@@ -167,9 +169,10 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4"
-      onClick={() => setTarget(null)}
+    <dialog ref={dialogRef} aria-labelledby="gift-buy-title" aria-modal="true"
+      className="fixed inset-0 z-[100] m-0 w-full h-full max-w-none max-h-none border-0 bg-black/50 flex items-center justify-center p-4"
+      onCancel={(e) => { e.preventDefault(); setTarget(null); }}
+      onClick={(e) => { if (e.target === e.currentTarget) setTarget(null); }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -178,7 +181,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
         <div className="flex items-start justify-between gap-4 px-6 sm:px-8 pt-5 sm:pt-6">
           <div>
             <span className="text-[10px] font-semibold tracking-[0.25em] uppercase text-spa-taupe block mb-1">Un regalo para alguien especial</span>
-            <h2 className="font-editorial text-2xl sm:text-3xl text-spa-charcoal">Regalar como giftcard</h2>
+            <h2 id="gift-buy-title" className="font-editorial text-2xl sm:text-3xl text-spa-charcoal">Regalar como giftcard</h2>
           </div>
           <button type="button" onClick={() => setTarget(null)} aria-label="Cerrar" className="text-spa-taupe text-3xl leading-none">
             ×
@@ -221,16 +224,16 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
           <form onSubmit={handleSubmit} className="grid lg:grid-cols-2 gap-x-6 gap-y-4 items-start">
             <div className="space-y-4">
             <div>
-              <label className={labelClass}>Tu email</label>
-              <input required type="email" value={form.buyerEmail} onChange={(e) => setForm({ ...form, buyerEmail: e.target.value })} className={inputClass} />
+              <label htmlFor="gift-buy-field-1" className={labelClass}>Tu email</label>
+              <input id="gift-buy-field-1" required type="email" value={form.buyerEmail} onChange={(e) => setForm({ ...form, buyerEmail: e.target.value })} className={inputClass} />
             </div>
             <div>
-              <label className={labelClass}>Email del destinatario</label>
-              <input required type="email" value={form.recipientEmail} onChange={(e) => setForm({ ...form, recipientEmail: e.target.value })} className={inputClass} />
+              <label htmlFor="gift-buy-field-2" className={labelClass}>Email del destinatario</label>
+              <input id="gift-buy-field-2" required type="email" value={form.recipientEmail} onChange={(e) => setForm({ ...form, recipientEmail: e.target.value })} className={inputClass} />
             </div>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className={`${labelClass} mb-0`}>Mensaje personalizado</label>
+                <label htmlFor="gift-buy-field-3" className={`${labelClass} mb-0`}>Mensaje personalizado</label>
                 <span className="text-[11px] text-spa-taupe">{form.message.length}/{MESSAGE_LIMIT}</span>
               </div>
               <div className="flex flex-wrap gap-1.5 mb-2">
@@ -262,12 +265,12 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
                   ))}
                 </div>
               )}
-              <textarea
+              <textarea id="gift-buy-field-3"
                 value={form.message}
                 maxLength={MESSAGE_LIMIT}
                 rows={2}
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
-                className="w-full border border-[#DDD5CA] rounded-2xl px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe resize-none"
+                className="w-full border border-[#DDD5CA] rounded-2xl px-5 py-3 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spa-taupe-dark focus:ring-offset-2 focus:border-spa-taupe resize-none"
               />
             </div>
 
@@ -276,7 +279,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
             <div className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className={`${labelClass} mb-0`}>Personaliza el diseño con tu foto (opcional)</label>
+                <label htmlFor="gift-buy-field-4" className={`${labelClass} mb-0`}>Personaliza el diseño con tu foto (opcional)</label>
                 {form.personalImageUrl && (
                   <button
                     type="button"
@@ -287,7 +290,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
                   </button>
                 )}
               </div>
-              <input
+              <input id="gift-buy-field-4"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 disabled={uploadingPhoto}
@@ -301,7 +304,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
                     ? 'Tu foto reemplaza el diseño de la tarjeta (el logo queda encima).'
                     : 'JPEG, PNG o WebP, hasta 5MB. Si no subes nada, se usa el diseño de fábrica.'}
               </p>
-              {photoError && <p className="text-sm text-red-600 mt-1">{photoError}</p>}
+              {photoError && <p role="alert" className="text-sm text-red-600 mt-1">{photoError}</p>}
             </div>
 
             {!addonsLocked && target.addons && target.addons.length > 0 && (
@@ -330,8 +333,8 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
             )}
 
             <div>
-              <label className={labelClass}>Fecha de envío (opcional)</label>
-              <input
+              <label htmlFor="gift-buy-field-5" className={labelClass}>Fecha de envío (opcional)</label>
+              <input id="gift-buy-field-5"
                 type="date"
                 value={form.deliveryDate ?? ''}
                 min={todayLocal()}
@@ -346,7 +349,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
               </p>
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
             <button
               type="submit"
@@ -364,6 +367,6 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
           </form>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

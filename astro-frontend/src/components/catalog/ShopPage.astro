@@ -1,8 +1,10 @@
 ---
 // Listado de la tienda, compartido por /tienda (?cat=, ?q=) y /categoria-producto/... (URL de spamandala.cl).
 // Las páginas que lo usan van en SSR para leer la categoría en cada request.
+import PageBanner from '../../components/common/PageBanner.astro';
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import ProductGrid from './ProductGrid.astro';
+import ShopFilters from './ShopFilters.astro';
 import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
 import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_PRODUCTS, GET_PRODUCTS_BY_TAG, GET_PRODUCT_CATEGORIES } from '../../lib/queries/products';
@@ -35,27 +37,27 @@ const categoryName: string | null = tag
   : category && catsResult.status === 'fulfilled' && catsResult.value
     ? catsResult.value.productCategories.nodes.find((c) => c.slug === category)?.name ?? category
     : category;
+const breadcrumbs = [{ name: 'Tienda', path: '/tienda' }, ...(categoryName ? [{ name: categoryName, path: Astro.url.pathname }] : [])];
 ---
 <ECommerceLayout
   title={search ? `Tienda · ${search}` : categoryName ? `Tienda · ${categoryName}` : 'Tienda'}
   layoutData={layoutDataPromise}
-  breadcrumbs={[{ name: 'Tienda', path: '/tienda' }, ...(categoryName ? [{ name: categoryName, path: Astro.url.pathname }] : [])]}
+  breadcrumbs={breadcrumbs} breadcrumbsInBanner
 >
-  <div class="bg-spa-sand py-12 sm:py-16 px-4 sm:px-6 lg:px-8 mb-10">
-    <div class="max-w-6xl mx-auto text-center">
-      <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Las Condes · Santiago de Chile</span>
-      <h1 class="font-editorial text-3xl sm:text-5xl font-light text-spa-charcoal uppercase tracking-wide">{search ? `Resultados para «${search}»` : categoryName ?? 'Tienda'}</h1>
-      {(category || search || tag) && (
-        <a href="/tienda" class="inline-block mt-4 text-xs font-semibold tracking-wider uppercase text-[#6E5C4E] hover:text-spa-charcoal border border-[#DDD5CA] px-4 py-2 rounded-full hover:bg-white transition-colors">
-          &larr; Ver todo el catálogo
-        </a>
-      )}
-    </div>
-  </div>
+  <PageBanner title={search ? `Resultados para «${search}»` : categoryName ?? 'Tienda'} context="Las Condes · Santiago de Chile" breadcrumbs={breadcrumbs} class="mb-10">
+    {(category || search || tag) && (
+      <a href="/tienda" class="inline-flex items-center gap-2 text-sm text-spa-taupe-dark underline underline-offset-4 decoration-spa-taupe/40 hover:text-spa-charcoal focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 rounded-sm">
+        <span aria-hidden="true">&larr;</span> Ver todo el catálogo
+      </a>
+    )}
+  </PageBanner>
 
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
     {products.length > 0 ? (
-      <ProductGrid products={products} basePath="/producto" />
+      <>
+        <ShopFilters products={products} />
+        <ProductGrid products={products} basePath="/producto" />
+      </>
     ) : (
       <p class="text-sm text-spa-taupe text-center">{search ? 'No encontramos productos que coincidan con tu búsqueda.' : 'No hay productos disponibles en esta categoría por ahora.'}</p>
     )}

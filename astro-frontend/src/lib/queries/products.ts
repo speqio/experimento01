@@ -22,6 +22,7 @@ export const PRODUCT_CARD_FIELDS = /* GraphQL */ `
       productosPrincipalesIds(first: 100) { nodes { ... on Product { id name slug } } }
     }
   }
+  productCategories { nodes { name slug } }
 `;
 
 export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
@@ -81,6 +82,19 @@ export const GET_PRODUCT_CATEGORIES = /* GraphQL */ `
         name
         slug
         count
+      }
+    }
+  }
+`;
+
+// Liviana: solo foto + categorías, para ilustrar cada familia de servicios del Home.
+export const GET_PRODUCT_IMAGES = /* GraphQL */ `
+  query GetProductImages {
+    products(first: 60, where: { status: "publish" }) {
+      nodes {
+        id
+        image { sourceUrl(size: MEDIUM_LARGE) altText }
+        productCategories { nodes { slug } }
       }
     }
   }

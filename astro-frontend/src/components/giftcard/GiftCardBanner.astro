@@ -1,0 +1,39 @@
+﻿---
+interface Props { imageUrl?: string }
+const { imageUrl = '/gift-card.webp' } = Astro.props;
+---
+<section class="gift-banner" aria-labelledby="gift-banner-title">
+  <div class="gift-banner__inner">
+    <div class="gift-banner__copy">
+      <h2 id="gift-banner-title" class="font-editorial">Un detalle que se transforma en una experiencia</h2>
+      <p>Personaliza tu Gift Card, elige el monto o el tratamiento ideal y envíala al instante.</p>
+      <a href="/gift-cards" class="gift-banner__cta">
+        Comprar Gift Card
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+      </a>
+    </div>
+    <figure class="gift-banner__visual">
+      <img src={imageUrl} alt="Gift Card de Mándala Spa" width="1200" height="851" loading="lazy" decoding="async" />
+      <figcaption>Regala bienestar</figcaption>
+    </figure>
+  </div>
+</section>
+<style>
+  .gift-banner { background: #efece4; color: #2c2724; }
+  .gift-banner__inner { max-width: 72rem; margin-inline: auto; padding: 3.5rem 1.5rem; display: grid; gap: 3rem; align-items: center; }
+  .gift-banner__copy { min-width: 0; }
+  .gift-banner h2 { max-width: 18ch; font-size: clamp(2.5rem, 4.2vw, 3.75rem); font-weight: 400; line-height: 1.06; letter-spacing: -.025em; text-wrap: balance; }
+  .gift-banner__copy p { max-width: 43ch; margin-top: 1.5rem; font-size: .9375rem; line-height: 1.8; color: #675647; text-wrap: pretty; }
+  .gift-banner__cta { display: inline-flex; align-items: center; justify-content: center; gap: 1.75rem; min-height: 48px; margin-top: 2rem; padding: .9rem 1.5rem; border-radius: 999px; background: #2c2724; color: #fff; font-size: .75rem; font-weight: 600; letter-spacing: .08em; transition: background-color .2s ease; }
+  .gift-banner__cta:hover { background: #675647; }
+  .gift-banner__cta:focus-visible { outline: 2px solid #675647; outline-offset: 5px; }
+  .gift-banner__visual { min-width: 0; margin: 0; padding: 1.25rem .5rem .25rem; }
+  .gift-banner__visual img { display: block; width: 100%; height: auto; border-radius: .75rem; transform: rotate(-3deg); box-shadow: 0 18px 30px -18px rgb(55 44 34 / .35); }
+  .gift-banner__visual figcaption { margin-top: 2rem; text-align: center; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.375rem; font-style: italic; color: #675647; }
+  @media (min-width: 768px) {
+    .gift-banner__inner { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 3.5rem; padding: 4.5rem 2rem; }
+    .gift-banner__visual { padding-inline: 1rem; }
+  }
+  @media (min-width: 1024px) { .gift-banner__inner { gap: 5rem; padding-block: 5rem; } }
+  @media (prefers-reduced-motion: reduce) { .gift-banner__cta { transition: none; } }
+</style>
