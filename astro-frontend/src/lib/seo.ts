@@ -1,6 +1,7 @@
 import { SITE_INFO } from './siteInfo';
 import seoWp from '../data/seo-wp.json';
 import entradasWp from '../data/entradas-wp.json';
+import titulosWp from '../data/titulos-wp.json';
 
 /** Ruta pública de una entrada: las de spamandala.cl siguen en /slug/ (su permalink original). */
 export const postPath = (slug: string) => (entradasWp.includes(slug) ? `/${slug}/` : `/blog/${slug}/`);
@@ -23,6 +24,18 @@ type WpSeo = { canonical?: string; noindex?: boolean; image?: string; crumb?: st
 export function wpSeo(path: string): WpSeo {
   const key = path === '/' ? '/' : `/${path.replace(/^\/+|\/+$/g, '').toLowerCase()}/`;
   return (seoWp as Record<string, WpSeo>)[key] ?? {};
+}
+
+/**
+ * <title> de la página: el que servía producción para esa ruta (src/data/titulos-wp.json, de
+ * migracion/_herramientas/titulos_wp.py) para no cambiar lo que Google ya tiene. Las rutas nuevas o sin
+ * título propio siguen la plantilla de Yoast: `Nombre | Spa Mandala`.
+ */
+export function titleFor(path: string, title: string) {
+  const key = path === '/' ? '/' : `/${path.replace(/^\/+|\/+$/g, '').toLowerCase()}/`;
+  const exact = (titulosWp as Record<string, string>)[key];
+  if (exact) return exact;
+  return /m[aá]ndala/i.test(title) ? title : `${title} | Spa Mandala`;
 }
 
 /** Canonical con barra final, igual que los permalinks de spamandala.cl. */

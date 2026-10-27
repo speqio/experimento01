@@ -3,6 +3,7 @@ import { SITE_INFO, GTM_CONTAINER_ID } from '../lib/siteInfo';
 import CookieBanner from '../components/common/CookieBanner.astro';
 import CartNotification from '../components/cart/CartNotification.astro';
 import Seo from '../components/common/Seo.astro';
+import { titleFor } from '../lib/seo';
 import '../styles/global.css';
 
 interface Props {
@@ -16,11 +17,12 @@ interface Props {
   preloadImage?: string | null;
 }
 const {
-  title,
+  title: pageTitle,
   description = 'Refugio de bienestar: masajes terapéuticos, tratamientos faciales, experiencias spa y gift cards.',
   preloadImage,
   ...seo
 } = Astro.props;
+const title = titleFor(Astro.url.pathname, pageTitle);
 // Las imágenes vienen del CMS: abrir la conexión antes ahorra ~1,5 s del banner en celular (PageSpeed).
 const cmsOrigin = import.meta.env.PUBLIC_WPGRAPHQL_URL ? new URL(import.meta.env.PUBLIC_WPGRAPHQL_URL).origin : null;
 ---
