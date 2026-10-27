@@ -21,6 +21,8 @@ export interface CheckoutInput {
   state: string; // región, código de WooCommerce (CL-RM)
   shippingMethod?: string; // id del método de envío elegido (carritos con productos físicos)
   paymentMethod: 'webpay';
+  rut?: string; // opcional
+  note?: string; // notas del pedido, opcional
   giftCardCode?: string;
   // Origen del comprador (utm/referrer), ver lib/attribution.ts. Solo trazabilidad.
   attribution?: Record<string, unknown> | null;

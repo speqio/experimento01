@@ -25,7 +25,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const sessionHeader = request.headers.get('woocommerce-session') ?? '';
     if (!sessionHeader) return json({ error: 'Carrito vacío o sesión expirada' }, 400);
 
-    const { paymentMethod: _pm, giftCardCode: _gc, attribution, shippingMethod, ...billing } = input;
+    const { paymentMethod: _pm, giftCardCode: _gc, attribution, shippingMethod, rut, note, ...billing } = input;
+    // Opcionales que escribe el cliente: se validan aquí, no en el navegador.
+    const cleanRut = String(rut ?? '').trim();
+    if (cleanRut && !/^[0-9.]{1,10}-?[0-9kK]$/.test(cleanRut)) return json({ error: 'RUT inválido' }, 400);
+    const cleanNote = String(note ?? '').trim().slice(0, 500);
     if (!validAddress(billing.state, billing.city)) return json({ error: 'Región o comuna inválida' }, 400);
 
     // El envío se recalcula aquí (no se confía en el navegador): si el carrito lleva productos
@@ -34,12 +38,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (shipping.needsShipping && !shipping.rates.some((r) => r.id === shippingMethod)) {
       return json({ error: 'Elige un método de envío' }, 400);
     }
-    const order = await createOrderFromCart(env, sessionHeader, billing, shipping.needsShipping ? shippingMethod : undefined);
+    const order = await createOrderFromCart(env, sessionHeader, billing, shipping.needsShipping ? shippingMethod : undefined, cleanNote);
 
-    if (attribution) {
-      // No bloquea el pago si falla — solo trazabilidad para wp-admin → Gift Cards.
-      await setOrderMeta(env, order.id, { _mandala_attribution: JSON.stringify(attribution) }).catch(() => {});
-    }
+    // No bloquea el pago si falla: atribución (wp-admin → Gift Cards) y RUT son datos de apoyo.
+    const meta = { ...(attribution ? { _mandala_attribution: JSON.stringify(attribution) } : {}), ...(cleanRut ? { _billing_rut: cleanRut } : {}) };
+    if (Object.keys(meta).length) await setOrderMeta(env, order.id, meta).catch(() => {});
 
     // Total $0 (ej. gift card canjeada al 100%): Transbank no acepta monto 0.
     if (order.total <= 0) {

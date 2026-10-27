@@ -97,6 +97,7 @@ export async function createOrderFromCart(
   sessionHeader: string,
   billing: { firstName: string; lastName: string; email: string; phone: string; address1: string; city: string; state?: string },
   shippingMethod?: string,
+  customerNote?: string,
 ): Promise<CreatedOrder> {
   const address = { ...billing, country: 'CL' };
   const json = await sessionGraphql(env, sessionHeader, CHECKOUT_MUTATION, {
@@ -104,6 +105,7 @@ export async function createOrderFromCart(
       paymentMethod: 'webpay',
       isPaid: false,
       billing: address,
+      ...(customerNote ? { customerNote } : {}),
       ...(shippingMethod ? { shipping: address, shippingMethod: [shippingMethod] } : {}),
     },
   });

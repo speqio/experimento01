@@ -1,5 +1,5 @@
 ---
-// Formulario de datos de envío/facturación e inicio de Webpay — SSR.
+// Checkout en una sola pantalla: datos, despacho, envío y resumen del pedido; inicia Webpay — SSR.
 export const prerender = false;
 
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
@@ -7,43 +7,126 @@ import { REGIONES } from '../../lib/comunas';
 
 const inputClass =
   'w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe placeholder:text-spa-taupe';
+const labelClass = 'block text-xs font-semibold tracking-wide text-spa-charcoal mb-1.5 pl-1';
+const sectionClass = 'group bg-white rounded-2xl border border-[#E8E2D7]';
+const summaryClass =
+  'flex items-center justify-between gap-3 cursor-pointer list-none px-5 sm:px-6 py-4 font-editorial text-xl text-spa-charcoal [&::-webkit-details-marker]:hidden';
+const bodyClass = 'px-5 sm:px-6 pb-6 space-y-4';
 ---
 <ECommerceLayout title="Checkout">
-  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
     <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block mb-3">Último paso</span>
-    <h1 class="font-editorial text-3xl sm:text-4xl font-light text-spa-charcoal mb-8">Datos de pago</h1>
+    <h1 class="font-editorial text-3xl sm:text-4xl font-light text-spa-charcoal mb-8">Finalizar compra</h1>
 
-    <form id="checkout-form" class="space-y-4 bg-white rounded-2xl border border-[#E8E2D7] p-6 sm:p-8">
-      <div class="grid grid-cols-2 gap-4">
-        <input name="firstName" required placeholder="Nombre" class={inputClass} />
-        <input name="lastName" required placeholder="Apellido" class={inputClass} />
-      </div>
-      <input name="email" type="email" required placeholder="Email" class={inputClass} />
-      <input name="phone" required placeholder="Teléfono" class={inputClass} />
-      <div class="grid sm:grid-cols-2 gap-4">
-        <select name="state" required class={inputClass} aria-label="Región">
-          <option value="">Región</option>
-          {REGIONES.map((r) => <option value={r.code} selected={r.code === 'CL-RM'}>{r.name}</option>)}
-        </select>
-        <select name="city" required class={inputClass} aria-label="Comuna">
-          <option value="">Comuna</option>
-        </select>
-      </div>
-      <input name="address1" required placeholder="Dirección (calle, número, depto.)" class={inputClass} />
+    <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
+      <form id="checkout-form" class="space-y-4 min-w-0">
+        <details class={sectionClass} open>
+          <summary class={summaryClass}>
+            <span>Tus datos</span>
+            <svg class="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8l5 5 5-5" /></svg>
+          </summary>
+          <div class={bodyClass}>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div><label class={labelClass} for="firstName">Nombre *</label><input id="firstName" name="firstName" required autocomplete="given-name" class={inputClass} /></div>
+              <div><label class={labelClass} for="lastName">Apellidos *</label><input id="lastName" name="lastName" required autocomplete="family-name" class={inputClass} /></div>
+            </div>
+            <div><label class={labelClass} for="phone">N° de celular *</label><input id="phone" name="phone" type="tel" inputmode="tel" required autocomplete="tel" placeholder="Ej: XXXXXXXX (8 dígitos)" class={inputClass} /></div>
+            <div><label class={labelClass} for="email">Correo electrónico *</label><input id="email" name="email" type="email" required autocomplete="email" placeholder="Ej: contacto@gmail.com" class={inputClass} /></div>
+            <div><label class={labelClass} for="rut">N° RUT (opcional)</label><input id="rut" name="rut" inputmode="text" maxlength="12" placeholder="Ej: 12.904.130-5" class={inputClass} /></div>
+          </div>
+        </details>
 
-      <!-- Solo aparece si el carrito tiene productos físicos (WooCommerce decide según las zonas de envío). -->
-      <fieldset id="shipping-box" hidden class="border border-[#E8E2D7] rounded-2xl p-5 space-y-3">
-        <legend class="px-2 text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase">Envío</legend>
-        <div id="shipping-rates" class="space-y-2 text-sm"></div>
-        <p id="shipping-total" class="text-sm text-spa-charcoal font-semibold"></p>
-      </fieldset>
-      <button
-        type="submit"
-        class="w-full bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md mt-2"
-      >
-        Pagar con Webpay
-      </button>
-    </form>
+        <details class={sectionClass} open>
+          <summary class={summaryClass}>
+            <span>Dirección de despacho</span>
+            <svg class="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8l5 5 5-5" /></svg>
+          </summary>
+          <div class={bodyClass}>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class={labelClass} for="state">Región / Provincia *</label>
+                <select id="state" name="state" required class={inputClass}>
+                  <option value="">Región</option>
+                  {REGIONES.map((r) => <option value={r.code} selected={r.code === 'CL-RM'}>{r.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label class={labelClass} for="city">Comuna *</label>
+                <select id="city" name="city" required class={inputClass}>
+                  <option value="">Comuna</option>
+                </select>
+              </div>
+            </div>
+            <div><label class={labelClass} for="address1">Dirección de la calle *</label><input id="address1" name="address1" required autocomplete="address-line1" placeholder="Nombre de la calle y número de la casa" class={inputClass} /></div>
+            <div><label class={labelClass} for="address2">Apartamento, habitación, escalera, etc. (opcional)</label><input id="address2" name="address2" autocomplete="address-line2" placeholder="Apartamento, habitación, etc. (opcional)" class={inputClass} /></div>
+          </div>
+        </details>
+
+        <!-- Solo aparece si el carrito tiene productos físicos (WooCommerce decide según las zonas de envío). -->
+        <details id="shipping-box" class={sectionClass} open hidden>
+          <summary class={summaryClass}>
+            <span>Envío</span>
+            <svg class="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8l5 5 5-5" /></svg>
+          </summary>
+          <div class={bodyClass}>
+            <div id="shipping-rates" class="space-y-2 text-sm"></div>
+          </div>
+        </details>
+
+        <details class={sectionClass}>
+          <summary class={summaryClass}>
+            <span>Información adicional</span>
+            <svg class="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8l5 5 5-5" /></svg>
+          </summary>
+          <div class={bodyClass}>
+            <label class={labelClass} for="note">Notas del pedido (opcional)</label>
+            <textarea id="note" name="note" rows="3" maxlength="500" placeholder="Notas sobre tu pedido, por ejemplo, notas especiales para la entrega." class="w-full border border-[#DDD5CA] rounded-2xl px-5 py-3 text-sm bg-white focus:outline-none focus:border-spa-taupe placeholder:text-spa-taupe"></textarea>
+          </div>
+        </details>
+      </form>
+
+      <aside class="bg-white rounded-2xl border border-[#E8E2D7] p-5 sm:p-6 space-y-5 lg:sticky lg:top-24">
+        <details class="group" open>
+          <summary class="flex items-center justify-between gap-3 cursor-pointer list-none font-editorial text-xl text-spa-charcoal [&::-webkit-details-marker]:hidden">
+            <span>Tu pedido</span>
+            <svg class="w-4 h-4 shrink-0 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 8l5 5 5-5" /></svg>
+          </summary>
+          <ul id="sum-items" class="mt-4 divide-y divide-spa-cream text-sm"></ul>
+        </details>
+
+        <dl class="space-y-3 text-sm border-t border-spa-cream pt-4">
+          <div class="flex justify-between gap-4 text-spa-taupe"><dt>Subtotal</dt><dd id="sum-subtotal">—</dd></div>
+          <div id="sum-shipping-row" hidden class="flex justify-between gap-4 text-spa-taupe"><dt>Envío</dt><dd id="sum-shipping" class="text-right"></dd></div>
+          <div class="flex justify-between items-baseline gap-4 pt-3 border-t border-spa-cream text-spa-charcoal">
+            <dt class="font-editorial text-lg">Total</dt><dd id="sum-total" class="font-editorial text-2xl font-medium">—</dd>
+          </div>
+        </dl>
+
+        <div class="rounded-xl bg-spa-sand px-4 py-3 text-xs text-spa-taupe-dark leading-relaxed">
+          <strong class="block text-spa-charcoal mb-0.5">Webpay Plus</strong>
+          Paga con tarjetas de crédito, débito y prepago a través de Webpay Plus.
+        </div>
+
+        <p class="text-[11px] text-spa-taupe leading-relaxed">
+          Tus datos personales se utilizarán para procesar tu pedido y mejorar tu experiencia en esta web. Más información en nuestra
+          <a href="/politicas-de-privacidad" class="underline">política de privacidad</a>.
+        </p>
+
+        <label class="flex items-start gap-2 text-xs text-spa-charcoal cursor-pointer">
+          <input type="checkbox" form="checkout-form" required class="mt-0.5" />
+          <span>He leído y estoy de acuerdo con los <a href="/politicas-de-la-empresa" target="_blank" rel="noopener" class="underline">términos y condiciones</a> de la web *</span>
+        </label>
+
+        <button
+          id="pay-btn"
+          type="submit"
+          form="checkout-form"
+          class="w-full bg-spa-charcoal hover:bg-[#433B36] disabled:opacity-60 text-white rounded-full py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all duration-300 shadow-md"
+        >
+          Pagar con Webpay
+        </button>
+      </aside>
+    </div>
   </div>
 </ECommerceLayout>
 
@@ -51,7 +134,7 @@ const inputClass =
   import type { CheckoutInput } from '../../types/checkout';
   import type { WebpayInitResponse } from '../../types/checkout';
   import { getAttribution } from '../../lib/attribution';
-  import { fetchCart } from '../../store/cartStore';
+  import { cartSummary, fetchCart } from '../../store/cartStore';
   import { clp, cartLinesToItems, pushEcommerce } from '../../lib/dataLayer';
   import { REGIONES } from '../../lib/comunas';
 
@@ -64,11 +147,37 @@ const inputClass =
   const stateSel = form.elements.namedItem('state') as HTMLSelectElement;
   const citySel = form.elements.namedItem('city') as HTMLSelectElement;
   const address = form.elements.namedItem('address1') as HTMLInputElement;
-  const box = document.getElementById('shipping-box') as HTMLFieldSetElement;
+  const box = document.getElementById('shipping-box') as HTMLDetailsElement;
   const ratesEl = document.getElementById('shipping-rates')!;
-  const totalEl = document.getElementById('shipping-total')!;
+  const payBtn = document.getElementById('pay-btn') as HTMLButtonElement;
   const money = (n: number) => '$' + n.toLocaleString('es-CL');
   let needsShipping = false;
+  // Envío elegido y total con envío (lo calcula WooCommerce vía /api/shipping); null hasta que haya comuna.
+  let rate: { label: string; cost: number } | null = null;
+  let shipTotal: number | null = null;
+
+  // Resumen del pedido: líneas del carrito + subtotal, envío y total.
+  function renderSummary() {
+    const s = cartSummary.get();
+    document.getElementById('sum-items')!.replaceChildren(...s.items.map((i) => {
+      const li = document.createElement('li');
+      li.className = 'flex justify-between gap-4 py-2.5';
+      const name = document.createElement('span');
+      name.textContent = `${i.product?.name ?? ''} × ${i.quantity}`;
+      const total = document.createElement('span');
+      total.className = 'whitespace-nowrap';
+      total.textContent = i.total;
+      li.append(name, total);
+      return li;
+    }));
+    document.getElementById('sum-subtotal')!.textContent = s.subtotal;
+    document.getElementById('sum-total')!.textContent = shipTotal != null ? money(shipTotal) : s.total;
+    const row = document.getElementById('sum-shipping-row')!;
+    row.hidden = !rate;
+    // Sin costo en el pedido (por pagar o gratis): se muestra el nombre del método, no un monto.
+    if (rate) document.getElementById('sum-shipping')!.textContent = rate.cost ? money(rate.cost) : rate.label;
+  }
+  cartSummary.subscribe(renderSummary);
 
   function fillComunas() {
     const region = REGIONES.find((r) => r.code === stateSel.value);
@@ -87,12 +196,15 @@ const inputClass =
     const data = await res.json().catch(() => ({}));
     needsShipping = !!data.needsShipping;
     box.hidden = !needsShipping;
-    if (!needsShipping) return;
+    rate = null;
+    shipTotal = null;
+    if (!needsShipping) return renderSummary();
     if (!data.rates?.length) {
       ratesEl.textContent = 'No hay despacho disponible para esta comuna. Escríbenos por WhatsApp.';
-      totalEl.textContent = '';
-      return;
+      return renderSummary();
     }
+    rate = data.rates.find((r: { id: string }) => r.id === data.chosen) ?? data.rates[0];
+    shipTotal = data.total;
     ratesEl.replaceChildren(...data.rates.map((r: { id: string; label: string; cost: number }) => {
       const label = document.createElement('label');
       label.className = 'flex items-start gap-3 cursor-pointer';
@@ -100,32 +212,39 @@ const inputClass =
       input.className = 'mt-1';
       input.addEventListener('change', () => loadShipping(r.id));
       const text = document.createElement('span');
-      text.textContent = `${r.label} — ${r.cost ? money(r.cost) : 'sin costo en el pedido'}`;
+      text.textContent = r.cost ? `${r.label} — ${money(r.cost)}` : r.label;
       label.append(input, text);
       return label;
     }));
-    totalEl.textContent = `Total a pagar: ${money(data.total)}`;
+    renderSummary();
   }
 
   fillComunas();
-  stateSel.addEventListener('change', () => { fillComunas(); box.hidden = true; });
+  stateSel.addEventListener('change', () => { fillComunas(); box.hidden = true; needsShipping = false; rate = null; shipTotal = null; renderSummary(); });
   citySel.addEventListener('change', () => loadShipping());
+  // Un campo obligatorio dentro de una sección cerrada no se puede enfocar: se abre la sección.
+  form.addEventListener('invalid', (e) => (e.target as HTMLElement).closest('details')?.setAttribute('open', ''), true);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
+    const address2 = String(formData.get('address2') ?? '').trim();
     const input: CheckoutInput = {
       firstName: String(formData.get('firstName')),
       lastName: String(formData.get('lastName')),
       email: String(formData.get('email')),
       phone: String(formData.get('phone')),
-      address1: String(formData.get('address1')),
+      address1: address2 ? `${formData.get('address1')}, ${address2}` : String(formData.get('address1')),
       city: String(formData.get('city')),
       state: String(formData.get('state')),
       shippingMethod: needsShipping ? String(formData.get('shippingMethod') ?? '') : undefined,
+      rut: String(formData.get('rut') ?? '').trim() || undefined,
+      note: String(formData.get('note') ?? '').trim() || undefined,
       paymentMethod: 'webpay',
       attribution: getAttribution(),
     };
 
+    // Cada envío crea un pedido: se bloquea el botón para evitar duplicados.
+    payBtn.disabled = true;
     const session = localStorage.getItem('woo-session');
     const res = await fetch('/api/webpay-init', {
       method: 'POST',
@@ -136,7 +255,10 @@ const inputClass =
       body: JSON.stringify(input),
     });
     const data: WebpayInitResponse = await res.json();
-    if (data.error || !res.ok) return alert(data.error ?? 'No se pudo iniciar el pago');
+    if (data.error || !res.ok) {
+      payBtn.disabled = false;
+      return alert(data.error ?? 'No se pudo iniciar el pago');
+    }
     if (data.free && data.redirect) return void (window.location.href = data.redirect);
     const { token, url } = data as { token: string; url: string };
 
