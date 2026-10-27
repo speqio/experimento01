@@ -68,7 +68,7 @@ const families = (layoutResult.status === 'fulfilled' ? layoutResult.value.categ
       label: group.label,
       href: categoryGroupHref(group.label),
       image: editorial ? { sourceUrl: `/images/servicios/${editorial.file}-natural-v2-960.webp`, altText: editorial.altText } : pick?.image ?? null,
-      srcSet: editorial ? `/images/servicios/${editorial.file}-natural-v2-480.webp 480w, /images/servicios/${editorial.file}-natural-v2-960.webp 960w` : undefined,
+      srcSet: editorial ? `/images/servicios/${editorial.file}-natural-v2-360.webp 360w, /images/servicios/${editorial.file}-natural-v2-480.webp 480w, /images/servicios/${editorial.file}-natural-v2-960.webp 960w` : undefined,
       imagePosition: editorial?.position ?? 'center',
     };
   });
@@ -153,6 +153,11 @@ const slides: Slide[] = [
     secondaryLink: '/promociones',
   }),
 ];
+// Fotos locales del hero: 480/720/960 para que el celular (412 px a 1,75x) no baje la de 960.
+const heroSrcset = (src: string) => {
+  const base = src.match(/^(\/images\/servicios\/.+)-960\.webp$/)?.[1];
+  return base ? `${base}-480.webp 480w, ${base}-720.webp 720w, ${base}-960.webp 960w` : undefined;
+};
 const isExternal = (href: string) => /^https?:\/\//.test(href);
 ---
 <ECommerceLayout
@@ -196,6 +201,8 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
                   <img
                     data-hero-media
                     src={slide.image}
+                    srcset={heroSrcset(slide.image)}
+                    sizes="100vw"
                     alt=""
                     class="absolute inset-0 w-full h-full object-cover"
                     loading={i === 0 ? 'eager' : 'lazy'}

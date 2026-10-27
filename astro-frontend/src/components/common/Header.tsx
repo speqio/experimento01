@@ -242,10 +242,10 @@ export default function Header({ currentPath, currentCategory, categoryGroups }:
 
           <a href="/" className="flex items-center justify-center py-1 select-none" aria-label="Mándala Spa — inicio">
             <img
-              src="/images/servicios/Spa mandala - Logos.png"
+              src="/images/servicios/logo-mandala.webp"
               alt="Mándala Spa"
-              width="180"
-              height="60"
+              width="320"
+              height="128"
               style={{ maxWidth: '150px', height: 'auto' }}
               className="block"
             />
