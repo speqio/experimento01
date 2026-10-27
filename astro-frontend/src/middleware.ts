@@ -34,7 +34,25 @@ const PROXIED_PREFIXES = ['/wp-content/'];
 const CACHE_TTL_SECONDS = 120;
 const NOT_CACHEABLE_PREFIXES = ['/carrito', '/checkout', '/api'];
 
+// `public/_headers` solo llega a los archivos estáticos; el HTML lo genera el Worker, así que
+// estas cabeceras se ponen aquí. Sin CSP: la política de _headers nunca se ha probado contra el
+// HTML (GTM carga scripts de otros dominios) y activarla sin probar podría cortar la medición.
+const SECURITY_HEADERS: Record<string, string> = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+};
+
 export const onRequest = defineMiddleware(async (context, next) => {
+  const res = await handle(context, next);
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(SECURITY_HEADERS)) out.headers.set(k, v);
+  return out;
+});
+
+const handle: Parameters<typeof defineMiddleware>[0] = async (context, next) => {
   const { pathname, search } = context.url;
   let key = pathname;
   try { key = decodeURIComponent(pathname); } catch {}
@@ -117,4 +135,4 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // de TS todavía.
     ...(hasBody ? { duplex: 'half' } : {}),
   } as RequestInit);
-});
+};

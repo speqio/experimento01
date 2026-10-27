@@ -36,9 +36,10 @@ export const GET: APIRoute = async (ctx) => {
   const entry = (path: string, modified?: string | null) =>
     `<url><loc>${origin}${path}</loc>${modified ? `<lastmod>${modified.slice(0, 10)}</lastmod>` : ''}</url>`;
   const urls = [
-    ...STATIC_PATHS.map((p) => entry(p)),
+    // Con barra final, igual que el canonical de cada página.
+    ...STATIC_PATHS.map((p) => entry(p === '/' ? p : `${p}/`)),
     ...pages.map((p) => entry(`/${p.path}/`)),
-    ...cats.map((c) => entry(`/categoria-producto/${c.parent ? c.parent.node.slug + "/" : ""}${c.slug}/`)),
+    ...cats.filter((c) => c.slug !== 'sin-categorizar').map((c) => entry(`/categoria-producto/${c.parent ? c.parent.node.slug + "/" : ""}${c.slug}/`)),
     ...products.map((p) => entry(`/producto/${p.slug}/`, p.modified)),
     ...posts.map((p) => entry(postPath(p.slug), p.modified)),
   ];
