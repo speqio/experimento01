@@ -200,8 +200,10 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
                 <>
                   <img
                     data-hero-media
-                    src={slide.image}
-                    srcset={heroSrcset(slide.image)}
+                    src={i === 0 ? slide.image : undefined}
+                    srcset={i === 0 ? heroSrcset(slide.image) : undefined}
+                    data-src={i === 0 ? undefined : slide.image}
+                    data-srcset={i === 0 ? undefined : heroSrcset(slide.image)}
                     sizes="100vw"
                     alt=""
                     class="absolute inset-0 w-full h-full object-cover"
@@ -507,7 +509,19 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
 
     const FADE = 900; // ms del crossfade
 
+    // Las diapositivas ocultas no bajan su foto al cargar la página (PageSpeed móvil): se asigna
+    // al mostrarlas, y la siguiente se precarga a mitad de la actual para que el fundido no quede vacío.
+    function loadSlide(index: number) {
+      slides[index]?.querySelectorAll<HTMLImageElement>('img[data-src]').forEach((img) => {
+        if (img.dataset.srcset) img.srcset = img.dataset.srcset;
+        img.src = img.dataset.src!;
+        img.removeAttribute('data-src');
+        img.removeAttribute('data-srcset');
+      });
+    }
+
     function showSlide(index: number, instant = false) {
+      loadSlide(index);
       const prev = current;
       const next = slides[index];
       const old  = slides[prev];
@@ -569,6 +583,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
         if (startTs === null) startTs = ts;
         const delta = ts - startTs + elapsed;
         const progress = Math.min(delta / DURATION, 1);
+        if (progress > 0.5) loadSlide((current + 1) % slides.length);
         fill.style.transition = 'none';
         fill.style.transform  = `scaleY(${progress})`;
         if (progress < 1) {
