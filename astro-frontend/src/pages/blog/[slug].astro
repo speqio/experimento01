@@ -24,7 +24,8 @@ try {
   });
   post = data.post;
 } catch {
-  post = null;
+  // El CMS falló o tardó: no es una entrada inexistente (un 404 haría que Google la dé por eliminada).
+  return new Response('Servicio no disponible, intenta de nuevo en unos segundos.', { status: 503, headers: { 'Retry-After': '30' } });
 }
 
 if (!post) {

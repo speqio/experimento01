@@ -60,7 +60,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const body: WebpayInitResponse = { token: response.token, url: response.url };
     return json(body);
   } catch (e) {
-    console.error('webpay-init:', e);
+    // El mensaje va aparte del stack: en los logs de Cloudflare el stack solo no dice qué falló.
+    console.error('webpay-init:', e instanceof Error ? e.message : String(e), e);
     return json({ error: 'No pudimos iniciar el pago. Inténtalo de nuevo.' }, 500);
   }
 };

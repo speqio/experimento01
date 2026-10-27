@@ -36,7 +36,8 @@ try {
   });
   product = data.product;
 } catch {
-  product = null;
+  // El CMS falló o tardó: no es un producto inexistente. Un 404 aquí le haría creer a Google que la ficha ya no existe.
+  return new Response('Servicio no disponible, intenta de nuevo en unos segundos.', { status: 503, headers: { 'Retry-After': '30' } });
 }
 
 if (!product) {
