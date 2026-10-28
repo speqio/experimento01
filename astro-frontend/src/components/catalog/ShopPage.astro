@@ -5,6 +5,7 @@ import PageBanner from '../../components/common/PageBanner.astro';
 import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import ProductGrid from './ProductGrid.astro';
 import ShopFilters from './ShopFilters.astro';
+import { isPhysicalProduct } from '../../lib/categoryGroups';
 import { wpQuery, kvCacheFrom } from '../../lib/wp-graphql';
 import { fetchLayoutData } from '../../lib/layoutData';
 import { GET_PRODUCTS, GET_PRODUCTS_BY_TAG, GET_PRODUCT_CATEGORIES } from '../../lib/queries/products';
@@ -23,7 +24,7 @@ const [productsResult, catsResult] = await Promise.allSettled([
   wpQuery<{ products: { nodes: SimpleProduct[] }; productTag?: { name: string } | null }>(
     tag
       ? { query: GET_PRODUCTS_BY_TAG, variables: { tag, tagId: tag }, cache }
-      : { query: GET_PRODUCTS, variables: { first: 48, category, search }, cache },
+      : { query: GET_PRODUCTS, variables: { first: 100, category, search }, cache },
   ),
   category
     ? wpQuery<{ productCategories: { nodes: ProductCategory[] } }>({ query: GET_PRODUCT_CATEGORIES, cache })
@@ -31,7 +32,9 @@ const [productsResult, catsResult] = await Promise.allSettled([
 ]);
 
 // WordPress aún no configurado/disponible en build time.
-const products: SimpleProduct[] = productsResult.status === 'fulfilled' ? productsResult.value.products.nodes : [];
+// Primero los productos físicos (Skin care, Bienestar, Packs) y después los servicios; dentro de cada grupo, el orden del CMS.
+const products: SimpleProduct[] = (productsResult.status === 'fulfilled' ? productsResult.value.products.nodes : [])
+  .sort((a, b) => Number(isPhysicalProduct(b)) - Number(isPhysicalProduct(a)));
 const categoryName: string | null = tag
   ? (productsResult.status === 'fulfilled' && productsResult.value.productTag?.name) || tag
   : category && catsResult.status === 'fulfilled' && catsResult.value

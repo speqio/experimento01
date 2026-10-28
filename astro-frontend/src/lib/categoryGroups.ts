@@ -26,6 +26,12 @@ export function groupOf(slug: string): string | undefined {
 
 // El CMS trae nombres en mayúsculas ("TRATAMIENTOS CORPORALES"); el menú los muestra con solo la primera letra en mayúscula.
 export const sentenceCase = (name: string) => name.charAt(0).toLocaleUpperCase('es') + name.slice(1).toLocaleLowerCase('es');
+/** Nombre visible de una categoría: el de Tienda si es de productos físicos, si no el del CMS con mayúscula inicial. */
+export const categoryLabel = (slug: string, name: string) => TIENDA_LABELS[slug] ?? sentenceCase(name);
+/** Categoría o producto físico (Skin care, Bienestar, Packs especiales), en vez de un servicio. */
+export const isPhysicalCategory = (slug: string) => slug in TIENDA_LABELS;
+export const isPhysicalProduct = (p: { productCategories?: { nodes: { slug: string }[] } | null }) =>
+  (p.productCategories?.nodes ?? []).some((c) => isPhysicalCategory(c.slug));
 
 export function groupCategories(categories: ProductCategory[]): CategoryGroup[] {
   const groups: CategoryGroup[] = GROUP_MATCHERS.map((m) => ({ label: m.label, items: [] }));
@@ -35,7 +41,7 @@ export function groupCategories(categories: ProductCategory[]): CategoryGroup[] 
     const matcher = GROUP_MATCHERS.find((m) => m.test(category.slug));
     if (!matcher) continue;
     const group = groups.find((g) => g.label === matcher.label)!;
-    group.items.push({ ...category, name: TIENDA_LABELS[category.slug] ?? sentenceCase(category.name) });
+    group.items.push({ ...category, name: categoryLabel(category.slug, category.name) });
   }
 
   return groups.filter((g) => g.items.length > 0).sort((a, b) => Number(a.label === 'Tienda') - Number(b.label === 'Tienda'));

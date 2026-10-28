@@ -1,10 +1,12 @@
 ---
 // Migas de pan visibles; el mismo listado va como BreadcrumbList en el JSON-LD (ver ECommerceLayout).
 import type { Crumb } from '../../lib/seo';
+import { sentenceCase } from '../../lib/categoryGroups';
 
 interface Props { crumbs: Crumb[]; inBanner?: boolean; inverse?: boolean }
 
-const { crumbs, inBanner = false, inverse = false } = Astro.props;
+const { crumbs: rawCrumbs, inBanner = false, inverse = false } = Astro.props;
+const crumbs = rawCrumbs.map((c) => ({ ...c, name: sentenceCase(c.name) }));
 ---
 <nav aria-label="Migas de pan" class:list={[
   'w-full max-w-6xl mx-auto text-left text-xs',

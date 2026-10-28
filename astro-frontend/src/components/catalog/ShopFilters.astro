@@ -1,6 +1,6 @@
 ---
 import type { SimpleProduct } from '../../types/catalog';
-import { sentenceCase } from '../../lib/categoryGroups';
+import { categoryLabel, isPhysicalCategory } from '../../lib/categoryGroups';
 import { getProductBadge, getProductDuration, extractDuration, hasAnyDiscount } from '../../lib/parse';
 
 interface Props {
@@ -49,11 +49,12 @@ for (const p of products) {
     catCount[cat.slug].count++;
   }
 }
-const categories = Object.entries(catCount)
-  .filter(([, v]) => v.count > 0)
-  .sort((a, b) => b[1].count - a[1].count)
-  .slice(0, 6)
-  .map(([slug, v]) => ({ slug, name: sentenceCase(v.name) }));
+// Las categorías de productos físicos van siempre primero; después las 6 de servicios más frecuentes.
+const ranked = Object.entries(catCount).filter(([, v]) => v.count > 0).sort((a, b) => b[1].count - a[1].count);
+const categories = [
+  ...ranked.filter(([slug]) => isPhysicalCategory(slug)),
+  ...ranked.filter(([slug]) => !isPhysicalCategory(slug)).slice(0, 6),
+].map(([slug, v]) => ({ slug, name: categoryLabel(slug, v.name) }));
 const showCategoryFilter = categories.length > 1;
 
 const hasAnyFilter = showAudienceFilter || showDurationFilter || showDiscountFilter || showCategoryFilter;
