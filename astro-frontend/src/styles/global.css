@@ -2,6 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Fuentes auto-hospedadas (latin subset, variable font) ─────────────────
+   Descargadas de Google Fonts para eliminar la latencia del CDN externo.
+   Solo se sirve el subconjunto latin — suficiente para español.
+   La instrucción unicode-range evita cargar este archivo en páginas con
+   otro idioma; el navegador descarga el archivo solo al encontrar texto
+   dentro del rango.                                                         */
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: italic;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/cormorant-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/cormorant-normal-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ── Paleta de tokens ──────────────────────────────────────────────────────
+   Fuente de verdad para colores usados en componentes con <style> scoped
+   (ProductCard, WellnessCallout, etc.) donde las utilidades Tailwind no
+   alcanzan. Los nombres espejean los tokens del config de Tailwind.          */
+:root {
+  --spa-bg:           #F8F6F0;
+  --spa-sand:         #EDE7DC;
+  --spa-cream:        #F0EBE3;
+  --spa-border:       #E8E2D7;
+  --spa-border-warm:  #D4C9BC;
+  --spa-ring:         #C7B8A7;
+  --spa-ring-dark:    #A18E7E;
+  --spa-taupe:        #A89080;
+  --spa-taupe-mid:    #7A6557;
+  --spa-taupe-dark:   #675647;
+  --spa-taupe-deeper: #5A4A3C;
+  --spa-rose:         #9B6F5C;
+  --spa-charcoal:     #2C2724;
+  --spa-charcoal-mid: #44393169;  /* rgb(44 39 36 / .41) — gradiente foto */
+  --spa-overlay:      rgb(103 86 71 / .07);
+  --spa-gradient-dark: rgb(44 39 36 / .52);
+  --spa-gradient-mid:  rgb(44 39 36 / .18);
+}
+
 body {
   font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   background-color: #f8f6f0;
@@ -92,3 +147,56 @@ html {
   .legal table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.925rem; }
   .legal th, .legal td { text-align: left; padding: 0.55rem 0.75rem; border-bottom: 1px solid #E8E2D7; }
   .legal th { color: #2C2724; font-weight: 600; }
+
+/* Off-canvas mobile navigation with a separate category level. */
+.mobile-navigation {
+  position: fixed; inset: 0 auto 0 0; margin: 0;
+  width: min(90vw, 400px); max-width: none;
+  height: 100vh; height: 100dvh; max-height: none;
+  padding: 0; border: 0; overflow: hidden;
+  background: #FAF8F5; color: #2c2724;
+  box-shadow: 12px 0 40px #26211d26;
+}
+.mobile-navigation[open] { animation: mobile-drawer-enter 260ms cubic-bezier(0.16, 1, 0.3, 1); }
+.mobile-navigation::backdrop { background: #26211d80; }
+.mobile-navigation-content {
+  display: flex; flex-direction: column; gap: 16px;
+  height: 100%; overflow: hidden;
+  padding: max(12px, env(safe-area-inset-top)) 20px 0 max(20px, env(safe-area-inset-left));
+}
+.mobile-navigation-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+.mobile-navigation-heading h2 { min-width: 0; overflow-wrap: anywhere; }
+.mobile-navigation-heading button { flex-shrink: 0; }
+.mobile-navigation-stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.mobile-navigation-level:not([hidden]) { display: flex; flex-direction: column; gap: 16px; height: 100%; min-height: 0; }
+.mobile-navigation-level[hidden] { display: none; }
+.mobile-navigation nav { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 3px; }
+.mobile-navigation nav a, .mobile-navigation nav button {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 52px; width: 100%; text-align: left;
+  padding: 12px 8px; font-size: 1rem;
+  border-bottom: 1px solid #ECE6DC; overflow-wrap: anywhere;
+}
+.mobile-navigation nav a:hover, .mobile-navigation nav a:active,
+.mobile-navigation nav button:hover, .mobile-navigation nav button:active,
+.mobile-navigation nav [aria-current="page"] { background: #eee7dd; }
+.mobile-navigation nav [aria-current="page"] { font-weight: 600; }
+.mobile-navigation-subpanel:not([hidden]) { animation: mobile-category-enter 240ms cubic-bezier(0.16, 1, 0.3, 1); }
+.mobile-navigation-back { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px; flex-shrink: 0; text-align: left; font-size: 14px; color: #54463A; }
+.mobile-navigation-back:hover, .mobile-navigation-back:active { background: #eee7dd; }
+.mobile-navigation-footer {
+  flex-shrink: 0; background: #FAF8F5;
+  padding: 12px 0 max(16px, env(safe-area-inset-bottom)); border-top: 1px solid #ECE6DC;
+}
+.mobile-navigation-footer > a { width: fit-content; max-width: 100%; min-height: 48px; background: #2c2724; color: #fff; }
+.mobile-navigation-footer > a:hover { background: #4A403A; }
+.mobile-menu-search { flex-shrink: 0; }
+.mobile-menu-search input { height: 48px; padding-left: 48px; font-size: 16px; }
+.mobile-menu-search button { width: 44px; height: 44px; }
+.mobile-menu-search > div { position: relative; width: 100%; max-width: 100%; max-height: 30dvh; overflow-y: auto; overscroll-behavior: contain; }
+.mobile-navigation :is(a, button, input):focus-visible { outline: 2px solid #6E5C4E; outline-offset: -2px; }
+@keyframes mobile-drawer-enter { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+@keyframes mobile-category-enter { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .mobile-navigation[open], .mobile-navigation-subpanel:not([hidden]) { animation: none; }
+}

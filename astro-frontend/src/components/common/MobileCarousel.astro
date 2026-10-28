@@ -1,0 +1,105 @@
+---
+interface Props {
+  id: string;
+  label: string;
+  count: number;
+  desktopClasses: string;
+}
+const { id, label, count, desktopClasses } = Astro.props;
+---
+<div class="mobile-carousel" data-mobile-carousel>
+  <div id={id} class:list={['mobile-carousel-track', desktopClasses]} data-mobile-carousel-track role="region" aria-label={label} tabindex="0">
+    <slot />
+  </div>
+  <div class="mobile-carousel-controls" data-mobile-carousel-controls hidden>
+    <span data-mobile-carousel-position aria-live="polite" aria-atomic="true">1 / {count}</span>
+    <div class="mobile-carousel-arrows">
+      <button type="button" data-mobile-carousel-prev aria-label={`Anterior en ${label}`} aria-controls={id} disabled>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+      </button>
+      <button type="button" data-mobile-carousel-next aria-label={`Siguiente en ${label}`} aria-controls={id}>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .mobile-carousel { min-width: 0; width: 100%; }
+  .mobile-carousel-controls { display: none; }
+  @media (max-width: 767px) {
+    .mobile-carousel .mobile-carousel-track {
+      display: grid; grid-template-columns: none; grid-auto-flow: column;
+      grid-auto-columns: 88%; align-items: stretch; gap: 16px;
+      overflow-x: auto; overscroll-behavior-x: contain;
+      scroll-snap-type: x mandatory; scroll-padding-inline: 4px;
+      padding: 4px 4px 16px;
+      scrollbar-width: thin; scrollbar-color: #B8A591 transparent;
+    }
+    .mobile-carousel-track > :global(*) { min-width: 0; scroll-snap-align: start; }
+    .mobile-carousel-track > :global([data-product-grid]) { display: contents; }
+    .mobile-carousel-track :global([data-product-filters]) { min-width: 0; scroll-snap-align: start; }
+    .mobile-carousel-track :global([data-product-filters][hidden]) { display: none; }
+    .mobile-carousel-track :global([data-product-filters] > .product-card) { height: 100%; }
+    .mobile-carousel-track > :global(.group) { grid-template-columns: minmax(0, 1fr); }
+    .mobile-carousel-controls:not([hidden]) { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 12px; color: #675647; font-size: 13px; font-variant-numeric: tabular-nums; }
+    .mobile-carousel-arrows { display: flex; gap: 8px; }
+    .mobile-carousel-arrows button { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; border: 1px solid #C7B8A7; border-radius: 50%; color: #3D3530; }
+    .mobile-carousel-arrows button:hover:not(:disabled), .mobile-carousel-arrows button:active:not(:disabled) { background: #EEE7DD; }
+    .mobile-carousel-arrows button:disabled { opacity: .35; }
+    .mobile-carousel :is(button, [tabindex]):focus-visible { outline: 2px solid #675647; outline-offset: 2px; }
+  }
+  .mobile-carousel .mobile-carousel-track[hidden] { display: none; }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-mobile-carousel]').forEach((carousel) => {
+    const track = carousel.querySelector<HTMLElement>('[data-mobile-carousel-track]')!;
+    const slideContainer = track.querySelector<HTMLElement>(':scope > [data-product-grid]') ?? track;
+    const allSlides = Array.from(slideContainer.children) as HTMLElement[];
+    let slides = allSlides.filter((slide) => !slide.hidden);
+    const previous = carousel.querySelector<HTMLButtonElement>('[data-mobile-carousel-prev]')!;
+    const next = carousel.querySelector<HTMLButtonElement>('[data-mobile-carousel-next]')!;
+    const position = carousel.querySelector<HTMLElement>('[data-mobile-carousel-position]')!;
+    const controls = carousel.querySelector<HTMLElement>('[data-mobile-carousel-controls]')!;
+    const mobile = window.matchMedia('(max-width: 767px)');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let current = 0;
+    let frame = 0;
+    const offset = (slide: HTMLElement) => slide.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft - 4;
+    const update = () => {
+      slides = allSlides.filter((slide) => !slide.hidden);
+      track.hidden = slides.length === 0;
+      controls.hidden = !mobile.matches || slides.length < 2;
+      track.tabIndex = mobile.matches ? 0 : -1;
+      if (!slides.length) { position.textContent = '0 / 0'; return; }
+      if (!mobile.matches) return;
+      current = slides.reduce((nearest, slide, index) => Math.abs(offset(slide) - track.scrollLeft) < Math.abs(offset(slides[nearest]) - track.scrollLeft) ? index : nearest, 0);
+      if (track.scrollLeft > 0 && track.scrollLeft >= track.scrollWidth - track.clientWidth - 2) current = slides.length - 1;
+      previous.disabled = track.scrollLeft <= 2;
+      next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 2;
+      const label = `${current + 1} / ${slides.length}`;
+      if (position.textContent !== label) position.textContent = label;
+    };
+    const goTo = (index: number) => {
+      if (!mobile.matches || !slides.length) return;
+      track.scrollTo({ left: offset(slides[Math.max(0, Math.min(slides.length - 1, index))]), behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+    };
+    previous.addEventListener('click', () => goTo(current - 1));
+    next.addEventListener('click', () => goTo(current + 1));
+    track.addEventListener('scroll', () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); }, { passive: true });
+    track.addEventListener('keydown', (event) => {
+      if (event.target !== track || !mobile.matches || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      goTo(event.key === 'Home' ? 0 : event.key === 'End' ? slides.length - 1 : current + (event.key === 'ArrowRight' ? 1 : -1));
+    });
+    mobile.addEventListener('change', update);
+    const visibilityObserver = new MutationObserver(() => {
+      track.scrollTo({ left: 0, behavior: 'instant' });
+      update();
+    });
+    allSlides.forEach((slide) => visibilityObserver.observe(slide, { attributes: true, attributeFilter: ['hidden'] }));
+    new ResizeObserver(update).observe(track);
+    update();
+  });
+</script>

@@ -1,5 +1,5 @@
 import { useModalDialog } from '../../lib/useModalDialog';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCardTilt, REST_SHADOW } from '../../lib/useCardTilt';
 
 // ponytail: número de prueba para validar el flujo de verificación — volver a
@@ -17,14 +17,23 @@ interface Props {
 // al aplicarlo en checkout; ver wordpress/mu-plugins/mandala-giftcards.php.
 //
 // El disparador es la misma tarjeta 3D del modal de compra (GiftCardPreview),
-// en miniatura, con la etiqueta "Usa tu giftcard disponible" siempre visible
-// (no solo al pasar el mouse) para que no pase desapercibida.
+// en miniatura, con una etiqueta que aparece al interactuar.
 // Tamaño "medium" de WordPress para la proporción de la gift card (1748 × 1240): 300 × 213.
 const thumb = (url: string) => (/\/wp-content\/uploads\/.+\.(webp|jpe?g|png)$/i.test(url) ? url.replace(/\.(\w+)$/, '-300x213.$1') : url);
 
 export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
   const full = cardImageUrl || '/gift-card.webp';
   const [open, setOpen] = useState(false);
+  const [labelVisible, setLabelVisible] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!labelVisible) return;
+    const dismiss = (event: PointerEvent) => {
+      if (!triggerRef.current?.contains(event.target as Node)) setLabelVisible(false);
+    };
+    document.addEventListener('pointerdown', dismiss);
+    return () => document.removeEventListener('pointerdown', dismiss);
+  }, [labelVisible]);
   const dialogRef = useModalDialog(open);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -62,17 +71,35 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
       <style>{`
         @keyframes gc-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
         .gc-float { animation: gc-float 6s ease-in-out infinite; }
+        .gc-trigger-label {
+          position: absolute; bottom: calc(100% + 10px); left: 0;
+          width: max-content; max-width: min(220px, calc(100vw - 32px));
+          opacity: 0; visibility: hidden; pointer-events: none;
+          transition: opacity 150ms ease;
+        }
+        .gc-trigger[data-label-visible=true] .gc-trigger-label,
+        .gc-trigger:focus-visible .gc-trigger-label { opacity: 1; visibility: visible; }
+        @media (hover: hover) { .gc-trigger:hover .gc-trigger-label { opacity: 1; visibility: visible; } }
         @media (prefers-reduced-motion: reduce) { .gc-float { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .gc-trigger-label { transition: none; } }
       `}</style>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        ref={triggerRef}
+        data-label-visible={labelVisible}
+        onBlur={() => setLabelVisible(false)}
+        onClick={(event) => {
+          if (event.detail !== 0 && window.matchMedia('(hover: none)').matches && !labelVisible) {
+            setLabelVisible(true);
+            return;
+          }
+          setLabelVisible(false);
+          setOpen(true);
+        }}
         aria-label="Usa tu giftcard disponible"
-        className="fixed bottom-24 right-2 z-40 flex flex-col items-end gap-1.5 xl:flex-row xl:gap-2"
+        className="gc-trigger fixed bottom-6 left-2 z-40 flex flex-col items-start gap-1.5 xl:flex-row xl:gap-2"
       >
-        {/* Etiqueta siempre visible — no depende de hover ni click. Bajo 1280 px va encima de la tarjeta y en dos
-            líneas, para que el botón ocupe solo el borde derecho y no tape el contenido (p. ej. los CTA del hero). */}
-        <span className="max-w-[96px] text-center leading-tight rounded-xl xl:mb-1 xl:max-w-none xl:leading-normal xl:rounded-full xl:whitespace-nowrap bg-spa-charcoal text-white text-[11px] font-semibold uppercase tracking-wide px-3 py-1.5 shadow-lg">
+        <span aria-hidden="true" className="gc-trigger-label text-center leading-tight rounded-xl bg-spa-charcoal text-white text-[11px] font-semibold uppercase tracking-wide px-3 py-1.5 shadow-lg">
           Usa tu giftcard disponible
         </span>
         <div style={{ perspective: '800px' }}>
@@ -104,7 +131,7 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
                 src={thumb(full)}
                 alt=""
                 loading="lazy"
-                fetchPriority="low"
+                {...{ fetchpriority: 'low' }}
                 decoding="async"
                 onError={(e) => { if (e.currentTarget.src !== new URL(full, location.href).href) e.currentTarget.src = full; }}
                 className="absolute inset-0 w-full h-full object-cover"
@@ -150,7 +177,7 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all disabled:opacity-50"
+                className="w-fit max-w-full sm:w-full min-h-12 bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full px-6 py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all disabled:opacity-50"
               >
                 {loading ? 'Verificando…' : 'Verificar y agendar por WhatsApp'}
               </button>

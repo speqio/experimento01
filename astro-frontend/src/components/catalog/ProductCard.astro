@@ -8,8 +8,9 @@ interface Props {
     'databaseId' | 'name' | 'slug' | 'price' | 'regularPrice' | 'image' | 'shortDescription' | 'attributes' | 'giftCardEnabled'
   >;
   href: string;
+  giftOnly?: boolean;
 }
-const { product, href } = Astro.props;
+const { product, href, giftOnly = false } = Astro.props;
 
 const { duration: descDuration } = extractDuration(product.shortDescription ?? '');
 const summary = getCardSummary(product.shortDescription ?? '');
@@ -21,11 +22,11 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
 ---
 <article class="product-card">
   <!-- Foto -->
-  <a href={href} class="product-card__photo" aria-label={product.name}>
+  <a href={href} class="product-card__photo" aria-label={`${product.name}${duration ? ` — ${duration}` : ''}`}>
     {product.image?.sourceUrl ? (
-      <img src={product.image.sourceUrl} alt={product.image.altText || product.name} width="600" height="450" loading="lazy" decoding="async" class="product-card__image" />
+      <img src={product.image.sourceUrl} alt={product.image.altText || ""} width="600" height="450" loading="lazy" decoding="async" class="product-card__image" />
     ) : (
-      <div class="product-card__image-placeholder" />
+      <div class="product-card__image-placeholder" aria-hidden="true" />
     )}
 
     <!-- Gradiente inferior para legibilidad -->
@@ -33,7 +34,7 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
 
     <!-- Duración sobre la foto, esquina inferior izquierda -->
     {duration && (
-      <div class="product-card__duration">
+      <div class="product-card__duration" aria-hidden="true">
         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" />
         </svg>
@@ -41,14 +42,14 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
       </div>
     )}
 
-    <!-- Badge (Nuevo / Bestseller…) -->
-    {badge && (
+    <!-- Badge (Nuevo / Bestseller…): se suprime cuando hay icono de descuento para no acumular overlays -->
+    {badge && !onSale && (
       <span class="product-card__badge">{badge}</span>
     )}
 
     <!-- Descuento -->
     {onSale && (
-      <span class="product-card__sale-icon" aria-label="Con descuento">
+      <span class="product-card__sale-icon" role="img" aria-label="Con descuento">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
         </svg>
@@ -59,7 +60,7 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
   <!-- Cuerpo de la card -->
   <div class="product-card__body">
     <h3 class="product-card__title">
-      <a href={href}>{product.name}</a>
+      <a href={href} aria-hidden="true" tabindex="-1">{product.name}</a>
     </h3>
 
     {summary && (
@@ -77,14 +78,16 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
 
       <!-- CTAs -->
       {product.__typename === 'VariableProduct' ? (
-        <a href={href} class="product-card__cta product-card__cta--primary">
-          Elegir opciones
+        <a href={href} class="product-card__cta product-card__cta--primary" aria-label={`${giftOnly ? 'Elegir regalo' : 'Elegir opciones'} — ${product.name}`}>
+          {giftOnly ? 'Elegir regalo' : 'Elegir opciones'}
         </a>
       ) : (
-        <div class={`product-card__ctas ${product.giftCardEnabled === false ? 'product-card__ctas--single' : ''}`}>
-          <button type="button" data-add-to-cart={product.databaseId} class="product-card__cta product-card__cta--secondary">
+        <div class={`product-card__ctas ${giftOnly || product.giftCardEnabled === false ? 'product-card__ctas--single' : ''}`}>
+          {!giftOnly && (
+          <button type="button" data-add-to-cart={product.databaseId} class="product-card__cta product-card__cta--secondary" aria-label={`Agregar ${product.name} al carrito`}>
             Agregar al carrito
           </button>
+          )}
           {product.giftCardEnabled !== false && (
             <button
               type="button"
@@ -92,6 +95,7 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
               data-gift-name={product.name}
               data-gift-image={product.image?.sourceUrl}
               class="product-card__cta product-card__cta--primary"
+              aria-label={`Regalar ${product.name}`}
             >
               Regalar
             </button>
@@ -102,6 +106,23 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
   </div>
 </article>
 
+<script>
+  document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const label = btn.getAttribute('aria-label') ?? '';
+      const original = btn.textContent ?? '';
+      btn.disabled = true;
+      btn.textContent = '✓ Agregado';
+      btn.setAttribute('aria-label', label.replace('Agregar', 'Agregado'));
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = original;
+        btn.setAttribute('aria-label', label);
+      }, 1500);
+    });
+  });
+</script>
+
 <style>
   /* ── Estructura ─────────────────────────────────────────── */
   .product-card {
@@ -109,14 +130,15 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
     flex-direction: column;
     background: #fff;
     border-radius: 1.25rem;
-    border: 1px solid #E8E2D7;
+    border: 1px solid var(--spa-border);
     overflow: hidden;
-    box-shadow: 0 1px 4px rgb(0 0 0 / .05);
-    transition: box-shadow .3s ease, transform .3s ease;
+    box-shadow: 0 1px 3px rgb(0 0 0 / .04), 0 2px 8px rgb(103 86 71 / .06);
+    transition: box-shadow .4s cubic-bezier(.16, 1, .3, 1), transform .4s cubic-bezier(.16, 1, .3, 1), border-color .3s ease;
   }
   .product-card:is(:hover, :focus-within) {
-    box-shadow: 0 8px 32px rgb(103 86 71 / .12);
-    transform: translateY(-3px);
+    box-shadow: 0 2px 8px rgb(103 86 71 / .08), 0 14px 44px rgb(103 86 71 / .15);
+    border-color: var(--spa-border-warm);
+    transform: translateY(-4px);
   }
 
   /* ── Foto ──────────────────────────────────────────────── */
@@ -125,22 +147,37 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
     display: block;
     aspect-ratio: 4 / 3;
     overflow: hidden;
-    background: #F0EBE3;
+    background: var(--spa-cream);
   }
   .product-card__image {
     position: absolute; inset: 0;
     width: 100%; height: 100%;
     object-fit: cover;
-    transition: transform .7s cubic-bezier(.16, 1, .3, 1);
+    transition: transform .9s cubic-bezier(.16, 1, .3, 1);
   }
-  .product-card__image-placeholder { position: absolute; inset: 0; background: #EDE7DC; }
-  .product-card:is(:hover, :focus-within) .product-card__image { transform: scale(1.04); }
+  .product-card__image-placeholder { position: absolute; inset: 0; background: var(--spa-sand); }
+  .product-card:is(:hover, :focus-within) .product-card__image { transform: scale(1.05); }
 
-  /* Gradiente sutil */
+  /* Overlay cálido en hover — opacity transition es GPU-composited */
+  .product-card__photo::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--spa-overlay);
+    opacity: 0;
+    transition: opacity .5s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .product-card:is(:hover, :focus-within) .product-card__photo::after {
+    opacity: 1;
+  }
+
+  /* Gradiente refinado con tres paradas */
   .product-card__gradient {
     position: absolute; inset: 0;
-    background: linear-gradient(to top, rgb(44 39 36 / .45) 0%, transparent 55%);
+    background: linear-gradient(to top, var(--spa-gradient-dark) 0%, var(--spa-gradient-mid) 38%, transparent 62%);
     pointer-events: none;
+    z-index: 2;
   }
 
   /* ── Duración — pill elegante sobre la foto ─────────────── */
@@ -148,6 +185,7 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
     position: absolute;
     bottom: .875rem;
     left: .875rem;
+    z-index: 3;
     display: inline-flex;
     align-items: center;
     gap: .35rem;
@@ -170,7 +208,8 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
   .product-card__badge {
     position: absolute;
     top: .75rem; right: .75rem;
-    background: #2C2724;
+    z-index: 3;
+    background: var(--spa-charcoal);
     color: #fff;
     font-family: 'Manrope', sans-serif;
     font-size: 10px;
@@ -183,10 +222,11 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
   .product-card__sale-icon {
     position: absolute;
     top: .75rem; left: .75rem;
+    z-index: 3;
     display: flex; align-items: center; justify-content: center;
     width: 2rem; height: 2rem;
     background: #fff;
-    color: #9B6F5C;
+    color: var(--spa-rose);
     border-radius: 50%;
     box-shadow: 0 1px 4px rgb(0 0 0 / .1);
   }
@@ -198,35 +238,40 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
     flex: 1;
     padding: 1.25rem 1.25rem 1.125rem;
   }
+  @media (min-width: 1024px) {
+    .product-card__body { padding: 1.5rem 1.5rem 1.375rem; }
+  }
 
-  /* Título en Cormorant */
+  /* Título editorial — Cormorant itálico da voz ritual a los nombres de servicio */
   .product-card__title {
     font-family: 'Cormorant Garamond', Georgia, serif;
-    font-size: 1.35rem;
+    font-size: 1.4rem;
+    font-style: italic;
     font-weight: 600;
-    line-height: 1.25;
-    color: #2C2724;
+    line-height: 1.2;
+    color: var(--spa-charcoal);
     margin-bottom: .5rem;
+    letter-spacing: -.01em;
   }
   .product-card__title a {
     color: inherit;
     text-decoration: none;
     transition: color .2s;
   }
-  .product-card__title a:hover { color: #675647; }
+  .product-card__title a:hover { color: var(--spa-taupe-dark); }
 
   /* Resumen */
   .product-card__summary {
     font-size: .8125rem;
     line-height: 1.65;
-    color: #7A6557;
+    color: var(--spa-taupe-mid);
     margin-bottom: auto;
     padding-bottom: .875rem;
   }
 
   /* Footer: precio + botones */
   .product-card__footer {
-    border-top: 1px solid #EFECE4;
+    border-top: 1px solid var(--spa-border);
     padding-top: .875rem;
     display: flex;
     flex-direction: column;
@@ -238,13 +283,13 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
   .product-card__price-original {
     font-size: .8125rem;
     text-decoration: line-through;
-    color: #A89080;
+    color: var(--spa-taupe);
   }
   .product-card__price-current {
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-size: 1.5rem;
     font-weight: 700;
-    color: #2C2724;
+    color: var(--spa-charcoal);
     line-height: 1;
   }
 
@@ -253,7 +298,7 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
   .product-card__ctas--single { grid-template-columns: 1fr; }
   .product-card__cta {
     display: flex; align-items: center; justify-content: center;
-    padding: .6rem .75rem;
+    padding: .6rem .875rem;
     border-radius: 999px;
     font-family: 'Manrope', sans-serif;
     font-size: 10.5px;
@@ -262,22 +307,57 @@ const onSale = hasAnyDiscount(product.price, product.regularPrice);
     text-transform: uppercase;
     text-decoration: none;
     cursor: pointer;
-    border: none;
-    transition: background .2s, color .2s;
-    min-height: 38px;
+    transition: background .2s, color .2s, border-color .2s, opacity .2s;
+    min-height: 44px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
-  .product-card__cta--primary { background: #675647; color: #fff; }
-  .product-card__cta--primary:hover { background: #5A4A3C; }
-  .product-card__cta--secondary { background: #EFECE4; color: #675647; }
-  .product-card__cta--secondary:hover { background: #E5E0D5; }
+  .product-card__cta--primary { background: var(--spa-taupe-dark); color: #fff; border: 1px solid transparent; }
+  .product-card__cta--primary:hover { background: var(--spa-taupe-deeper); }
+  .product-card__cta--secondary { background: transparent; color: var(--spa-taupe-dark); border: 1px solid var(--spa-ring); }
+  .product-card__cta--secondary:hover { background: var(--spa-cream); border-color: var(--spa-ring-dark); }
+  .product-card__cta:disabled { opacity: .75; cursor: default; }
 
-  .product-card :is(a, button):focus-visible { outline: 2px solid #675647; outline-offset: -2px; }
-
-  @media (any-pointer: coarse) {
-    .product-card__cta { min-height: 44px; }
+  .product-card button:focus-visible { outline: 2px solid var(--spa-taupe-dark); outline-offset: 3px; }
+  .product-card__photo:focus-visible {
+    outline: 2px solid var(--spa-taupe-dark);
+    outline-offset: 3px;
   }
+
+  @media (max-width: 767px) {
+    .product-card { border-radius: 16px; }
+    .product-card__photo { aspect-ratio: 16 / 9; max-height: 220px; flex-shrink: 0; }
+    /* backdrop-filter es caro en GPUs de gama baja: más opacidad compensa el blur sin penalizar compositing */
+    .product-card__duration { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgb(44 39 36 / .78); }
+    .product-card__body { padding: 14px; }
+    .product-card__title { font-size: 1.25rem; line-height: 1.2; margin-bottom: 6px; }
+    .product-card__summary {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      font-size: .8125rem;
+      line-height: 1.45;
+      padding-bottom: 0;
+      margin-bottom: 10px;
+    }
+    .product-card__footer { margin-top: auto; padding-top: 10px; gap: 10px; }
+    .product-card__price { flex-wrap: wrap; row-gap: 4px; }
+    .product-card__price-current { font-size: 1.375rem; }
+    .product-card__price-original { color: var(--spa-taupe); }
+    .product-card__ctas { display: flex; flex-wrap: wrap; gap: 8px; }
+    .product-card__cta { align-self: flex-start; width: fit-content; max-width: 100%; padding: 8px 16px; font-size: .75rem; letter-spacing: 0; text-transform: none; }
+    .product-card__duration { bottom: 10px; left: 10px; font-size: .875rem; padding: 5px 9px; }
+    .product-card__badge { top: 10px; right: 10px; padding: 4px 8px; letter-spacing: .04em; }
+    .product-card__sale-icon { top: 10px; left: 10px; width: 28px; height: 28px; }
+    .product-card:is(:hover, :focus-within),
+    .product-card:is(:hover, :focus-within) .product-card__image { transform: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .product-card, .product-card__image { transition: none; }
+    .product-card, .product-card__image, .product-card__photo::after { transition: none; }
+    .product-card__photo::after { opacity: 0; }
     .product-card:is(:hover, :focus-within) { transform: none; }
     .product-card:is(:hover, :focus-within) .product-card__image { transform: none; }
   }

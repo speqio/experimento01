@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
-import { ShoppingBag, Search, Menu, X, Calendar, Phone, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Search, Menu, X, Calendar, Phone, Sparkles, ChevronDown, ChevronRight, ArrowLeft, MapPin, Clock } from 'lucide-react';
 import { cartItemCount, cartSummary } from '../../store/cartStore';
 import { SITE_INFO } from '../../lib/siteInfo';
 import { wpQuery } from '../../lib/wp-graphql';
@@ -9,8 +9,7 @@ import { categoryGroupHref, categoryGroupForLocation, type CategoryGroup } from 
 import type { SimpleProduct } from '../../types/catalog';
 
 const NAV_LINKS = [
-  { label: 'Tienda', href: '/tienda' },
-  { label: 'Gift Cards', href: '/gift-cards' },
+  { label: 'Giftcards', href: '/gift-cards' },
 ];
 
 interface HeaderProps {
@@ -179,10 +178,45 @@ function SearchBox({ className = '', panelAlign = 'left' }: { className?: string
 export default function Header({ currentPath, currentCategory, categoryGroups }: HeaderProps) {
   const currentGroup = categoryGroups.find((group) => group.items.some((category) => category.slug === currentCategory))?.label
     ?? categoryGroupForLocation(currentPath, currentCategory);
-  const isShopActive = currentPath.replace(/\/+$/, '') === '/tienda' && !currentGroup;
+  const isGiftCardsActive = currentPath.replace(/\/+$/, '') === '/gift-cards';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileDialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const dialog = mobileDialogRef.current;
+    if (!dialog) return;
+    const scrollY = window.scrollY;
+    const previous = { position: document.body.style.position, top: document.body.style.top, width: document.body.style.width, overflow: document.body.style.overflow };
+    dialog.showModal();
+    Object.assign(document.body.style, { position: 'fixed', top: `-${scrollY}px`, width: '100%', overflow: 'hidden' });
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const closeOnDesktop = () => { if (desktop.matches) setMobileMenuOpen(false); };
+    desktop.addEventListener('change', closeOnDesktop);
+    closeOnDesktop();
+    return () => {
+      desktop.removeEventListener('change', closeOnDesktop);
+      dialog.close();
+      Object.assign(document.body.style, previous);
+      const behavior = document.documentElement.style.scrollBehavior;
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, scrollY);
+      document.documentElement.style.scrollBehavior = behavior;
+    };
+  }, [mobileMenuOpen]);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [mobileOpenGroup, setMobileOpenGroup] = useState<string | null>(null);
+  const mobileBackRef = useRef<HTMLButtonElement>(null);
+  const previousMobileGroup = useRef<string | null>(null);
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      if (mobileOpenGroup) mobileBackRef.current?.focus();
+      else if (previousMobileGroup.current) {
+        const index = categoryGroups.findIndex((group) => group.label === previousMobileGroup.current);
+        document.getElementById(`mobile-category-trigger-${index}`)?.focus();
+      }
+    }
+    previousMobileGroup.current = mobileOpenGroup;
+  }, [mobileOpenGroup, mobileMenuOpen, categoryGroups]);
   const [featuredByGroup, setFeaturedByGroup] = useState<Record<string, SimpleProduct[]>>({});
   const count = useStore(cartItemCount);
   const summary = useStore(cartSummary);
@@ -204,24 +238,37 @@ export default function Header({ currentPath, currentCategory, categoryGroups }:
 
   return (
     <header className="relative z-40 bg-[#FAF8F5]/98 backdrop-blur-md border-b border-[#ECE6DC]">
-      <div className="bg-[#26211D] text-[#ECE5DC] text-[11px] py-1 px-4 text-center flex items-center justify-between sm:justify-center gap-4">
-        <span className="hidden sm:flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-[#C8B8A6] shrink-0" />
-          <span>Refugio de bienestar &middot; {SITE_INFO.address}</span>
-        </span>
-        <span className="sm:hidden">{SITE_INFO.name}</span>
-        <a href={`tel:${SITE_INFO.phone.replace(/\s/g, '')}`} aria-label={`Llamar al ${SITE_INFO.phone}`} className="text-[#D8CABE] hover:text-white flex items-center gap-1 min-h-6 min-w-6 justify-center px-1 transition-colors">
-          <Phone className="w-3 h-3" />
-          <span className="hidden md:inline">{SITE_INFO.phone}</span>
-        </a>
+      <div className="bg-[#26211D] text-[#ECE5DC] text-[11px] px-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-x-4 lg:gap-x-5">
+          <span className="hidden xl:flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-[#C8B8A6] shrink-0" aria-hidden="true" />
+            Refugio de bienestar
+          </span>
+          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${SITE_INFO.streetAddress.split(',')[0]}, ${SITE_INFO.address}`)}`} target="_blank" rel="noopener noreferrer" className="basis-full lg:basis-auto min-h-11 flex items-center justify-center gap-1.5 py-1 text-center leading-relaxed hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8B8A6]">
+            <MapPin className="w-3.5 h-3.5 text-[#C8B8A6] shrink-0" aria-hidden="true" />
+            <span>{SITE_INFO.streetAddress}, {SITE_INFO.address}</span>
+          </a>
+          <div className="min-w-0 flex-1 lg:flex-none flex items-center justify-start lg:justify-center gap-1.5 py-1 leading-relaxed" aria-label="Horarios de atención">
+            <Clock className="w-3.5 h-3.5 text-[#C8B8A6] shrink-0" aria-hidden="true" />
+            <span>{SITE_INFO.schedule}</span>
+          </div>
+          <a href={`tel:${SITE_INFO.phone.replace(/\s/g, '')}`} aria-label={`Llamar al ${SITE_INFO.phone}`} className="min-h-11 shrink-0 text-[#ECE5DC] hover:text-white flex items-center gap-1.5 justify-center px-1 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C8B8A6]">
+            <Phone className="w-3.5 h-3.5 text-[#C8B8A6]" aria-hidden="true" />
+            <span>{SITE_INFO.phone}</span>
+          </a>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Tres columnas con los lados del mismo ancho: así el logo queda centrado de verdad */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 h-20 sm:h-24 lg:h-28">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:gap-4 h-20 sm:h-24 lg:h-28">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setMobileMenuOpen((v) => !v)}
+              type="button"
+              onClick={() => { setMobileOpenGroup(null); setMobileMenuOpen(true); }}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
+              aria-haspopup="dialog"
               className="min-w-11 min-h-11 p-2 text-spa-charcoal hover:bg-spa-sand rounded-full lg:hidden transition-colors"
               aria-label="Abrir menú de navegación"
             >
@@ -260,9 +307,10 @@ export default function Header({ currentPath, currentCategory, categoryGroups }:
             </a>
             <a
               href="/carrito"
+              aria-label={`Carrito, ${count} productos`}
               className="min-w-11 min-h-11 flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-spa-sand transition-colors group"
             >
-              <span className="text-xs sm:text-sm font-serif font-medium text-spa-charcoal">
+              <span className="hidden sm:inline text-xs sm:text-sm font-serif font-medium text-spa-charcoal">
                 {/* cart.total llega ya formateado desde WooGraphQL (ej. "$65.000"), no un número crudo */}
                 {summary.total && summary.total !== '0' ? summary.total.replace(/&nbsp;/g, ' ') : '$0'}
               </span>
@@ -325,12 +373,12 @@ export default function Header({ currentPath, currentCategory, categoryGroups }:
                 </button>
               ))}
               <a
-                href="/tienda"
+                href="/gift-cards"
                 onMouseEnter={() => setActiveGroup(null)}
-                aria-current={isShopActive ? 'page' : undefined}
-                className={`${navItemClass(isShopActive)} ${isShopActive ? 'font-bold' : ''}`}
+                aria-current={isGiftCardsActive ? 'page' : undefined}
+                className={`${navItemClass(isGiftCardsActive)} ${isGiftCardsActive ? 'font-bold' : ''}`}
               >
-                Tienda
+                Giftcards
               </a>
               <a
                 href="/sobre-nosotras"
@@ -465,65 +513,82 @@ export default function Header({ currentPath, currentCategory, categoryGroups }:
         </div>
       </div>
 
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#FAF8F5] border-b border-[#ECE6DC] px-6 py-6 space-y-4 text-sm font-medium text-spa-charcoal animate-in fade-in slide-in-from-top-3 duration-200 max-h-[70vh] overflow-y-auto">
-          <SearchBox className="md:hidden w-full" />
-          <a href="/" className="block py-2.5 border-b border-spa-sand">
-            Inicio
-          </a>
-          {categoryGroups.map((group) => (
-            <div key={group.label} className="border-b border-spa-sand pb-2">
-              <button
-                type="button"
-                onClick={() => setMobileOpenGroup((g) => (g === group.label ? null : group.label))}
-                aria-expanded={mobileOpenGroup === group.label}
-                className={`w-full flex items-center justify-between text-xs uppercase tracking-wider py-1.5 ${currentGroup === group.label ? 'text-spa-charcoal underline underline-offset-4' : 'text-spa-taupe'}`}
-              >
-                <span>{group.label}</span>
-                <ChevronDown
-                  className={`w-4 h-4 transition-transform duration-200 ${
-                    mobileOpenGroup === group.label ? 'rotate-180' : ''
-                  }`}
-                />
+      <dialog
+        ref={mobileDialogRef}
+        id="mobile-navigation"
+        aria-labelledby="mobile-menu-title"
+        className="mobile-navigation"
+        onCancel={(event) => {
+          if (mobileOpenGroup) { event.preventDefault(); setMobileOpenGroup(null); }
+          else setMobileMenuOpen(false);
+        }}
+        onClose={() => setMobileMenuOpen(false)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget || (event.target as Element).closest('a[href]')) setMobileMenuOpen(false);
+        }}
+      >
+        {mobileMenuOpen && (
+          <div className="mobile-navigation-content text-spa-charcoal">
+            <div className="mobile-navigation-heading">
+              <h2 id="mobile-menu-title" className="font-editorial text-3xl">{mobileOpenGroup || 'Menú'}</h2>
+              <button type="button" autoFocus onClick={() => setMobileMenuOpen(false)} aria-label="Cerrar menú de navegación" className="flex min-h-12 min-w-12 items-center justify-center rounded-full hover:bg-spa-sand">
+                <X className="w-6 h-6" aria-hidden="true" />
               </button>
-              {mobileOpenGroup === group.label && (
-                <a href={categoryGroupHref(group.label)} className="block pl-3 py-2.5 text-sm font-semibold text-spa-charcoal">Ver todo {group.label}</a>
-              )}
-              {mobileOpenGroup === group.label &&
-                group.items.map((category) => (
-                  <a
-                    key={category.slug}
-                    href={`/tienda?cat=${category.slug}`}
-                    className="block pl-3 py-1.5 text-sm text-[#54463A]"
-                  >
-                    {category.name}
-                  </a>
-                ))}
             </div>
-          ))}
-          {NAV_LINKS.map((link) => (
-            <a key={link.href} href={link.href} className="block py-2.5 border-b border-spa-sand">
-              {link.label}
-            </a>
-          ))}
-          <a href="/sobre-nosotras" className="block py-2.5 border-b border-spa-sand">
-            Sobre Nosotras
-          </a>
-          <a href="/blog" className="block py-2.5 border-b border-spa-sand">
-            Blog
-          </a>
-          <a href="/carrito" className="block py-2.5 border-b border-spa-sand">
-            Carrito
-          </a>
-          <a
-            href="/agenda"
-            className="flex items-center justify-center gap-2 border border-[#DDD5CA] hover:bg-spa-sand text-spa-charcoal px-5 py-2.5 rounded-full text-sm font-medium tracking-wide transition-colors"
-          >
-            <Calendar className="w-4 h-4 text-spa-taupe" />
-            <span>agenda</span>
-          </a>
-        </div>
-      )}
+            <div className="mobile-navigation-stage">
+              <div hidden={!!mobileOpenGroup} className="mobile-navigation-level">
+                <SearchBox className="mobile-menu-search w-full" />
+                <nav aria-label="Navegación principal móvil">
+                  <a href="/" aria-current={currentPath === '/' ? 'page' : undefined}>Inicio</a>
+                  {categoryGroups.map((group, index) => (
+                    <button
+                      key={group.label}
+                      id={`mobile-category-trigger-${index}`}
+                      type="button"
+                      aria-expanded={mobileOpenGroup === group.label}
+                      aria-controls="mobile-category-panel"
+                      onClick={() => setMobileOpenGroup(group.label)}
+                      className={currentGroup === group.label ? 'font-semibold' : ''}
+                    >
+                      <span>{group.label}</span>
+                      <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    </button>
+                  ))}
+                  {[...NAV_LINKS, { label: 'Promociones', href: '/promociones' }, { label: 'Sobre Nosotras', href: '/sobre-nosotras' }, { label: 'Blog', href: '/blog' }, { label: 'Carrito', href: '/carrito' }].map((link) => (
+                    <a key={link.href} href={link.href} aria-current={(link.href === '/gift-cards' ? isGiftCardsActive : currentPath === link.href || currentPath.startsWith(link.href + '/')) ? 'page' : undefined}>{link.label}</a>
+                  ))}
+                </nav>
+              </div>
+              <section id="mobile-category-panel" hidden={!mobileOpenGroup} className="mobile-navigation-level mobile-navigation-subpanel" aria-label={mobileOpenGroup || 'Categoría'}>
+                <button ref={mobileBackRef} type="button" onClick={() => setMobileOpenGroup(null)} className="mobile-navigation-back">
+                  <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+                  Volver al menú
+                </button>
+                <nav key={mobileOpenGroup} aria-label={`Opciones de ${mobileOpenGroup}`}>
+                  {categoryGroups.filter((group) => group.label === mobileOpenGroup).map((group) => (
+                    <div key={group.label}>
+                      <a href={categoryGroupHref(group.label)} className="font-semibold">Ver todo {group.label}</a>
+                      {group.items.map((category) => (
+                        <a key={category.slug} href={`/tienda?cat=${category.slug}`} aria-current={currentCategory === category.slug ? 'page' : undefined}>
+                          <span>{category.name}</span>
+                          <ChevronRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        </a>
+                      ))}
+                    </div>
+                  ))}
+                </nav>
+              </section>
+            </div>
+            <div className="mobile-navigation-footer">
+              <a href="/agenda" className="flex items-center justify-center gap-2 rounded-full px-5 py-3 text-base font-medium transition-colors">
+                <Calendar className="w-5 h-5" aria-hidden="true" />
+                Agendar
+              </a>
+            </div>
+          </div>
+        )}
+      </dialog>
+
     </header>
   );
 }

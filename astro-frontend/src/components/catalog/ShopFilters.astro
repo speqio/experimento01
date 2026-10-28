@@ -32,7 +32,7 @@ function getDurationBucket(p: typeof products[0]): string | null {
 
 // Compute which filter groups are useful (have at least one product matching)
 const showParaDos = products.some(p => getProductBadge(p.name) === 'Cabina Doble');
-const showParaUno = products.some(p => !getProductBadge(p.name));
+const showParaUno = products.some(p => getProductBadge(p.name) !== 'Cabina Doble');
 const showAudienceFilter = showParaDos && showParaUno;
 
 const durationBuckets = new Set(products.map(getDurationBucket).filter(Boolean));
@@ -60,32 +60,44 @@ if (!hasAnyFilter) return;
 ---
 
 <div id="shop-filters" class="mb-8 space-y-3" data-total={products.length}>
-  <div class="flex flex-wrap gap-x-6 gap-y-3 items-start">
+  <details id="filter-disclosure">
+    <summary class="filter-toggle">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16M9 4v6M15 14v6" /></svg>
+      <span>Filtrar<span id="filter-active-count"></span></span>
+      <svg class="filter-chevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </summary>
+  <div class="filter-options flex flex-wrap gap-x-6 gap-y-3 items-start">
 
     {showAudienceFilter && (
-      <div class="filter-group flex items-center gap-2 flex-wrap" data-group="audience">
-        <span class="text-xs font-semibold text-spa-taupe-dark uppercase tracking-widest shrink-0">Para</span>
+      <details class="filter-group flex items-center gap-2 flex-wrap" data-group="audience">
+        <summary class="filter-group-toggle"><span>Para</span><span class="filter-group-count"></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
+        <div class="filter-choices">
         <button class="filter-chip" data-value="solo">Solo</button>
         <button class="filter-chip" data-value="pareja">Pareja</button>
-      </div>
+        </div>
+      </details>
     )}
 
     {showDurationFilter && (
-      <div class="filter-group flex items-center gap-2 flex-wrap" data-group="duration">
-        <span class="text-xs font-semibold text-spa-taupe-dark uppercase tracking-widest shrink-0">Duración</span>
+      <details class="filter-group flex items-center gap-2 flex-wrap" data-group="duration">
+        <summary class="filter-group-toggle"><span>Duración</span><span class="filter-group-count"></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
+        <div class="filter-choices">
         {durationBuckets.has('short') && <button class="filter-chip" data-value="short">Hasta 45 min</button>}
-        {durationBuckets.has('medium') && <button class="filter-chip" data-value="medium">1 hora</button>}
-        {durationBuckets.has('long') && <button class="filter-chip" data-value="long">Más de 1 hora</button>}
-      </div>
+        {durationBuckets.has('medium') && <button class="filter-chip" data-value="medium">46 a 70 min</button>}
+        {durationBuckets.has('long') && <button class="filter-chip" data-value="long">Más de 70 min</button>}
+        </div>
+      </details>
     )}
 
     {showCategoryFilter && (
-      <div class="filter-group flex items-center gap-2 flex-wrap" data-group="category">
-        <span class="text-xs font-semibold text-spa-taupe-dark uppercase tracking-widest shrink-0">Tipo</span>
+      <details class="filter-group flex items-center gap-2 flex-wrap" data-group="category">
+        <summary class="filter-group-toggle"><span>Tipo</span><span class="filter-group-count"></span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
+        <div class="filter-choices">
         {categories.map(cat => (
           <button class="filter-chip" data-value={cat.slug}>{cat.name}</button>
         ))}
-      </div>
+        </div>
+      </details>
     )}
 
     {showDiscountFilter && (
@@ -97,14 +109,36 @@ if (!hasAnyFilter) return;
       </div>
     )}
   </div>
+    <button type="button" id="filter-done" class="filter-done">Ver {products.length} productos</button>
+  </details>
 
-  <div id="filter-status" class="hidden items-center gap-3 text-sm text-spa-taupe">
-    <span id="filter-count"></span>
-    <button id="filter-clear" class="underline underline-offset-4 decoration-spa-taupe/40 hover:text-spa-charcoal transition-colors">Limpiar filtros</button>
+  <div id="filter-status" class="flex flex-wrap items-center justify-between gap-x-3 text-sm text-[#675647]">
+    <span id="filter-count" role="status" aria-live="polite" aria-atomic="true">{products.length} productos</span>
+    <button type="button" id="filter-clear" hidden class="underline underline-offset-4 decoration-spa-taupe/40 hover:text-spa-charcoal transition-colors">Limpiar filtros</button>
   </div>
+  <p id="filter-empty" hidden class="rounded-xl bg-spa-sand px-4 py-5 text-sm text-spa-charcoal">No hay productos con esta combinación. Prueba otras opciones o limpia los filtros.</p>
 </div>
 
 <style>
+  .filter-toggle { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 16px; border: 1px solid #D8D0C5; border-radius: 12px; color: #3D3530; font-size: 14px; font-weight: 600; cursor: pointer; list-style: none; }
+  .filter-toggle::-webkit-details-marker { display: none; }
+  .filter-chevron { margin-left: auto; }
+  details[open] .filter-chevron { transform: rotate(180deg); }
+  .filter-done { display: none; }
+  #filter-clear { min-height: 44px; }
+  #filter-clear[hidden], #filter-empty[hidden] { display: none; }
+  .filter-toggle:focus-visible, .filter-done:focus-visible, #filter-clear:focus-visible { outline: 2px solid #675647; outline-offset: 2px; }
+  @media (max-width: 767px) {
+    .filter-toggle { width: fit-content; }
+    .filter-options { flex-direction: column; flex-wrap: nowrap; gap: 20px; max-height: 48vh; max-height: 48dvh; overflow-y: auto; overscroll-behavior: contain; padding: 16px 4px; }
+    .filter-group { width: 100%; }
+    .filter-group > span { width: 100%; font-size: 12px; letter-spacing: .04em; }
+    .filter-options .filter-chip { min-height: 44px; padding: 10px 14px; font-size: 14px; letter-spacing: 0; text-align: left; }
+    .filter-done { display: block; width: fit-content; max-width: 100%; min-height: 48px; padding: 12px 24px; border-radius: 999px; background: #3D3530; color: #fff; font-size: 14px; font-weight: 600; }
+    #shop-filters { margin-bottom: 20px; }
+  }
+  @media (min-width: 768px) { .filter-toggle { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .filter-chip { transition: none; } }
   .filter-chip {
     display: inline-flex;
     align-items: center;
@@ -133,6 +167,33 @@ if (!hasAnyFilter) return;
     outline: 2px solid #675647;
     outline-offset: 2px;
   }
+  .filter-group-toggle { display: flex; align-items: center; gap: 8px; min-height: 44px; list-style: none; cursor: pointer; color: #3D3530; font-size: 14px; font-weight: 500; }
+  .filter-group-toggle::-webkit-details-marker { display: none; }
+  .filter-group-toggle svg { margin-left: auto; flex-shrink: 0; }
+  .filter-group[open] > summary svg { transform: rotate(180deg); }
+  .filter-group-count:not(:empty) { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 50%; background: #3D3530; color: white; font-size: 11px; }
+  .filter-group-toggle:focus-visible { outline: 2px solid #675647; outline-offset: 2px; }
+  .filter-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+  @media (max-width: 767px) {
+    details.filter-group { display: block; }
+    .filter-group-toggle { padding: 0 4px; margin-bottom: 4px; }
+  }
+  @media (min-width: 768px) {
+    .filter-options { align-items: center; gap: 10px; padding: 0 0 16px; border-bottom: 1px solid #E2DBD0; }
+    details.filter-group { display: block; position: relative; }
+    .filter-group-toggle { min-width: 132px; padding: 0 14px; border: 1px solid #D8D0C5; border-radius: 10px; background: #FAF8F5; }
+    .filter-group-toggle:hover, .filter-group[open] > summary { background: #EEE7DD; border-color: #A18E7E; }
+    .filter-choices { position: absolute; top: calc(100% + 8px); left: 0; z-index: 30; display: flex; flex-direction: column; flex-wrap: nowrap; gap: 4px; width: 270px; max-width: calc(100vw - 48px); max-height: 360px; overflow-y: auto; overscroll-behavior: contain; padding: 8px; border-radius: 12px; background: #FDFBF7; box-shadow: 0 10px 32px #26211d24; }
+    .filter-choices .filter-chip { justify-content: flex-start; gap: 10px; min-height: 44px; width: 100%; padding: 10px; border: 0; border-radius: 6px; background: transparent; font-size: 14px; letter-spacing: 0; font-weight: 400; text-align: left; }
+    .filter-choices .filter-chip::before { content: ''; width: 16px; height: 16px; flex-shrink: 0; border: 1px solid #A18E7E; border-radius: 4px; }
+    .filter-choices .filter-chip.active { background: #EEE7DD; color: #3D3530; font-weight: 600; }
+    .filter-choices .filter-chip.active::before { width: 8px; height: 13px; margin: 0 4px; border: solid #675647; border-width: 0 2px 2px 0; border-radius: 0; transform: rotate(45deg) translateY(-2px); }
+    .filter-choices .filter-chip:hover { background: #EEE7DD; }
+    [data-group="discount"] { margin-left: auto; }
+    [data-group="discount"] .filter-chip { gap: 6px; min-height: 44px; padding: 10px 14px; border-width: 1px; border-radius: 10px; font-size: 14px; letter-spacing: 0; font-weight: 500; background: transparent; }
+    [data-group="discount"] .filter-chip.active { background: #3D3530; }
+    #filter-status { font-size: 13px; }
+  }
 </style>
 
 <script>
@@ -146,6 +207,34 @@ if (!hasAnyFilter) return;
 
     // Active filters: { group: Set<value> }
     const active: Record<string, Set<string>> = {};
+    const disclosure = document.getElementById('filter-disclosure') as HTMLDetailsElement;
+    const done = document.getElementById('filter-done')!;
+    const clear = document.getElementById('filter-clear')!;
+    const desktop = window.matchMedia('(min-width: 768px)');
+    const groupPanels = Array.from(filtersEl.querySelectorAll<HTMLDetailsElement>('details.filter-group'));
+    const syncDisclosure = () => {
+      disclosure.open = desktop.matches;
+      groupPanels.forEach((panel) => { panel.open = !desktop.matches; });
+    };
+    desktop.addEventListener('change', syncDisclosure);
+    syncDisclosure();
+    groupPanels.forEach((panel) => {
+      panel.addEventListener('toggle', () => {
+        if (panel.open && desktop.matches) groupPanels.forEach((other) => { if (other !== panel) other.open = false; });
+      });
+    });
+    document.addEventListener('pointerdown', (event) => {
+      if (desktop.matches) groupPanels.forEach((panel) => { if (!panel.contains(event.target as Node)) panel.open = false; });
+    });
+    filtersEl.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !desktop.matches) return;
+      const panel = (event.target as Element).closest<HTMLDetailsElement>('details.filter-group');
+      if (panel?.open) { event.preventDefault(); panel.open = false; panel.querySelector('summary')?.focus(); }
+    });
+    done.addEventListener('click', () => {
+      disclosure.open = false;
+      disclosure.querySelector('summary')?.focus();
+    });
 
     function applyFilters() {
       const groups = Object.entries(active).filter(([, vals]) => vals.size > 0);
@@ -166,21 +255,25 @@ if (!hasAnyFilter) return;
         if (matches) visible++;
       }
 
-      const statusEl = document.getElementById('filter-status');
       const countEl = document.getElementById('filter-count');
-      if (statusEl && countEl) {
-        const hasActive = groups.length > 0;
-        statusEl.classList.toggle('hidden', !hasActive);
-        statusEl.classList.toggle('flex', hasActive);
-        if (hasActive) {
-          countEl.textContent = `${visible} ${visible === 1 ? 'producto' : 'productos'}`;
-        }
-      }
+      const resultLabel = `${visible} ${visible === 1 ? 'producto' : 'productos'}`;
+      if (countEl) countEl.textContent = resultLabel;
+      done.textContent = `Ver ${resultLabel}`;
+      clear.hidden = groups.length === 0;
+      const selected = groups.reduce((total, [, values]) => total + values.size, 0);
+      document.getElementById('filter-active-count')!.textContent = selected ? ` (${selected})` : '';
+      document.getElementById('filter-empty')!.hidden = visible !== 0;
+      groupPanels.forEach((panel) => {
+        const count = active[panel.dataset.group!]?.size ?? 0;
+        panel.querySelector('.filter-group-count')!.textContent = count ? String(count) : '';
+      });
     }
 
     filtersEl.querySelectorAll<HTMLButtonElement>('.filter-chip').forEach(chip => {
       const group = chip.closest<HTMLElement>('[data-group]')?.dataset.group;
       if (!group) return;
+      chip.type = 'button';
+      chip.setAttribute('aria-pressed', 'false');
       chip.addEventListener('click', () => {
         if (!active[group]) active[group] = new Set();
         if (active[group].has(chip.dataset.value!)) {
@@ -202,10 +295,11 @@ if (!hasAnyFilter) return;
         c.classList.remove('active');
         c.setAttribute('aria-pressed', 'false');
       });
-      for (const card of cards) card.hidden = false;
-      const statusEl = document.getElementById('filter-status');
-      statusEl?.classList.add('hidden');
-      statusEl?.classList.remove('flex');
+      applyFilters();
+      if (desktop.matches) filtersEl.querySelector<HTMLElement>('.filter-group-toggle, [data-group="discount"] button')?.focus();
+      else if (disclosure.open) filtersEl.querySelector<HTMLButtonElement>('.filter-chip')?.focus();
+      else disclosure.querySelector('summary')?.focus();
     });
+    applyFilters();
   })();
 </script>

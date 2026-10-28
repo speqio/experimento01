@@ -9,8 +9,9 @@ interface Props {
     'databaseId' | 'name' | 'slug' | 'price' | 'regularPrice' | 'image' | 'shortDescription' | 'attributes' | 'productCategories'
   >[];
   basePath: string;
+  animate?: boolean;
 }
-const { products, basePath } = Astro.props;
+const { products, basePath, animate = true } = Astro.props;
 
 function durationToMinutes(str: string): number {
   const s = str.toLowerCase();
@@ -42,7 +43,7 @@ function getFilters(p: typeof products[0]) {
   return { audience, duration: durationBucket, discount, category: categories };
 }
 ---
-<div data-stagger class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+<div data-product-grid data-stagger={animate || undefined} class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
   {products.map((product) => {
     const filters = getFilters(product);
     return (
@@ -55,7 +56,7 @@ function getFilters(p: typeof products[0]) {
 
 <script>
   import { addToCart } from '../../store/cartStore';
-  document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>('[data-product-grid] [data-add-to-cart]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const id = Number(btn.dataset.addToCart);
       addToCart(id, 1);

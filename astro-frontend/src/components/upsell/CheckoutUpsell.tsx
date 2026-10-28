@@ -32,7 +32,7 @@ export default function CheckoutUpsell({ suggestions }: Props) {
               type="button"
               disabled={loading}
               onClick={() => addToCart(product.databaseId, 1)}
-              className="mt-3 w-full text-[11px] font-semibold tracking-wide uppercase bg-spa-sand hover:bg-[#E2DDD3] text-spa-charcoal rounded-full py-2 transition-colors disabled:opacity-50"
+              className="mt-3 w-fit max-w-full sm:w-full min-h-11 px-4 text-[11px] font-semibold tracking-wide uppercase bg-spa-sand hover:bg-[#E2DDD3] text-spa-charcoal rounded-full py-2 transition-colors disabled:opacity-50"
             >
               Agregar
             </button>

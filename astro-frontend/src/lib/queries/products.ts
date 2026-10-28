@@ -57,18 +57,18 @@ export const GET_PRODUCT_BY_SLUG = /* GraphQL */ `
       }
       ... on SimpleProduct {
         upsell {
-          nodes { ${PRODUCT_CARD_FIELDS} }
+          nodes { ... on Product { ${PRODUCT_CARD_FIELDS} } }
         }
         crossSell {
-          nodes { ${PRODUCT_CARD_FIELDS} }
+          nodes { ... on Product { ${PRODUCT_CARD_FIELDS} } }
         }
       }
       ... on VariableProduct {
         upsell {
-          nodes { ${PRODUCT_CARD_FIELDS} }
+          nodes { ... on Product { ${PRODUCT_CARD_FIELDS} } }
         }
         crossSell {
-          nodes { ${PRODUCT_CARD_FIELDS} }
+          nodes { ... on Product { ${PRODUCT_CARD_FIELDS} } }
         }
       }
     }

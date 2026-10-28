@@ -7,6 +7,9 @@ export const prerender = false;
 import PageBanner from '../components/common/PageBanner.astro';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import ProductGrid from '../components/catalog/ProductGrid.astro';
+import ShopFilters from '../components/catalog/ShopFilters.astro';
+import FaqAccordion from '../components/common/FaqAccordion.astro';
+import { extractFaqSection } from '../lib/faq';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
 import { fetchLayoutData } from '../lib/layoutData';
 import { GET_PRODUCTS_BY_CATEGORIES } from '../lib/queries/products';
@@ -109,9 +112,10 @@ function cleanPageHtml(html: string, pageTitle: string): { main: string; faq: st
   return { main: mainBlocks.join('\n'), faq: faqBlocks.join('\n') };
 }
 
-const { main: pageMain, faq: pageFaq } = page.html
+const { main: pageMain } = page.html
   ? cleanPageHtml(page.html, title)
   : { main: '', faq: '' };
+const pageFaq = extractFaqSection(page.html ?? '');
 
 // Con productos, el main (descripciones de servicio) duplica las cards y tiene
 // encabezados desincronizados del WXR de origen — solo se muestra en páginas sin productos.
@@ -122,6 +126,7 @@ const showMain = !products.length;
 
   {products.length > 0 && (
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <ShopFilters products={products} />
       <ProductGrid products={products} basePath="/producto" />
     </div>
   )}
@@ -134,8 +139,7 @@ const showMain = !products.length;
 
   {pageFaq && (
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-      <h2 class="font-editorial text-xl font-light text-spa-charcoal mb-6 pb-4 border-b border-[#E8E2D7]">Preguntas frecuentes</h2>
-      <div class="faq-list space-y-0" set:html={pageFaq} />
+      <FaqAccordion html={pageFaq} path={page.path} />
     </div>
   )}
 
@@ -178,13 +182,4 @@ const showMain = !products.length;
     margin-bottom: .25rem;
   }
 
-  /* FAQ: cada párrafo como ítem con separador */
-  .faq-list p {
-    font-size: .9rem;
-    line-height: 1.75;
-    color: #675647;
-    padding: 1rem 0;
-    border-bottom: 1px solid #EDE8E0;
-  }
-  .faq-list p:first-child { padding-top: 0; }
 </style>

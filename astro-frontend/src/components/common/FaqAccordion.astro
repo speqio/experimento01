@@ -1,0 +1,41 @@
+---
+import { parseFaq } from '../../lib/faq';
+interface Props { html: string; path: string }
+const { html, path } = Astro.props;
+const items = parseFaq(html, path);
+---
+<section class="faq-section" aria-labelledby="faq-title">
+  <h2 id="faq-title" class="font-editorial text-3xl sm:text-4xl text-spa-charcoal mb-6">Preguntas frecuentes</h2>
+  <div class="faq-accordion">
+    {items.map((item) => (
+      <details class="faq-item" name="interior-faq">
+        <summary>
+          <span>{item.question}</span>
+          <svg class="faq-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14" /><path class="faq-icon-vertical" d="M12 5v14" /></svg>
+        </summary>
+        <div class="faq-answer" set:html={item.answer} />
+      </details>
+    ))}
+  </div>
+</section>
+<style>
+  .faq-accordion { border-top: 1px solid #DDD3C6; }
+  .faq-item { border-bottom: 1px solid #DDD3C6; }
+  .faq-item summary {
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+    min-height: 60px; padding: 18px 4px; list-style: none; cursor: pointer;
+    color: #3D3530; font-size: 1rem; font-weight: 500; line-height: 1.5;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary:hover { color: #675647; }
+  .faq-item summary:focus-visible { outline: 2px solid #675647; outline-offset: -2px; border-radius: 4px; }
+  .faq-item[open] summary { font-weight: 600; }
+  .faq-icon { flex-shrink: 0; color: #675647; }
+  .faq-item[open] .faq-icon-vertical { display: none; }
+  .faq-answer { padding: 0 36px 22px 4px; color: #5C4F45; font-size: .9375rem; line-height: 1.8; overflow-wrap: anywhere; }
+  .faq-answer :global(p + p), .faq-answer :global(ul), .faq-answer :global(ol) { margin-top: 12px; }
+  .faq-answer :global(ul) { list-style: disc; padding-left: 20px; }
+  .faq-answer :global(ol) { list-style: decimal; padding-left: 20px; }
+  .faq-answer :global(a) { text-decoration: underline; text-underline-offset: 3px; }
+  @media (min-width: 768px) { .faq-item summary { min-height: 72px; padding: 22px 8px; font-size: 1.0625rem; } .faq-answer { padding-left: 8px; } }
+</style>

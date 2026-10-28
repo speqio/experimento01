@@ -354,7 +354,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
             <button
               type="submit"
               disabled={loading || uploadingPhoto}
-              className="w-full bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all disabled:opacity-50"
+              className="w-fit max-w-full sm:w-full min-h-12 bg-spa-charcoal hover:bg-[#433B36] text-white rounded-full px-6 py-3.5 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase transition-all disabled:opacity-50"
             >
               {uploadingPhoto ? 'Subiendo foto…' : loading ? 'Agregando…' : 'Continuar al pago'}
             </button>

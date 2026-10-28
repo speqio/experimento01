@@ -58,7 +58,13 @@ const variantAttrs = variations[0]
       options: [...new Set(variations.map((v) => v.attributes.nodes.find((x) => x.name === a.name)?.value ?? ''))].filter(Boolean),
     }))
   : [];
-const { intro: introHtml, benefits, includes, indicatedFor, contraindications, extras } = parseProductSections(product.description ?? '');
+const sections = parseProductSections(product.description ?? '');
+const uniqueItems = (items: string[]) => [...new Set(items.map((item) => item.trim()))];
+const { intro: introHtml, extras } = sections;
+const benefits = uniqueItems(sections.benefits);
+const includes = uniqueItems(sections.includes);
+const indicatedFor = uniqueItems(sections.indicatedFor);
+const contraindications = uniqueItems(sections.contraindications);
 const intro = clampIntroWords(introHtml);
 
 const [upsells, relatedResult] = await Promise.all([
@@ -111,35 +117,37 @@ const related: SimpleProduct[] = relatedResult
   schema={[productSchema]}
 >
 
-  <section class="relative min-h-[28rem] sm:min-h-[34rem] lg:min-h-[38rem] w-full overflow-hidden bg-spa-charcoal">
+  <div class="product-hero-shell">
+  <section class="product-hero">
     {product.image?.sourceUrl && (
       <img
         src={product.image.sourceUrl}
         alt={product.image.altText || product.name}
         loading="eager"
         fetchpriority="high"
-        class="absolute inset-0 w-full h-full object-cover"
+        class="absolute inset-0 w-full h-full object-cover" width="1440" height="720"
       />
     )}
     <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/45" />
-    <div class="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+
     {badge && (
       <span class="absolute bottom-6 right-6 z-10 bg-white text-spa-charcoal text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
         {badge}
       </span>
     )}
-    <div class="relative min-h-[28rem] sm:min-h-[34rem] lg:min-h-[38rem] max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 sm:pt-6 pb-16 sm:pb-20 flex flex-col text-white">
+    <div class="product-hero-inner max-w-6xl mx-auto flex flex-col text-white">
       <Breadcrumbs crumbs={[{ name: 'Inicio', path: '/' }, ...breadcrumbs]} inBanner inverse />
-      <h1 class="font-sans text-[clamp(2.75rem,5.2vw,4.5rem)] font-normal tracking-[-0.025em] leading-[1.02] max-w-3xl mt-auto pt-12 mb-4 text-balance break-words">{product.name}</h1>
+      <h1 class="product-title font-editorial">{product.name}</h1>
       <p class="text-xs text-[#F0E8DF] mb-3">{categoryName}</p>
       {tagline && (
         <p class="text-sm sm:text-base text-[#E5DFD7] font-light italic max-w-xl">{tagline}</p>
       )}
     </div>
   </section>
+  </div>
 
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="relative -mt-8 sm:-mt-10 bg-white rounded-2xl border border-[#E8E2D7] shadow-lg px-6 sm:px-8 py-5 flex flex-wrap items-center gap-x-8 gap-y-3 justify-center sm:justify-between">
+    <div class="product-facts">
       {duration && (
         <div class="flex items-center gap-2 text-sm text-[#4A4036]">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
@@ -160,20 +168,121 @@ const related: SimpleProduct[] = relatedResult
   </div>
 
   <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
-      <div class="lg:col-span-7 space-y-10">
+    <div class="product-layout">
+      <div class="product-purchase-column">
+        <div class="product-purchase">
+          <div class="product-purchase-header">
+            <h2 class="product-purchase-title font-editorial">Reserva tu experiencia</h2>
+            <div class="flex items-baseline gap-2.5">
+              <span id="product-regular-price" class="text-sm line-through text-[#796859]" hidden={!priceInfo.original}>{priceInfo.original}</span>
+              <span id="product-price" aria-live="polite" aria-atomic="true" class="product-purchase-price font-editorial">{priceInfo.current}</span>
+            </div>
+          </div>
+          <div class="product-purchase-body space-y-5">
+            {variantAttrs.length > 0 && (
+              <div class="space-y-3" id="variant-picker">
+                <p id="variant-guidance" class="text-sm text-[#675647]">Elige tus opciones para ver el precio final.</p>
+                {variantAttrs.map((attr) => (
+                  <label class="block">
+                    <span class="block text-[11px] font-semibold tracking-wide uppercase text-spa-taupe mb-1.5">{attr.name}</span>
+                    <select data-variant-attr={attr.name} aria-describedby="variant-guidance purchase-feedback" class="product-variant-select">
+                      <option value="">Elige una opción</option>
+                      {attr.options.map((o) => <option value={o}>{o}</option>)}
+                    </select>
+                  </label>
+                ))}
+              </div>
+            )}
+            {upsells.length > 0 && (
+              <details class="product-upsells" id="upsell-block">
+                <summary class="product-upsells-toggle">
+                  <span>Complementa tu experiencia</span>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                </summary>
+                <div class="space-y-3">
+                  {upsells.map((u) => {
+                    const upsellPrice = getPriceDisplay(u.price, u.regularPrice);
+                    return (
+                    <div class="border-b border-dashed border-[#DDD5CA] pb-3 last:border-0 last:pb-0">
+                      <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" class="product-upsell-checkbox" data-upsell-id={u.databaseId} />
+                        <span class="flex-1">
+                          <span class="block text-sm font-semibold text-spa-charcoal leading-snug">{u.name}</span>
+                          <span class="flex items-baseline gap-2">
+                            {upsellPrice.original && <span class="text-xs line-through text-[#A89E95]">{upsellPrice.original}</span>}
+                            <span class="text-sm font-bold text-spa-taupe-dark">{upsellPrice.current}</span>
+                          </span>
+                        </span>
+                      </label>
+                      {u.popup && (
+                        <details class="mt-2 ml-7 text-xs text-[#675647] leading-relaxed">
+                          <summary class="cursor-pointer text-spa-taupe underline underline-offset-2">Ver detalles</summary>
+                          <p class="mt-1.5">{u.popup}</p>
+                        </details>
+                      )}
+                    </div>
+                    );
+                  })}
+                </div>
+              </details>
+            )}
+            <div class="space-y-3">
+              <button
+                type="button"
+                data-add-to-cart={product.databaseId}
+                data-needs-variation={variantAttrs.length > 0 ? "1" : undefined}
+                class="product-buy-button group w-full border border-[#DDD5CA] hover:border-spa-charcoal hover:bg-spa-charcoal text-spa-charcoal hover:text-white py-3.5 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase flex items-center justify-center gap-2 transition-colors"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe group-hover:text-[#D4C3B3] transition-colors"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></svg>
+                Agregar al Carrito
+              </button>
+              {product.giftCardEnabled !== false && (
+              <button
+                type="button"
+                data-gift-product={product.databaseId}
+                data-needs-variation={variantAttrs.length > 0 ? "1" : undefined}
+                data-gift-name={product.name}
+                data-gift-summary={getCardSummary(product.shortDescription ?? '', 100)}
+                data-gift-image={product.image?.sourceUrl}
+                data-gift-addons={upsells.length > 0 ? JSON.stringify(upsells.map((u) => ({ id: u.databaseId, name: u.name, price: formatPriceDisplay(u.price) }))) : undefined}
+                class="product-gift-button group w-full bg-spa-cream hover:bg-spa-taupe text-spa-charcoal hover:text-white py-3.5 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase flex items-center justify-center gap-2 transition-colors"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe group-hover:text-white transition-colors"><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></svg>
+                Regalar Gift Card
+              </button>
+              )}
+            </div>
+            <p id="purchase-feedback" class="purchase-feedback" role="status" aria-live="polite" hidden></p>
+            <ul class="pt-4 border-t border-spa-cream space-y-2.5">
+              <li class="flex items-center gap-2.5 text-xs text-[#675647]">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe shrink-0"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
+                <span>Cabinas privadas y climatizadas</span>
+              </li>
+              <li class="flex items-center gap-2.5 text-xs text-[#675647]">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe shrink-0"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
+                <span>Terapeutas certificadas</span>
+              </li>
+              <li class="flex items-center gap-2.5 text-xs text-[#675647]">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe shrink-0"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
+                <span>Productos premium</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="product-content space-y-10">
         {intro && (
           <div>
-            <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-spa-taupe mb-3 flex items-center gap-2">
-              <span class="w-6 h-px bg-spa-taupe" />Te ofrecemos
+            <h2 class="product-section-title font-editorial mb-4">
+              Te ofrecemos
             </h2>
             <p class="text-[#4A4036] text-sm sm:text-base leading-relaxed">{intro}</p>
           </div>
         )}
 
         {includes.length > 0 && (
-          <div class="bg-white p-6 sm:p-7 rounded-2xl border border-[#E8E2D7] shadow-sm">
-            <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-[#675647] mb-4 flex items-center gap-2">
+          <div class="product-detail-section">
+            <h3 class="product-section-title font-editorial mb-5 flex items-center gap-3">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe">
                 <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" />
                 <path d="M20 2v4" /><path d="M22 4h-4" /><circle cx="4" cy="20" r="2" />
@@ -193,7 +302,7 @@ const related: SimpleProduct[] = relatedResult
 
         {benefits.length > 0 && (
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-[#675647] mb-4">Beneficios Principales</h3>
+            <h3 class="product-section-title font-editorial mb-4">Beneficios Principales</h3>
             <div class="flex flex-wrap gap-2">
               {benefits.map((item) => (
                 <span class="inline-flex items-center gap-1.5 text-xs bg-spa-sand text-[#4A4036] px-3.5 py-1.5 rounded-full border border-[#E2DBCE]">
@@ -207,16 +316,16 @@ const related: SimpleProduct[] = relatedResult
         {(indicatedFor.length > 0 || contraindications.length > 0) && (
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {indicatedFor.length > 0 && (
-              <div class="bg-white p-5 rounded-2xl border border-[#E8E2D7]">
-                <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">Indicado para</h3>
+              <div class="product-care-section">
+                <h3 class="product-section-title font-editorial mb-4">Indicado para</h3>
                 <ul class="space-y-2 text-xs sm:text-sm text-[#4A4036] list-disc pl-4">
                   {indicatedFor.map((item) => <li>{item}</li>)}
                 </ul>
               </div>
             )}
             {contraindications.length > 0 && (
-              <div class="bg-spa-bg p-5 rounded-2xl border border-[#E8E2D7]">
-                <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">Contraindicaciones</h3>
+              <div class="product-care-section">
+                <h3 class="product-section-title font-editorial mb-4">Contraindicaciones</h3>
                 <ul class="space-y-2 text-xs sm:text-sm text-[#4A4036] list-disc pl-4">
                   {contraindications.map((item) => <li>{item}</li>)}
                 </ul>
@@ -226,109 +335,13 @@ const related: SimpleProduct[] = relatedResult
         )}
 
         {extras.map((extra) => (
-          <div class="bg-white p-6 sm:p-7 rounded-2xl border border-[#E8E2D7] shadow-sm">
-            <h3 class="text-xs font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">{extra.title}</h3>
+          <div class="product-detail-section">
+            <h3 class="product-section-title font-editorial mb-4">{extra.title}</h3>
             <div class="text-[#4A4036] text-sm leading-relaxed [&_p]:mb-2 last:[&_p]:mb-0 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-1 [&_strong]:text-spa-charcoal" set:html={extra.html} />
           </div>
         ))}
       </div>
 
-      <div class="lg:col-span-5">
-        <div class="lg:sticky lg:top-28 bg-white rounded-3xl border border-[#E8E2D7] shadow-xl overflow-hidden">
-          <div class="bg-spa-charcoal px-6 sm:px-7 py-5 text-white">
-            <span class="text-[10px] font-semibold tracking-[0.25em] uppercase text-[#D4C3B3] block mb-1.5">Reserva tu experiencia</span>
-            <div class="flex items-baseline gap-2.5">
-              <span id="product-regular-price" class="text-sm line-through text-white/50" hidden={!priceInfo.original}>{priceInfo.original}</span>
-              <span id="product-price" class="text-3xl font-bold">{priceInfo.current}</span>
-            </div>
-          </div>
-          <div class="p-6 sm:p-7 space-y-5">
-            {variantAttrs.length > 0 && (
-              <div class="space-y-3" id="variant-picker">
-                {variantAttrs.map((attr) => (
-                  <label class="block">
-                    <span class="block text-[11px] font-semibold tracking-wide uppercase text-spa-taupe mb-1.5">{attr.name}</span>
-                    <select data-variant-attr={attr.name} class="w-full border border-[#DDD5CA] rounded-full px-4 py-2.5 text-sm bg-white focus:outline-none focus:border-spa-taupe">
-                      <option value="">Elige una opción</option>
-                      {attr.options.map((o) => <option value={o}>{o}</option>)}
-                    </select>
-                  </label>
-                ))}
-              </div>
-            )}
-            {upsells.length > 0 && (
-              <div class="rounded-xl border border-[#E8E2D7] bg-spa-bg p-4" id="upsell-block">
-                <h3 class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#675647] mb-3">Complementa tu experiencia</h3>
-                <div class="space-y-3">
-                  {upsells.map((u) => {
-                    const upsellPrice = getPriceDisplay(u.price, u.regularPrice);
-                    return (
-                    <div class="border-b border-dashed border-[#DDD5CA] pb-3 last:border-0 last:pb-0">
-                      <label class="flex items-start gap-3 cursor-pointer">
-                        <input type="checkbox" class="mt-1 accent-[#2C2724]" data-upsell-id={u.databaseId} />
-                        <span class="flex-1">
-                          <span class="block text-sm font-semibold text-spa-charcoal leading-snug">{u.name}</span>
-                          <span class="flex items-baseline gap-2">
-                            {upsellPrice.original && <span class="text-xs line-through text-[#A89E95]">{upsellPrice.original}</span>}
-                            <span class="text-sm font-bold text-spa-taupe-dark">{upsellPrice.current}</span>
-                          </span>
-                        </span>
-                      </label>
-                      {u.popup && (
-                        <details class="mt-2 ml-7 text-xs text-[#675647] leading-relaxed">
-                          <summary class="cursor-pointer text-spa-taupe underline underline-offset-2">Ver detalles</summary>
-                          <p class="mt-1.5">{u.popup}</p>
-                        </details>
-                      )}
-                    </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            <div class="space-y-3">
-              <button
-                type="button"
-                data-add-to-cart={product.databaseId}
-                data-needs-variation={variantAttrs.length > 0 ? "1" : undefined}
-                class="group w-full border border-[#DDD5CA] hover:border-spa-charcoal hover:bg-spa-charcoal text-spa-charcoal hover:text-white py-3.5 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase flex items-center justify-center gap-2 transition-colors"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe group-hover:text-[#D4C3B3] transition-colors"><path d="M16 10a4 4 0 0 1-8 0" /><path d="M3.103 6.034h17.794" /><path d="M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" /></svg>
-                Agregar al Carrito
-              </button>
-              {product.giftCardEnabled !== false && (
-              <button
-                type="button"
-                data-gift-product={product.databaseId}
-                data-needs-variation={variantAttrs.length > 0 ? "1" : undefined}
-                data-gift-name={product.name}
-                data-gift-summary={getCardSummary(product.shortDescription ?? '', 100)}
-                data-gift-image={product.image?.sourceUrl}
-                data-gift-addons={upsells.length > 0 ? JSON.stringify(upsells.map((u) => ({ id: u.databaseId, name: u.name, price: formatPriceDisplay(u.price) }))) : undefined}
-                class="group w-full bg-spa-cream hover:bg-spa-taupe text-spa-charcoal hover:text-white py-3.5 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase flex items-center justify-center gap-2 transition-colors"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe group-hover:text-white transition-colors"><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M12 8v13" /><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7" /><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5" /></svg>
-                Regalar Gift Card
-              </button>
-              )}
-            </div>
-            <ul class="pt-4 border-t border-spa-cream space-y-2.5">
-              <li class="flex items-center gap-2.5 text-xs text-[#675647]">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe shrink-0"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
-                <span>Cabinas privadas y climatizadas</span>
-              </li>
-              <li class="flex items-center gap-2.5 text-xs text-[#675647]">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe shrink-0"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
-                <span>Terapeutas certificadas</span>
-              </li>
-              <li class="flex items-center gap-2.5 text-xs text-[#675647]">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-spa-taupe shrink-0"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg>
-                <span>Productos premium</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
 
     {related.length > 0 && (
@@ -341,7 +354,7 @@ const related: SimpleProduct[] = relatedResult
             return (
               <a
                 href={`/producto/${item.slug}`}
-                class="group text-left bg-white rounded-2xl overflow-hidden border border-[#E5DDD2] shadow-xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 block"
+                class="product-related-card group text-left bg-white rounded-2xl overflow-hidden border border-[#E5DDD2] block"
               >
                 <div class="relative h-44 overflow-hidden">
                   {item.image?.sourceUrl ? (
@@ -360,7 +373,7 @@ const related: SimpleProduct[] = relatedResult
                   )}
                 </div>
                 <div class="p-5">
-                  <h3 class="font-sans text-lg text-spa-charcoal mb-1.5 leading-snug group-hover:text-spa-taupe transition-colors">{item.name}</h3>
+                  <h3 class="font-editorial text-2xl text-spa-charcoal mb-2 leading-snug group-hover:text-spa-taupe transition-colors">{item.name}</h3>
                   <div class="flex items-baseline gap-2">
                     {itemPrice.original && (
                       <span class="text-xs line-through text-[#A89E95]">{itemPrice.original}</span>
@@ -376,6 +389,73 @@ const related: SimpleProduct[] = relatedResult
     )}
   </section>
 </ECommerceLayout>
+
+<style>
+  .product-hero-shell { padding: 12px 12px 0; }
+  .product-hero { position: relative; overflow: hidden; border-radius: 20px; background: #2C2724; }
+  .product-hero-inner { position: relative; min-height: 340px; padding: 20px 20px 36px; }
+  .product-title { max-width: 22ch; margin: auto 0 16px; padding-top: 36px; font-size: clamp(2.5rem, 4.8vw, 4.25rem); font-weight: 400; line-height: 1.06; letter-spacing: -.025em; text-wrap: balance; overflow-wrap: anywhere; }
+  .product-facts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; padding: 22px 0; border-bottom: 1px solid #DDD3C6; }
+  .product-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; align-items: start; }
+  .product-content, .product-purchase-column { min-width: 0; }
+  .product-content { font-size: 15px; }
+  .product-section-title { color: #3D3530; font-size: 1.75rem; font-weight: 500; line-height: 1.15; letter-spacing: -.015em; }
+  .product-detail-section, .product-care-section { padding-top: 28px; border-top: 1px solid #DDD3C6; }
+  .product-content ul { font-size: .875rem; line-height: 1.7; }
+  .product-content li svg { color: #675647; }
+  .product-purchase { border: 1px solid #DDD3C6; border-radius: 16px; overflow: hidden; background: #FDFBF7; }
+  .product-purchase-header { padding: 24px 24px 0; color: #2C2724; }
+  .product-purchase-title { margin-bottom: 14px; font-size: 1.625rem; font-weight: 500; line-height: 1.2; }
+  .product-purchase-price { font-size: clamp(2.25rem, 3vw, 3rem); font-weight: 500; line-height: 1.1; letter-spacing: -.02em; }
+  .product-purchase-header > div { flex-wrap: wrap; row-gap: 8px; }
+  .product-purchase-body { padding: 24px; }
+  .product-variant-select { min-height: 48px; width: 100%; padding: 10px 36px 10px 14px; border: 1px solid #C7B8A7; border-radius: 10px; background: #fff; color: #3D3530; font-size: 16px; }
+  .product-variant-select[aria-invalid="true"] { border-color: #9B4034; }
+  .product-upsells { padding-top: 20px; border-top: 1px solid #E2DBD0; }
+  .product-upsells > .product-upsells-toggle { justify-content: space-between; gap: 12px; padding-bottom: 12px; font-size: 14px; font-weight: 600; text-decoration: none; list-style: none; }
+  .product-upsells-toggle::-webkit-details-marker { display: none; }
+  .product-upsells[open] > summary svg { transform: rotate(180deg); }
+  .product-upsells label { min-height: 44px; padding-block: 6px; }
+  .product-upsell-checkbox { appearance: auto; flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; accent-color: #675647; }
+  .product-upsells summary { display: flex; align-items: center; min-height: 44px; font-size: 13px; color: #675647; }
+  .product-buy-button, .product-gift-button { min-height: 48px; border-radius: 999px; text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 600; }
+  .product-buy-button { background: #2C2724; border-color: #2C2724; color: #fff; }
+  .product-buy-button:hover { background: #4A403A; border-color: #4A403A; }
+  .product-buy-button svg { color: #fff; }
+  .product-gift-button { border: 1px solid #C7B8A7; background: transparent; color: #3D3530; }
+  .product-gift-button:hover { background: #EEE7DD; color: #3D3530; }
+  .product-gift-button:hover svg { color: inherit; }
+  .product-buy-button:disabled { cursor: wait; opacity: .65; }
+  .product-purchase :is(button, select, input, summary):focus-visible, .product-related-card:focus-visible { outline: 2px solid #675647; outline-offset: 3px; }
+  .purchase-feedback { color: #8D372E; font-size: 14px; line-height: 1.6; }
+  .purchase-feedback[hidden] { display: none; }
+  .product-related-card { transition: border-color 180ms ease; }
+  .product-related-card:hover { border-color: #A18E7E; }
+  @media (min-width: 640px) {
+    .product-hero-shell { padding: 16px 24px 0; }
+    .product-hero { border-radius: 28px; }
+    .product-hero-inner { min-height: 380px; padding: 24px 32px 44px; }
+  }
+  @media (min-width: 1024px) {
+    .product-hero-shell { padding: 24px 32px 0; }
+    .product-hero { border-radius: 36px; }
+    .product-hero-inner { min-height: 400px; }
+    .product-layout { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px; }
+    .product-content { grid-column: 1; grid-row: 1; }
+    .product-purchase-column { grid-column: 2; grid-row: 1; position: sticky; top: 24px; max-height: calc(100dvh - 48px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #C7B8A7 transparent; padding: 4px; margin: -4px; }
+    .product-section-title { font-size: 2rem; }
+  }
+  @media (max-width: 639px) {
+    .product-buy-button, .product-gift-button { width: fit-content; max-width: 100%; padding-inline: 24px; }
+    .product-purchase-header { padding: 20px 20px 0; }
+    .product-purchase-body { padding: 20px; }
+    .product-hero :global(nav) { font-size: 11px; }
+    .product-related-card { display: grid; grid-template-columns: 112px minmax(0, 1fr); }
+    .product-related-card > div:first-child { height: 100%; min-height: 140px; }
+    .product-related-card > div:last-child { padding: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .product-related-card, .product-related-card img { transition: none; } .product-related-card:hover img { transform: none; } }
+</style>
 
 <script type="application/json" id="variations-data" set:html={JSON.stringify(variations)} />
 <script type="application/json" id="view-item-data" set:html={JSON.stringify({ id: product.databaseId, name: product.name, price: formatPriceDisplay(product.price) })} />
@@ -401,6 +481,7 @@ const related: SimpleProduct[] = relatedResult
   const initialRegular = regularEl?.textContent ?? '';
   const digits = (t?: string) => Number((t ?? '').replace(/[^0-9]/g, '')) || 0;
   const actionBtns = [...document.querySelectorAll<HTMLElement>('[data-needs-variation]')];
+  const feedback = document.getElementById('purchase-feedback');
 
   function currentVariation() {
     if (selects.some((s) => !s.value)) return null;
@@ -412,6 +493,8 @@ const related: SimpleProduct[] = relatedResult
   }
 
   function refresh() {
+    if (feedback) feedback.hidden = true;
+    selects.forEach((select) => select.removeAttribute('aria-invalid'));
     const v = currentVariation();
     actionBtns.forEach((b) => {
       if (v) b.dataset.variationId = String(v.databaseId);
@@ -443,7 +526,15 @@ const related: SimpleProduct[] = relatedResult
       if (btn && !btn.dataset.variationId) {
         e.stopImmediatePropagation();
         e.preventDefault();
-        alert('Elige las opciones del producto (sesiones, horas) antes de continuar.');
+        const missing = selects.find((select) => !select.value) ?? selects[0];
+        if (feedback) {
+          feedback.textContent = selects.some((select) => !select.value)
+            ? 'Elige las opciones del producto antes de continuar.'
+            : 'Esta combinación no está disponible. Prueba con otras opciones.';
+          feedback.hidden = false;
+        }
+        missing?.setAttribute('aria-invalid', 'true');
+        missing?.focus();
       }
     },
     true,
@@ -451,12 +542,29 @@ const related: SimpleProduct[] = relatedResult
 
   document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
     btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+      const label = btn.innerHTML;
+      btn.textContent = 'Agregando…';
+      if (feedback) feedback.hidden = true;
+      try {
       const id = Number(btn.dataset.addToCart);
       await addToCart(id, 1, btn.dataset.variationId ? Number(btn.dataset.variationId) : undefined);
       // Complementos marcados: el carrito ya tiene el principal (WordPress lo exige).
       const extras = [...document.querySelectorAll<HTMLInputElement>('[data-upsell-id]:checked')];
       for (const box of extras) {
         await addToCart(Number(box.dataset.upsellId), 1);
+      }
+      } catch {
+        if (feedback) {
+          feedback.textContent = 'No pudimos completar la acción. Revisa tu carrito antes de volver a intentarlo.';
+          feedback.hidden = false;
+        }
+      } finally {
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+        btn.innerHTML = label;
       }
     });
   });

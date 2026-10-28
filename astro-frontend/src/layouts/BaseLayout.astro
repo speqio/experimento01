@@ -68,20 +68,10 @@ const cmsOrigin = import.meta.env.PUBLIC_WPGRAPHQL_URL ? new URL(import.meta.env
     <Seo title={title} description={description} {...seo} />
     {cmsOrigin && <link rel="preconnect" href={cmsOrigin} />}
     {preloadImage && <link rel="preload" as="image" href={preloadImage} fetchpriority="high" />}
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Manrope:wght@300;400;500;600;700;800&display=swap"
-      />
-    </noscript>
+    <!-- Fuentes auto-hospedadas: preload directo elimina el round-trip a Google Fonts -->
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/cormorant-normal-latin.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/cormorant-italic-latin.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/manrope-latin.woff2" crossorigin />
   </head>
   <body class="bg-spa-bg text-spa-charcoal font-sans antialiased selection:bg-[#D4C3B3] selection:text-[#1F1B18]">
     <noscript><iframe src={`https://www.googletagmanager.com/ns.html?id=${GTM_CONTAINER_ID}`} height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
@@ -107,6 +97,17 @@ const cmsOrigin = import.meta.env.PUBLIC_WPGRAPHQL_URL ? new URL(import.meta.env
     <div class="min-h-screen flex flex-col">
       <slot />
 
+      <button
+        type="button"
+        data-back-to-top
+        hidden
+        aria-label="Volver arriba"
+        title="Volver arriba"
+        class="back-to-top fixed bottom-[5.5rem] right-6 z-40 flex h-[52px] w-[52px] items-center justify-center rounded-full border border-[#C7B8A7] bg-[#FAF8F5] text-spa-charcoal shadow-sm hover:bg-spa-sand transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-spa-taupe-dark"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5m-6 6 6-6 6 6" /></svg>
+      </button>
+
       <a
         href={`https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURIComponent('Hola Mándala Spa, quisiera consultar por disponibilidad de horas o comprar una Gift Card.')}`}
         target="_blank"
@@ -130,11 +131,32 @@ const cmsOrigin = import.meta.env.PUBLIC_WPGRAPHQL_URL ? new URL(import.meta.env
       captureAttribution();
 
       // El loader tapa la página mientras carga; al irse arranca la animación de entrada (ver lib/motion.ts).
+      // fonts.ready resuelve cuando las fuentes requeridas están disponibles (~200-800 ms), mucho antes
+      // de que window.load espere todas las imágenes — mejora LCP drásticamente en móvil.
       const revealPage = setupMotion();
-      window.addEventListener('load', revealPage);
-      setTimeout(revealPage, 2500);
+      document.fonts.ready.then(revealPage);
+      setTimeout(revealPage, 1000);
+
+      const backToTop = document.querySelector<HTMLButtonElement>('[data-back-to-top]');
+      if (backToTop) {
+        const updateBackToTop = () => {
+          const hidden = window.scrollY < 400;
+          if (backToTop.hidden !== hidden) backToTop.hidden = hidden;
+        };
+        window.addEventListener('scroll', updateBackToTop, { passive: true });
+        window.addEventListener('pageshow', updateBackToTop);
+        backToTop.addEventListener('click', () => {
+          document.querySelector<HTMLAnchorElement>('header a[href="/"]')?.focus({ preventScroll: true });
+          window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+        });
+        updateBackToTop();
+      }
     </script>
     <CookieBanner />
     <CartNotification />
   </body>
 </html>
+
+<style>
+  .back-to-top[hidden] { display: none; }
+</style>

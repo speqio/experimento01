@@ -7,6 +7,7 @@ export const prerender = false;
 import ProductCard from '../components/catalog/ProductCard.astro';
 import GiftCardBanner from '../components/giftcard/GiftCardBanner.astro';
 import WellnessCallout from '../components/common/WellnessCallout.astro';
+import Testimonials from '../components/common/Testimonials.astro';
 import ECommerceLayout from '../layouts/ECommerceLayout.astro';
 import { wpQuery, kvCacheFrom } from '../lib/wp-graphql';
 import { fetchLayoutData } from '../lib/layoutData';
@@ -20,6 +21,7 @@ import type { SiteBanner } from '../types/banner';
 
 const mapsQuery = encodeURIComponent(`${SITE_INFO.streetAddress.split(',')[0]}, ${SITE_INFO.address}`);
 const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`;
+const wazeUrl = `https://waze.com/ul?q=${mapsQuery}&navigate=yes`;
 const cache = kvCacheFrom(Astro);
 // Arranca YA (sin await) para que corra en paralelo con las consultas propias
 // de esta página, en vez de que ECommerceLayout la dispare recién cuando le
@@ -85,7 +87,12 @@ const philosophyImage = {
   sourceUrl: '/images/servicios/bienestar-natural-v2-960.webp',
   altText: 'Sesión de reflexología podal en Mándala Spa.',
 };
-const specialties = ['Masajes', 'Limpiezas faciales', 'Terapias complementarias', 'Tratamientos postoperatorios'];
+const specialties = [
+  { label: 'Masajes', href: categoryGroupHref('Masajes') },
+  { label: 'Limpiezas faciales', href: '/tratamientos-faciales/limpieza-facial/' },
+  { label: 'Terapias complementarias', href: '/tienda?q=terapia' },
+  { label: 'Tratamientos postoperatorios', href: '/tienda?cat=post-operatorio' },
+];
 
 // Carrusel del Hero: cada diapositiva toma de wp-admin lo que esté cargado y completa el resto con su contenido de
 // fábrica (textos que el sitio ya usa en otras secciones). Sin WordPress en build time, queda todo de fábrica.
@@ -293,8 +300,8 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
       <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-end justify-between gap-4 mb-10 sm:mb-12 pb-4 border-b border-[#E8E2D7]">
           <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Nuestros servicios</h2>
-          <a href="/tienda" class="shrink-0 text-xs font-semibold tracking-wider uppercase text-[#6E5C4E] hover:text-spa-charcoal border border-[#DDD5CA] px-4 py-2 rounded-full hover:bg-white transition-colors">
-            Ver todos
+          <a href="/tienda" class="home-section-link">Ver todos
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
           </a>
         </div>
         <ul data-stagger class={`grid grid-cols-2 gap-x-5 gap-y-10 sm:gap-x-8 ${families.length >= 4 ? 'lg:grid-cols-4' : 'sm:grid-cols-3'}`}>
@@ -343,7 +350,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
             )}
           </div>
           {/* Sello circular: el anillo de texto gira con el scroll (data-spin) alrededor del mándala del logo */}
-          <div class="absolute -top-10 right-4 lg:-right-14 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-[#F1ECE4] text-spa-taupe-dark shadow-[0_10px_30px_-14px_rgba(44,39,36,0.45)]" aria-hidden="true">
+          <div class="absolute -bottom-8 left-4 md:bottom-auto md:left-auto md:-top-10 md:right-4 lg:-right-14 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-[#F1ECE4] text-spa-taupe-dark shadow-[0_10px_30px_-14px_rgba(44,39,36,0.45)]" aria-hidden="true">
             <svg data-spin viewBox="0 0 100 100" class="absolute inset-0 w-full h-full">
               <defs><path id="sello-filosofia" d="M 50 50 m -38 0 a 38 38 0 1 1 76 0 a 38 38 0 1 1 -76 0" /></defs>
               <text class="fill-current uppercase" style="font-size:7.4px;letter-spacing:0.18em;font-weight:600">
@@ -370,11 +377,13 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
           <p class="mt-5 text-[0.95rem] leading-relaxed text-[#6E5C4E] max-w-[60ch] text-pretty">
             Tratamos las somatizaciones del estrés, tanto anímicas como tensiones musculares, y otras afecciones que afectan tu belleza y bienestar. Somos un refugio para descansar el cuerpo y la mente, rejuvenecer y recuperar energía para el día a día.
           </p>
-          <ul data-stagger class="mt-9 grid sm:grid-cols-2 gap-x-8 border-t border-[#DDD3C6]">
+          <ul data-stagger class="specialty-links mt-9">
             {specialties.map((s) => (
-              <li class="flex items-center gap-3 py-3.5 border-b border-[#DDD3C6] text-sm font-medium text-spa-charcoal">
-                <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0 text-spa-taupe" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="8" cy="8" r="6.5" /><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" /></svg>
-                {s}
+              <li>
+                <a href={s.href} class="specialty-chip text-sm font-medium text-spa-charcoal">
+                  <svg viewBox="0 0 16 16" class="w-3.5 h-3.5 shrink-0 text-spa-taupe" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><circle cx="8" cy="8" r="6.5" /><circle cx="8" cy="8" r="2" fill="currentColor" stroke="none" /></svg>
+                  {s.label}
+                </a>
               </li>
             ))}
           </ul>
@@ -388,18 +397,33 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
 
     <!-- 3. DESTACADOS -->
     {featured.length > 0 && (
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-experiences-carousel aria-labelledby="experiences-title">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-[#E8E2D7]">
           <div>
             <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block">Relajación profunda</span>
-            <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Encuentra tu experiencia ideal</h2>
+            <h2 id="experiences-title" class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Encuentra tu experiencia ideal</h2>
           </div>
-          <a href="/tienda" class="mt-4 sm:mt-0 text-xs font-semibold tracking-wider uppercase text-[#6E5C4E] hover:text-spa-charcoal border border-[#DDD5CA] px-4 py-2 rounded-full hover:bg-white transition-colors">
-            Ver todos
+          <a href="/tienda" class="home-section-link">Ver todos
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
           </a>
         </div>
-        <div data-stagger class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {featured.map((product) => <ProductCard product={product} href={`/producto/${product.slug}`} />)}
+        <div id="experiences-track" class="experiences-track" data-experiences-track tabindex="0" role="region" aria-label="Experiencias destacadas">
+          {featured.map((product) => (
+            <div class="experiences-slide">
+              <ProductCard product={product} href={`/producto/${product.slug}`} />
+            </div>
+          ))}
+        </div>
+        <div class="experiences-controls" data-experiences-controls hidden>
+          <span class="text-sm text-[#6E5C4E]" data-experiences-count aria-live="polite" aria-atomic="true">1 / {featured.length}</span>
+          <div class="flex gap-2">
+            <button type="button" data-experiences-prev aria-label="Experiencia anterior" aria-controls="experiences-track" disabled>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+            </button>
+            <button type="button" data-experiences-next aria-label="Experiencia siguiente" aria-controls="experiences-track">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+            </button>
+          </div>
         </div>
       </section>
     )}
@@ -409,24 +433,41 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
 
     <!-- 5. RITUALES / PRODUCTOS -->
     {rituals.length > 0 && (
-      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" data-experiences-carousel aria-labelledby="rituals-title">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 pb-4 border-b border-[#E8E2D7]">
           <div>
             <span class="text-xs font-semibold tracking-[0.2em] text-spa-taupe uppercase block">Productos especializados</span>
-            <h2 class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Rituales para continuar el bienestar en casa</h2>
+            <h2 id="rituals-title" class="font-editorial text-3xl sm:text-4xl text-spa-charcoal font-normal">Rituales para continuar el bienestar en casa</h2>
           </div>
-          <a href="/tienda" class="mt-4 sm:mt-0 text-xs font-semibold tracking-wider uppercase text-[#6E5C4E] hover:text-spa-charcoal border border-[#DDD5CA] px-4 py-2 rounded-full hover:bg-white transition-colors">
-            Ver catálogo
+          <a href="/tienda" class="home-section-link">Ver catálogo
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
           </a>
         </div>
-        <div data-stagger class="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {rituals.map((product) => <ProductCard product={product} href={`/producto/${product.slug}`} />)}
+        <div id="rituals-track" class="experiences-track" data-experiences-track tabindex="0" role="region" aria-label="Productos especializados">
+          {rituals.map((product) => (
+            <div class="experiences-slide">
+              <ProductCard product={product} href={`/producto/${product.slug}`} />
+            </div>
+          ))}
+        </div>
+        <div class="experiences-controls" data-experiences-controls hidden>
+          <span class="text-sm text-[#6E5C4E]" data-experiences-count aria-live="polite" aria-atomic="true">1 / {rituals.length}</span>
+          <div class="flex gap-2">
+            <button type="button" data-experiences-prev aria-label="Producto anterior" aria-controls="rituals-track" disabled>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
+            </button>
+            <button type="button" data-experiences-next aria-label="Producto siguiente" aria-controls="rituals-track">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg>
+            </button>
+          </div>
         </div>
       </section>
     )}
 
     <!-- 6. GIFT CARD BANNER -->
     <GiftCardBanner imageUrl={layoutResult.status === 'fulfilled' ? layoutResult.value.giftCardImageUrl : undefined} />
+
+    <Testimonials />
 
     <!-- 7. UBICACIÓN -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -444,18 +485,22 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
                 </p>
               </div>
             </div>
-            <div class="pt-4 border-t border-spa-sand flex flex-col sm:flex-row gap-3">
-              <a href={RESERVO_URL} target="_blank" rel="noopener" class="w-full bg-spa-taupe-dark hover:bg-[#5A4A3C] text-white py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-colors text-center">
+            <div class="home-location-actions pt-4 border-t border-spa-sand flex flex-wrap items-center gap-3">
+              <a href={RESERVO_URL} target="_blank" rel="noopener" class="inline-flex w-fit max-w-full min-h-12 items-center justify-center bg-spa-taupe-dark hover:bg-[#5A4A3C] text-white px-5 py-3 rounded-full text-sm font-medium transition-colors text-center">
                 Agendar ahora
               </a>
               <a
                 href={`https://wa.me/${SITE_INFO.whatsapp}`}
                 target="_blank"
                 rel="noreferrer"
-                class="w-full bg-spa-sand hover:bg-[#E5E0D5] text-spa-taupe-dark py-3 px-4 rounded-xl text-xs font-semibold tracking-wider uppercase transition-colors text-center flex items-center justify-center gap-2"
+                class="inline-flex w-fit max-w-full min-h-12 items-center justify-center gap-2 bg-spa-sand hover:bg-[#E5E0D5] text-spa-taupe-dark px-5 py-3 rounded-full text-sm font-medium transition-colors text-center"
               >
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.999 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.985-1.407A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.522 2 11.999 2zm0 18a7.96 7.96 0 0 1-4.076-1.115l-.292-.174-3.045.859.822-3.001-.19-.308A7.96 7.96 0 0 1 4 12c0-4.418 3.582-8 8-8 4.419 0 8 3.582 8 8s-3.581 8-7.999 8z"/></svg>
                 WhatsApp
+              </a>
+              <a href={wazeUrl} target="_blank" rel="noopener noreferrer" class="inline-flex w-fit max-w-full min-h-12 items-center justify-center gap-2 border border-[#C7B8A7] rounded-full px-5 py-3 text-sm font-medium text-spa-charcoal hover:bg-spa-sand transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-spa-taupe-dark">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 18-7-7 18-4-7-7-4Z" /><path d="m10 14 11-11" /></svg>
+                Abrir en Waze
               </a>
             </div>
           </div>
@@ -484,6 +529,52 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
       const id = Number(btn.dataset.addToCart);
       addToCart(id, 1);
     });
+  });
+</script>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-experiences-carousel]').forEach((experiences) => {
+    const track = experiences.querySelector<HTMLElement>('[data-experiences-track]')!;
+    const slides = Array.from(track.children) as HTMLElement[];
+    const previous = experiences.querySelector<HTMLButtonElement>('[data-experiences-prev]')!;
+    const next = experiences.querySelector<HTMLButtonElement>('[data-experiences-next]')!;
+    const counter = experiences.querySelector<HTMLElement>('[data-experiences-count]')!;
+    const controls = experiences.querySelector<HTMLElement>('[data-experiences-controls]')!;
+    const mobile = window.matchMedia('(max-width: 767px)');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let current = 0;
+    const slidePosition = (slide: HTMLElement) => slide.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft;
+    const update = () => {
+      controls.hidden = !mobile.matches || slides.length < 2;
+      track.tabIndex = mobile.matches ? 0 : -1;
+      if (!mobile.matches) return;
+      current = slides.reduce((nearest, slide, index) =>
+        Math.abs(slidePosition(slide) - track.scrollLeft) < Math.abs(slidePosition(slides[nearest]) - track.scrollLeft) ? index : nearest, 0);
+      // The final slide aligns to the end when there is no room to align its start.
+      if (track.scrollLeft > 0 && track.scrollLeft >= track.scrollWidth - track.clientWidth - 2) current = slides.length - 1;
+      previous.disabled = current === 0;
+      next.disabled = current === slides.length - 1;
+      const label = `${current + 1} / ${slides.length}`;
+      if (counter.textContent !== label) counter.textContent = label;
+    };
+    const goTo = (index: number) => {
+      if (!mobile.matches) return;
+      const target = slides[Math.max(0, Math.min(slides.length - 1, index))];
+      track.scrollTo({ left: slidePosition(target), behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+    };
+    previous.addEventListener('click', () => goTo(current - 1));
+    next.addEventListener('click', () => goTo(current + 1));
+    track.addEventListener('scroll', update, { passive: true });
+    track.addEventListener('keydown', (event) => {
+      if (event.target !== track || !mobile.matches) return;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        goTo(current + (event.key === 'ArrowRight' ? 1 : -1));
+      }
+    });
+    new ResizeObserver(update).observe(track);
+    mobile.addEventListener('change', update);
+    update();
   });
 </script>
 
@@ -583,9 +674,9 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
         if (startTs === null) startTs = ts;
         const delta = ts - startTs + elapsed;
         const progress = Math.min(delta / DURATION, 1);
-        if (progress > 0.5) loadSlide((current + 1) % slides.length);
         fill.style.transition = 'none';
         fill.style.transform  = `scaleY(${progress})`;
+        if (progress > 0.5) loadSlide((current + 1) % slides.length);
         if (progress < 1) {
           raf = requestAnimationFrame(tick);
         } else {
@@ -656,6 +747,64 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
 </script>
 
 <style>
+  .home-section-link {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    width: fit-content; max-width: 100%; min-height: 48px;
+    align-self: flex-start; flex-shrink: 0;
+    padding: 12px 24px; border: 1px solid #C7B8A7; border-radius: 999px;
+    color: #2C2724; font-size: 14px; font-weight: 500; line-height: 1.5;
+    transition: background-color 150ms ease;
+  }
+  .home-section-link:hover, .home-section-link:active { background: #EFECE4; }
+  .home-section-link:focus-visible, .home-location-actions a:focus-visible { outline: 2px solid #675647; outline-offset: 2px; }
+  [data-experiences-carousel] .home-section-link { margin-top: 16px; }
+  @media (min-width: 640px) { [data-experiences-carousel] .home-section-link { margin-top: 0; align-self: auto; } }
+  @media (prefers-reduced-motion: reduce) { .home-section-link { transition: none; } }
+  .specialty-links { display: flex; flex-wrap: wrap; gap: 10px; }
+  .specialty-links li { min-width: 0; max-width: 100%; }
+  .specialty-chip {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 44px; padding: 10px 16px;
+    border: 1px solid #C7B8A7; border-radius: 999px;
+    background: #FAF8F5; line-height: 1.4; overflow-wrap: anywhere;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .specialty-chip svg { display: none; }
+  .specialty-chip:hover, .specialty-chip:active { background: #E8DFD3; border-color: #A18E7E; }
+  .specialty-chip:focus-visible { outline: 2px solid #6E5C4E; outline-offset: 3px; }
+  @media (min-width: 768px) {
+    .specialty-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 32px; border-top: 1px solid #DDD3C6; }
+    .specialty-chip { justify-content: flex-start; gap: 12px; padding: 14px 0; border: 0; border-bottom: 1px solid #DDD3C6; border-radius: 0; background: transparent; }
+    .specialty-chip svg { display: block; }
+  }
+  @media (prefers-reduced-motion: reduce) { .specialty-chip { transition: none; } }
+  .experiences-track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 88%;
+    gap: 16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: thin;
+    scrollbar-color: #a18e7e #eee7dd;
+    padding: 4px 0 16px;
+  }
+  .experiences-slide { min-width: 0; scroll-snap-align: start; }
+  .experiences-slide :global(.product-card) { height: 100%; }
+  .experiences-controls:not([hidden]) { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .experiences-controls button {
+    display: flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px; border: 1px solid #DDD5CA;
+    border-radius: 50%; color: #2c2724;
+  }
+  .experiences-controls button:hover:not(:disabled), .experiences-controls button:active:not(:disabled) { background: #eee7dd; }
+  .experiences-controls button:disabled { opacity: .35; cursor: default; }
+  .experiences-controls button:focus-visible, .experiences-track:focus-visible { outline: 2px solid #6E5C4E; outline-offset: 2px; }
+  @media (min-width: 768px) {
+    .experiences-track { grid-auto-flow: row; grid-auto-columns: auto; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; overflow: visible; padding: 0; }
+    .experiences-controls:not([hidden]) { display: none; }
+  }
   .spa-location-map {
     filter: grayscale(1) sepia(.2) saturate(.65) contrast(.94);
   }
