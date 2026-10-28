@@ -58,7 +58,7 @@ const serviceImages: Record<string, { file: string; altText: string; position: s
   'Spa Day': { file: 'spa-day', altText: 'Rincón de relajación con butaca de lino, madera clara y una taza de infusión.', position: 'center' },
 };
 const families = (layoutResult.status === 'fulfilled' ? layoutResult.value.categoryGroups : [])
-  .filter((g) => g.label !== 'Promociones')
+  .filter((g) => g.label !== 'Promociones' && g.label !== 'Tienda')
   .map((group) => {
     const candidates = withImage.filter(
       (p) => p.productCategories.nodes.some((c) => groupOf(c.slug) === group.label) && !usedImages.has(p.image!.sourceUrl),

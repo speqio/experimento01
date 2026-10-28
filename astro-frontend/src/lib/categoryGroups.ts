@@ -9,7 +9,9 @@ export interface CategoryGroup {
 // mismas familias editoriales del sistema de diseño (Faciales, Corporales,
 // Masajes, Spa Day, Promociones). Los slugs vienen del catálogo real —
 // ver `productCategories` en WPGraphQL — no de una lista estática.
+const TIENDA_LABELS: Record<string, string> = { skincare: 'Skin care', bienestar: 'Bienestar', packs: 'Packs especiales' };
 const GROUP_MATCHERS: { label: string; test: (slug: string) => boolean }[] = [
+  { label: 'Tienda', test: (s) => s in TIENDA_LABELS },
   { label: 'Faciales', test: (s) => s.includes('facial') },
   { label: 'Corporales', test: (s) => s.includes('corporal') || s.includes('drenaje') || s.includes('espalda') },
   { label: 'Masajes', test: (s) => s.includes('masaje') },
@@ -22,6 +24,9 @@ export function groupOf(slug: string): string | undefined {
   return GROUP_MATCHERS.find((m) => m.test(slug))?.label;
 }
 
+// El CMS trae nombres en mayúsculas ("TRATAMIENTOS CORPORALES"); el menú los muestra con solo la primera letra en mayúscula.
+export const sentenceCase = (name: string) => name.charAt(0).toLocaleUpperCase('es') + name.slice(1).toLocaleLowerCase('es');
+
 export function groupCategories(categories: ProductCategory[]): CategoryGroup[] {
   const groups: CategoryGroup[] = GROUP_MATCHERS.map((m) => ({ label: m.label, items: [] }));
 
@@ -30,10 +35,10 @@ export function groupCategories(categories: ProductCategory[]): CategoryGroup[] 
     const matcher = GROUP_MATCHERS.find((m) => m.test(category.slug));
     if (!matcher) continue;
     const group = groups.find((g) => g.label === matcher.label)!;
-    group.items.push(category);
+    group.items.push({ ...category, name: TIENDA_LABELS[category.slug] ?? sentenceCase(category.name) });
   }
 
-  return groups.filter((g) => g.items.length > 0);
+  return groups.filter((g) => g.items.length > 0).sort((a, b) => Number(a.label === 'Tienda') - Number(b.label === 'Tienda'));
 }
 
 /** Landing pages for whole service families; never select an arbitrary subcategory. */
@@ -43,6 +48,7 @@ const GROUP_PATHS: Record<string, string> = {
   Masajes: '/masajes/',
   'Spa Day': '/spa-day/',
   Promociones: '/promociones/',
+  Tienda: '/tienda',
 };
 export function categoryGroupHref(label: string): string {
   return GROUP_PATHS[label] ?? '/tienda';

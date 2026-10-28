@@ -381,13 +381,6 @@ export default function Header({ currentPath, currentCategory, categoryGroups }:
                 Giftcards
               </a>
               <a
-                href="/sobre-nosotras"
-                onMouseEnter={() => setActiveGroup(null)}
-                className={`${navItemClass(currentPath === '/sobre-nosotras')} ${currentPath === '/sobre-nosotras' ? 'font-bold' : ''}`}
-              >
-                Sobre Nosotras
-              </a>
-              <a
                 href="/blog"
                 onMouseEnter={() => setActiveGroup(null)}
                 className={`${navItemClass(currentPath.startsWith('/blog'))} ${currentPath.startsWith('/blog') ? 'font-bold' : ''}`}
@@ -554,7 +547,7 @@ export default function Header({ currentPath, currentCategory, categoryGroups }:
                       <ChevronRight className="h-5 w-5 shrink-0" aria-hidden="true" />
                     </button>
                   ))}
-                  {[...NAV_LINKS, { label: 'Promociones', href: '/promociones' }, { label: 'Sobre Nosotras', href: '/sobre-nosotras' }, { label: 'Blog', href: '/blog' }, { label: 'Carrito', href: '/carrito' }].map((link) => (
+                  {[...NAV_LINKS, { label: 'Promociones', href: '/promociones' }, { label: 'Blog', href: '/blog' }, { label: 'Carrito', href: '/carrito' }].map((link) => (
                     <a key={link.href} href={link.href} aria-current={(link.href === '/gift-cards' ? isGiftCardsActive : currentPath === link.href || currentPath.startsWith(link.href + '/')) ? 'page' : undefined}>{link.label}</a>
                   ))}
                 </nav>

@@ -1,5 +1,6 @@
 ---
 import type { SimpleProduct } from '../../types/catalog';
+import { sentenceCase } from '../../lib/categoryGroups';
 import { getProductBadge, getProductDuration, extractDuration, hasAnyDiscount } from '../../lib/parse';
 
 interface Props {
@@ -52,7 +53,7 @@ const categories = Object.entries(catCount)
   .filter(([, v]) => v.count > 0)
   .sort((a, b) => b[1].count - a[1].count)
   .slice(0, 6)
-  .map(([slug, v]) => ({ slug, name: v.name }));
+  .map(([slug, v]) => ({ slug, name: sentenceCase(v.name) }));
 const showCategoryFilter = categories.length > 1;
 
 const hasAnyFilter = showAudienceFilter || showDurationFilter || showDiscountFilter || showCategoryFilter;
@@ -130,7 +131,7 @@ if (!hasAnyFilter) return;
   .filter-toggle:focus-visible, .filter-done:focus-visible, #filter-clear:focus-visible { outline: 2px solid #675647; outline-offset: 2px; }
   @media (max-width: 767px) {
     .filter-toggle { width: fit-content; }
-    .filter-options { flex-direction: column; flex-wrap: nowrap; gap: 20px; max-height: 48vh; max-height: 48dvh; overflow-y: auto; overscroll-behavior: contain; padding: 16px 4px; }
+    .filter-options { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 20px; padding: 16px 4px; }
     .filter-group { width: 100%; }
     .filter-group > span { width: 100%; font-size: 12px; letter-spacing: .04em; }
     .filter-options .filter-chip { min-height: 44px; padding: 10px 14px; font-size: 14px; letter-spacing: 0; text-align: left; }
@@ -252,6 +253,9 @@ if (!hasAnyFilter) return;
         });
 
         card.hidden = !matches;
+        // La animación de entrada (data-stagger) deja las tarjetas en opacity 0 hasta que pasan por pantalla;
+        // al filtrar suben a posiciones donde ya no se dispara, así que se muestran directo.
+        if (matches && groups.length) { card.style.opacity = '1'; card.style.transform = 'none'; }
         if (matches) visible++;
       }
 

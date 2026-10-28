@@ -41,7 +41,7 @@ const whatsappUrl = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompone
       <div class="footer-columns">
         <nav aria-labelledby="footer-explore">
           <h2 id="footer-explore">Explora</h2>
-          <ul>{tratamientos.map((t) => <li><a href={t.href}>{t.label}</a></li>)}</ul>
+          <ul>{tratamientos.map((t) => <li><a href={t.href}>{t.label}</a></li>)}<li><a href="/sobre-nosotras">Sobre nosotras</a></li></ul>
         </nav>
         <section aria-labelledby="footer-hours">
           <h2 id="footer-hours">Horario de atención</h2>
@@ -62,9 +62,8 @@ const whatsappUrl = `https://wa.me/${SITE_INFO.whatsapp}?text=${encodeURICompone
   </div>
 
   <div class="footer-bottom">
-    <p>&copy; {new Date().getFullYear()} {SITE_INFO.legalName}. Pagos procesados con Webpay Plus (Transbank).</p>
+    <p>&copy; {new Date().getFullYear()} {SITE_INFO.legalName}.</p>
     <nav aria-label="Información legal" class="footer-legal">
-      <a href="/sobre-nosotras">Sobre nosotras</a>
       <a href="/contacto/">Contacto</a>
       <a href="/politicas-de-la-empresa">Políticas de la empresa</a>
       <a href="/politicas-de-privacidad">Políticas de privacidad</a>
