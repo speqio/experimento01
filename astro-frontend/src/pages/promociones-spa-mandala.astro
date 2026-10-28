@@ -103,7 +103,7 @@ const breadcrumbs = [{ name: 'Promociones Spa Mandala', path: '/promociones-spa-
           <h2 class="flex items-center gap-4 text-xs font-bold tracking-[0.25em] uppercase text-spa-taupe mb-8 before:flex-1 before:h-px before:bg-[#E8E2D7] after:flex-1 after:h-px after:bg-[#E8E2D7]">{s.title}</h2>
         )}
         <div data-carousel-root>
-          <div data-carousel tabindex="0" aria-label={s.title} class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
+          <div data-carousel tabindex="0" aria-label={s.title} class="carousel-fade flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth overscroll-x-contain pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [-webkit-overflow-scrolling:touch]">
             {s.products.map((p) => (
               <div class="snap-start shrink-0 w-[85%] sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)]">
                 <ProductCard product={p} href={`/producto/${p.slug}`} />
@@ -112,7 +112,7 @@ const breadcrumbs = [{ name: 'Promociones Spa Mandala', path: '/promociones-spa-
           </div>
           <div data-carousel-nav class="hidden items-center justify-center gap-4 mt-6">
             <button type="button" data-carousel-prev aria-label={`Anterior en ${s.title}`} class="w-11 h-11 rounded-full border border-spa-charcoal text-spa-charcoal text-xl hover:bg-spa-charcoal hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none">‹</button>
-            <div data-carousel-dots class="flex gap-2"></div>
+            <div data-carousel-dots class="carousel-dots"></div>
             <button type="button" data-carousel-next aria-label={`Siguiente en ${s.title}`} class="w-11 h-11 rounded-full border border-spa-charcoal text-spa-charcoal text-xl hover:bg-spa-charcoal hover:text-white transition-colors disabled:opacity-30 disabled:pointer-events-none">›</button>
           </div>
         </div>
@@ -123,6 +123,7 @@ const breadcrumbs = [{ name: 'Promociones Spa Mandala', path: '/promociones-spa-
 
 <script>
   import { addToCart } from '../store/cartStore';
+  import { paginate, syncFade } from '../lib/carouselDots';
   document.querySelectorAll<HTMLButtonElement>('[data-add-to-cart]').forEach((btn) => {
     btn.addEventListener('click', () => addToCart(Number(btn.dataset.addToCart), 1));
   });
@@ -145,21 +146,8 @@ const breadcrumbs = [{ name: 'Promociones Spa Mandala', path: '/promociones-spa-
       const n = pages();
       nav.classList.toggle('hidden', n < 2);
       nav.classList.toggle('flex', n > 1);
-      if (dots.childElementCount !== n) {
-        dots.replaceChildren(...Array.from({ length: n }, (_, i) => {
-          const d = document.createElement('button');
-          d.type = 'button';
-          d.setAttribute('aria-label', `Ir a la página ${i + 1}`);
-          d.className = 'h-2 rounded-full bg-spa-charcoal transition-all duration-300';
-          d.addEventListener('click', () => go(i));
-          return d;
-        }));
-      }
-      const c = current();
-      [...dots.children].forEach((d, i) => {
-        (d as HTMLElement).style.width = i === c ? '24px' : '8px';
-        (d as HTMLElement).style.opacity = i === c ? '1' : '0.25';
-      });
+      paginate(dots, n, current(), go);
+      syncFade(track);
       prev.disabled = track.scrollLeft < 4;
       next.disabled = track.scrollLeft > track.scrollWidth - track.clientWidth - 4;
     };

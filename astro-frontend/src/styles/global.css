@@ -200,3 +200,23 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .mobile-navigation[open], .mobile-navigation-subpanel:not([hidden]) { animation: none; }
 }
+
+/* Paginación de carruseles (src/lib/carouselDots.ts): mismo lenguaje que los puntos del hero, en horizontal. */
+.carousel-dots { display: flex; align-items: center; justify-content: center; }
+.carousel-dots[hidden], .carousel-dot[hidden] { display: none; }
+.carousel-dot { display: flex; align-items: center; justify-content: center; width: 24px; height: 44px; border-radius: 9999px; transition: width .5s; }
+.carousel-dot[aria-current="true"] { width: 52px; }
+.carousel-dot span { display: block; width: 6px; height: 6px; border-radius: 9999px; background: rgb(61 53 48 / .3); transition: width .5s, height .5s, background-color .5s; }
+.carousel-dot:hover span { background: rgb(61 53 48 / .6); }
+.carousel-dot[aria-current="true"] span { width: 40px; background: #3D3530; }
+.carousel-dot[data-edge] span { width: 4px; height: 4px; }
+.carousel-dot:focus-visible { outline: 2px solid #675647; outline-offset: -6px; }
+
+/* Difuminado lateral de carruseles: el borde con más contenido se funde con el fondo. */
+.carousel-fade { --fade-start: 0px; --fade-end: 0px; -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent); mask-image: linear-gradient(to right, transparent, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent); }
+.carousel-fade[data-more-start] { --fade-start: 40px; }
+.carousel-fade[data-more-end] { --fade-end: 40px; }
+@media (prefers-reduced-motion: reduce) { .carousel-dot, .carousel-dot span { transition: none; } }
+/* Los puntos reemplazan la barra de desplazamiento: se oculta, pero se sigue deslizando con dedo, trackpad y teclado. */
+.carousel-fade { scrollbar-width: none; }
+.carousel-fade::-webkit-scrollbar { display: none; }

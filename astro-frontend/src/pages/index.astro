@@ -407,7 +407,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
           </a>
         </div>
-        <div id="experiences-track" class="experiences-track" data-experiences-track tabindex="0" role="region" aria-label="Experiencias destacadas">
+        <div id="experiences-track" class="experiences-track carousel-fade" data-experiences-track tabindex="0" role="region" aria-label="Experiencias destacadas">
           {featured.map((product) => (
             <div class="experiences-slide">
               <ProductCard product={product} href={`/producto/${product.slug}`} />
@@ -415,7 +415,8 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
           ))}
         </div>
         <div class="experiences-controls" data-experiences-controls hidden>
-          <span class="text-sm text-[#6E5C4E]" data-experiences-count aria-live="polite" aria-atomic="true">1 / {featured.length}</span>
+          <span class="sr-only" data-experiences-count aria-live="polite" aria-atomic="true">1 / {featured.length}</span>
+          <div class="carousel-dots" data-carousel-dots></div>
           <div class="flex gap-2">
             <button type="button" data-experiences-prev aria-label="Experiencia anterior" aria-controls="experiences-track" disabled>
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
@@ -443,7 +444,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
           </a>
         </div>
-        <div id="rituals-track" class="experiences-track" data-experiences-track tabindex="0" role="region" aria-label="Productos especializados">
+        <div id="rituals-track" class="experiences-track carousel-fade" data-experiences-track tabindex="0" role="region" aria-label="Productos especializados">
           {rituals.map((product) => (
             <div class="experiences-slide">
               <ProductCard product={product} href={`/producto/${product.slug}`} />
@@ -451,7 +452,8 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
           ))}
         </div>
         <div class="experiences-controls" data-experiences-controls hidden>
-          <span class="text-sm text-[#6E5C4E]" data-experiences-count aria-live="polite" aria-atomic="true">1 / {rituals.length}</span>
+          <span class="sr-only" data-experiences-count aria-live="polite" aria-atomic="true">1 / {rituals.length}</span>
+          <div class="carousel-dots" data-carousel-dots></div>
           <div class="flex gap-2">
             <button type="button" data-experiences-prev aria-label="Producto anterior" aria-controls="rituals-track" disabled>
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
@@ -533,6 +535,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
 </script>
 
 <script>
+  import { paginate, syncFade } from '../lib/carouselDots';
   document.querySelectorAll<HTMLElement>('[data-experiences-carousel]').forEach((experiences) => {
     const track = experiences.querySelector<HTMLElement>('[data-experiences-track]')!;
     const slides = Array.from(track.children) as HTMLElement[];
@@ -540,6 +543,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
     const next = experiences.querySelector<HTMLButtonElement>('[data-experiences-next]')!;
     const counter = experiences.querySelector<HTMLElement>('[data-experiences-count]')!;
     const controls = experiences.querySelector<HTMLElement>('[data-experiences-controls]')!;
+    const dots = experiences.querySelector<HTMLElement>('[data-carousel-dots]')!;
     const mobile = window.matchMedia('(max-width: 767px)');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let current = 0;
@@ -547,6 +551,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
     const update = () => {
       controls.hidden = !mobile.matches || slides.length < 2;
       track.tabIndex = mobile.matches ? 0 : -1;
+      syncFade(track);
       if (!mobile.matches) return;
       current = slides.reduce((nearest, slide, index) =>
         Math.abs(slidePosition(slide) - track.scrollLeft) < Math.abs(slidePosition(slides[nearest]) - track.scrollLeft) ? index : nearest, 0);
@@ -556,6 +561,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
       next.disabled = current === slides.length - 1;
       const label = `${current + 1} / ${slides.length}`;
       if (counter.textContent !== label) counter.textContent = label;
+      paginate(dots, slides.length, current, goTo);
     };
     const goTo = (index: number) => {
       if (!mobile.matches) return;
@@ -785,9 +791,7 @@ const isExternal = (href: string) => /^https?:\/\//.test(href);
     gap: 16px;
     overflow-x: auto;
     overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: thin;
-    scrollbar-color: #a18e7e #eee7dd;
+    scroll-snap-type: x mandatory;
     padding: 4px 0 16px;
   }
   .experiences-slide { min-width: 0; scroll-snap-align: start; }

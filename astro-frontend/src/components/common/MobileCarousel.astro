@@ -8,11 +8,12 @@ interface Props {
 const { id, label, count, desktopClasses } = Astro.props;
 ---
 <div class="mobile-carousel" data-mobile-carousel>
-  <div id={id} class:list={['mobile-carousel-track', desktopClasses]} data-mobile-carousel-track role="region" aria-label={label} tabindex="0">
+  <div id={id} class:list={['mobile-carousel-track carousel-fade', desktopClasses]} data-mobile-carousel-track role="region" aria-label={label} tabindex="0">
     <slot />
   </div>
   <div class="mobile-carousel-controls" data-mobile-carousel-controls hidden>
-    <span data-mobile-carousel-position aria-live="polite" aria-atomic="true">1 / {count}</span>
+    <span class="sr-only" data-mobile-carousel-position aria-live="polite" aria-atomic="true">1 / {count}</span>
+    <div class="carousel-dots" data-carousel-dots></div>
     <div class="mobile-carousel-arrows">
       <button type="button" data-mobile-carousel-prev aria-label={`Anterior en ${label}`} aria-controls={id} disabled>
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg>
@@ -34,7 +35,7 @@ const { id, label, count, desktopClasses } = Astro.props;
       overflow-x: auto; overscroll-behavior-x: contain;
       scroll-snap-type: x mandatory; scroll-padding-inline: 4px;
       padding: 4px 4px 16px;
-      scrollbar-width: thin; scrollbar-color: #B8A591 transparent;
+     
     }
     .mobile-carousel-track > :global(*) { min-width: 0; scroll-snap-align: start; }
     .mobile-carousel-track > :global([data-product-grid]) { display: contents; }
@@ -53,6 +54,7 @@ const { id, label, count, desktopClasses } = Astro.props;
 </style>
 
 <script>
+  import { paginate, syncFade } from '../../lib/carouselDots';
   document.querySelectorAll<HTMLElement>('[data-mobile-carousel]').forEach((carousel) => {
     const track = carousel.querySelector<HTMLElement>('[data-mobile-carousel-track]')!;
     const slideContainer = track.querySelector<HTMLElement>(':scope > [data-product-grid]') ?? track;
@@ -62,6 +64,7 @@ const { id, label, count, desktopClasses } = Astro.props;
     const next = carousel.querySelector<HTMLButtonElement>('[data-mobile-carousel-next]')!;
     const position = carousel.querySelector<HTMLElement>('[data-mobile-carousel-position]')!;
     const controls = carousel.querySelector<HTMLElement>('[data-mobile-carousel-controls]')!;
+    const dots = carousel.querySelector<HTMLElement>('[data-carousel-dots]')!;
     const mobile = window.matchMedia('(max-width: 767px)');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let current = 0;
@@ -73,6 +76,7 @@ const { id, label, count, desktopClasses } = Astro.props;
       controls.hidden = !mobile.matches || slides.length < 2;
       track.tabIndex = mobile.matches ? 0 : -1;
       if (!slides.length) { position.textContent = '0 / 0'; return; }
+      syncFade(track);
       if (!mobile.matches) return;
       current = slides.reduce((nearest, slide, index) => Math.abs(offset(slide) - track.scrollLeft) < Math.abs(offset(slides[nearest]) - track.scrollLeft) ? index : nearest, 0);
       if (track.scrollLeft > 0 && track.scrollLeft >= track.scrollWidth - track.clientWidth - 2) current = slides.length - 1;
@@ -80,6 +84,7 @@ const { id, label, count, desktopClasses } = Astro.props;
       next.disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 2;
       const label = `${current + 1} / ${slides.length}`;
       if (position.textContent !== label) position.textContent = label;
+      paginate(dots, slides.length, current, goTo);
     };
     const goTo = (index: number) => {
       if (!mobile.matches || !slides.length) return;
