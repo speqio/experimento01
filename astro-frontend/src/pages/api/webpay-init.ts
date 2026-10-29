@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Total $0 (ej. gift card canjeada al 100%): Transbank no acepta monto 0.
     if (order.total <= 0) {
       await updateOrderStatus(env, order.id, 'processing');
-      return json({ free: true, redirect: `${env.PUBLIC_SITE_URL}/checkout/confirmacion?status=success&order=${order.id}` });
+      return json({ free: true, redirect: `${env.PUBLIC_SITE_URL}/checkout/confirmacion?status=success&order=${order.id}&key=${encodeURIComponent(order.key)}` });
     }
 
     const response = await webpayCreate(env, {

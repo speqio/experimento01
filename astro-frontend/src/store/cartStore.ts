@@ -175,3 +175,47 @@ export async function applyGiftCardBalance(code: string) {
     isCartLoading.set(false);
   }
 }
+
+// WooCommerce vacía el carrito al crear el pedido, antes de que Webpay confirme el pago.
+// Se guarda una copia antes de pagar y se repone si el pago falla o se anula (checkout/confirmacion).
+const SNAPSHOT_KEY = 'cart-snapshot';
+const CART_SNAPSHOT = /* GraphQL */ `
+  query CartSnapshot {
+    cart { contents { nodes { quantity product { node { databaseId } } variation { node { databaseId } } extraData { key value } } } }
+  }
+`;
+type SnapshotLine = { productId: number; variationId?: number; quantity: number; extra: Record<string, unknown> | null };
+
+export async function saveCartSnapshot() {
+  const data = await wpQuery<{ cart: any }>({ query: CART_SNAPSHOT });
+  const lines: SnapshotLine[] = (data.cart?.contents?.nodes ?? []).map((n: any) => ({
+    productId: n.product?.node?.databaseId,
+    variationId: n.variation?.node?.databaseId ?? undefined,
+    quantity: n.quantity,
+    extra: n.extraData?.length
+      ? Object.fromEntries(n.extraData.map((d: { key: string; value: string }) => {
+          try { return [d.key, JSON.parse(d.value)]; } catch { return [d.key, d.value]; }
+        }))
+      : null,
+  }));
+  localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(lines));
+}
+
+// ponytail: los datos del regalo se reconstruyen desde extraData de WooGraphQL; si el plugin de gift cards
+// guarda claves internas distintas a las que recibe, revisar aquí al probar un pago rechazado con regalo.
+export async function restoreCartSnapshot() {
+  const raw = localStorage.getItem(SNAPSHOT_KEY);
+  if (!raw) return;
+  if ((await fetchCart()).itemCount > 0) return localStorage.removeItem(SNAPSHOT_KEY);
+  for (const l of JSON.parse(raw) as SnapshotLine[]) {
+    if (l.extra) {
+      for (let i = 0; i < l.quantity; i++) {
+        await wpQuery({ query: ADD_GIFTCARD_TO_CART, variables: { productId: l.productId, extraData: JSON.stringify(l.extra), variationId: l.variationId } });
+      }
+    } else {
+      await wpQuery({ query: ADD_TO_CART, variables: { productId: l.productId, quantity: l.quantity, variationId: l.variationId } });
+    }
+  }
+  localStorage.removeItem(SNAPSHOT_KEY);
+  await fetchCart();
+}

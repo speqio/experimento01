@@ -8,7 +8,7 @@ const CHECKOUT_MUTATION = /* GraphQL */ `
   mutation Checkout($input: CheckoutInput!) {
     checkout(input: $input) {
       result
-      order { databaseId total(format: RAW) }
+      order { databaseId orderKey total(format: RAW) }
     }
   }
 `;
@@ -16,6 +16,7 @@ const CHECKOUT_MUTATION = /* GraphQL */ `
 export interface CreatedOrder {
   id: number;
   total: number;
+  key: string; // order_key de WooCommerce: prueba de que quien ve la confirmación hizo el pedido
 }
 
 function graphqlUrl(env: Env) {
@@ -111,7 +112,7 @@ export async function createOrderFromCart(
   });
   const order = json?.data?.checkout?.order;
   if (!order) throw new Error(json?.errors?.[0]?.message ?? 'No se pudo crear la orden');
-  return { id: order.databaseId, total: Math.round(Number(order.total)) };
+  return { id: order.databaseId, total: Math.round(Number(order.total)), key: order.orderKey };
 }
 
 /** Adjunta meta_data a una orden vía REST (ej. `_mandala_attribution`, ver lib/attribution.ts). */
@@ -141,7 +142,7 @@ export async function setOrderMeta(env: Env, orderId: number, meta: Record<strin
  * Transbank pide validar igual el monto en el commit, por si el flujo cambia
  * o esta función se reutiliza en otro contexto.
  */
-export async function getOrderTotal(env: Env, orderId: number): Promise<number> {
+export async function getOrderState(env: Env, orderId: number): Promise<{ total: number; status: string; key: string }> {
   const origin = new URL(graphqlUrl(env)).origin;
   const auth = btoa(`${env.WC_REST_KEY}:${env.WC_REST_SECRET}`);
   const res = await fetch(wpRestUrl(origin, `/wc/v3/orders/${orderId}`), {
@@ -149,7 +150,7 @@ export async function getOrderTotal(env: Env, orderId: number): Promise<number> 
   });
   if (!res.ok) throw new Error(`REST ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  return Math.round(Number(data.total));
+  return { total: Math.round(Number(data.total)), status: data.status, key: data.order_key };
 }
 
 export interface OrderForAnalytics {
@@ -157,6 +158,8 @@ export interface OrderForAnalytics {
   value: number;
   items: { item_id: string; item_name: string; price: number; quantity: number; item_variant: string; item_category: string; item_category2: string }[];
   purchaseType: 'product' | 'gift' | 'product_upsell' | 'gift_upsell';
+  status: string;
+  key: string;
 }
 
 /** Datos de una orden pagada para el evento `purchase` de GTM (ver pages/checkout/confirmacion.astro). */
@@ -188,6 +191,8 @@ export async function getOrderForAnalytics(env: Env, orderId: number): Promise<O
       };
     }),
     purchaseType: mandala.purchase_type,
+    status: data.status,
+    key: data.order_key,
   };
 }
 

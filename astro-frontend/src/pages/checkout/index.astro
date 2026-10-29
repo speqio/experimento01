@@ -134,11 +134,13 @@ const bodyClass = 'px-5 sm:px-6 pb-6 space-y-4';
   import type { CheckoutInput } from '../../types/checkout';
   import type { WebpayInitResponse } from '../../types/checkout';
   import { getAttribution } from '../../lib/attribution';
-  import { cartSummary, fetchCart } from '../../store/cartStore';
+  import { cartSummary, fetchCart, saveCartSnapshot } from '../../store/cartStore';
   import { clp, cartLinesToItems, pushEcommerce } from '../../lib/dataLayer';
   import { REGIONES } from '../../lib/comunas';
 
   fetchCart().then((s) => {
+    // Sin productos no hay nada que pagar: de vuelta al carrito, que muestra su estado vacío.
+    if (!s.itemCount) return window.location.replace('/carrito');
     const items = cartLinesToItems(s.items);
     if (items.length) pushEcommerce('begin_checkout', { value: clp(s.total), items });
   }).catch(() => {});
@@ -245,19 +247,24 @@ const bodyClass = 'px-5 sm:px-6 pb-6 space-y-4';
 
     // Cada envío crea un pedido: se bloquea el botón para evitar duplicados.
     payBtn.disabled = true;
-    const session = localStorage.getItem('woo-session');
-    const res = await fetch('/api/webpay-init', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(session ? { 'woocommerce-session': `Session ${session}` } : {}),
-      },
-      body: JSON.stringify(input),
-    });
-    const data: WebpayInitResponse = await res.json();
-    if (data.error || !res.ok) {
+    let data: WebpayInitResponse;
+    try {
+      await saveCartSnapshot().catch(() => {});
+      const session = localStorage.getItem('woo-session');
+      const res = await fetch('/api/webpay-init', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session ? { 'woocommerce-session': `Session ${session}` } : {}),
+        },
+        body: JSON.stringify(input),
+      });
+      data = await res.json().catch(() => ({ error: 'No se pudo iniciar el pago' }));
+      if (data.error || !res.ok) throw new Error(data.error ?? 'No se pudo iniciar el pago');
+    } catch (err) {
+      // Error de red o del servidor: el botón vuelve a quedar disponible para reintentar.
       payBtn.disabled = false;
-      return alert(data.error ?? 'No se pudo iniciar el pago');
+      return alert(err instanceof TypeError ? 'Sin conexión. Revisa tu internet e inténtalo de nuevo.' : (err as Error).message);
     }
     if (data.free && data.redirect) return void (window.location.href = data.redirect);
     const { token, url } = data as { token: string; url: string };

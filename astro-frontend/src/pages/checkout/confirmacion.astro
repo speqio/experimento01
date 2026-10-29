@@ -6,16 +6,19 @@ import ECommerceLayout from '../../layouts/ECommerceLayout.astro';
 import { getOrderForAnalytics } from '../../lib/woo-server';
 
 const orderId = Astro.url.searchParams.get('order');
-const status = Astro.url.searchParams.get('status') ?? 'unknown';
-const success = status === 'success';
-
+const key = Astro.url.searchParams.get('key');
 const env = { ...import.meta.env, ...process.env, ...((Astro.locals as any).runtime?.env ?? {}) } as Record<string, string | undefined>;
-const purchase = success && orderId
+// El ID se adivina; el order_key no: sin él la URL no confirma ni muestra ningún pedido.
+const order = orderId && key
   ? await getOrderForAnalytics(env, Number(orderId)).catch((e) => {
-      console.error(`confirmacion: no se pudo leer la orden #${orderId} para medición: ${(e as Error).message}`);
+      console.error(`confirmacion: no se pudo leer la orden #${orderId}: ${(e as Error).message}`);
       return null;
     })
   : null;
+const success = Astro.url.searchParams.get('status') === 'success' && !!order && order.key === key
+  && (order.status === 'processing' || order.status === 'completed');
+// Al navegador solo van los datos de medición, nunca el order_key ni el estado.
+const purchase = success && order ? (({ key: _k, status: _s, ...rest }) => rest)(order) : null;
 ---
 <ECommerceLayout title="Confirmación de compra">
   <div class="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
@@ -28,7 +31,7 @@ const purchase = success && orderId
     {success ? (
       <div>
         <h1 class="font-editorial text-3xl font-light text-spa-charcoal mb-3">¡Gracias por tu compra!</h1>
-        <p class="text-spa-taupe">Tu pedido {orderId ? `#${orderId}` : ''} fue confirmado. Te enviaremos los detalles por correo.</p>
+        <p class="text-spa-taupe">Tu pedido #{orderId} fue confirmado. Te enviaremos los detalles por correo.</p>
         <a
           href="/tienda"
           class="inline-block mt-8 bg-spa-charcoal hover:bg-[#433B36] text-white px-8 py-3.5 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition-all duration-300"
@@ -51,6 +54,7 @@ const purchase = success && orderId
 
 <script>
   import { pushEcommerce } from '../../lib/dataLayer';
+  import { restoreCartSnapshot } from '../../store/cartStore';
 
   const purchase: {
     transactionId: string;
@@ -69,4 +73,8 @@ const purchase = success && orderId
     );
     sessionStorage.setItem(key, '1');
   }
+
+  // Pago confirmado: se descarta la copia del carrito. Si no, se repone para reintentar.
+  if (purchase) localStorage.removeItem('cart-snapshot');
+  else restoreCartSnapshot().catch(() => {});
 </script>
