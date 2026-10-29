@@ -279,149 +279,6 @@ function mandala_gift_create_coupon($product_ids, $gift, $order_id) {
     return $coupon->get_id() ? $code : null;
 }
 
-/**
- * Convierte la foto que subió el comprador en una única imagen ya compuesta como
- * "tarjeta de regalo" (recortada al mismo aspecto que el mockup 3D del sitio,
- * esquinas redondeadas y logo superpuesto), en vez de dejar que el correo intente
- * lograr ese efecto con CSS (position:absolute/border-radius, que la mayoría de
- * clientes de correo ignora y muestra la foto suelta). Se guarda como un adjunto
- * nuevo en la Biblioteca de Medios; si algo falla (GD no disponible, descarga
- * fallida), retorna la URL original sin componer.
- */
-function mandala_gift_compose_card_image($photo_url) {
-    if (!function_exists('imagecreatetruecolor')) return $photo_url;
-
-    $attachment_id = attachment_url_to_postid($photo_url);
-    $path = $attachment_id ? get_attached_file($attachment_id) : null;
-    if (!$path || !file_exists($path)) {
-        if (!function_exists('download_url')) require_once ABSPATH . 'wp-admin/includes/file.php';
-        $tmp = download_url($photo_url);
-        $path = is_wp_error($tmp) ? null : $tmp;
-    }
-    if (!$path) return $photo_url;
-
-    $info = @getimagesize($path);
-    $src = null;
-    if ($info) {
-        if ($info['mime'] === 'image/jpeg') $src = @imagecreatefromjpeg($path);
-        elseif ($info['mime'] === 'image/png') $src = @imagecreatefrompng($path);
-        elseif ($info['mime'] === 'image/webp' && function_exists('imagecreatefromwebp')) $src = @imagecreatefromwebp($path);
-    }
-    if (!$src) return $photo_url;
-
-    $sw = imagesx($src);
-    $sh = imagesy($src);
-    $target_w = 1200;
-    $ratio = 1748 / 1240; // mismo aspecto que GiftCardPreview.tsx en el sitio
-    $target_h = (int) round($target_w / $ratio);
-
-    // Recorte centrado al aspecto de la tarjeta (evita deformar la foto).
-    if (($sw / $sh) > $ratio) {
-        $crop_h = $sh;
-        $crop_w = (int) round($sh * $ratio);
-        $crop_x = (int) round(($sw - $crop_w) / 2);
-        $crop_y = 0;
-    } else {
-        $crop_w = $sw;
-        $crop_h = (int) round($sw / $ratio);
-        $crop_x = 0;
-        $crop_y = (int) round(($sh - $crop_h) / 2);
-    }
-
-    $card = imagecreatetruecolor($target_w, $target_h);
-    imagealphablending($card, false);
-    imagesavealpha($card, true);
-    $transparent = imagecolorallocatealpha($card, 0, 0, 0, 127);
-    imagefill($card, 0, 0, $transparent);
-    imagecopyresampled($card, $src, 0, 0, $crop_x, $crop_y, $target_w, $target_h, $crop_w, $crop_h);
-    imagedestroy($src);
-
-    // Esquinas redondeadas: solo recorre los 4 cuadrados de esquina (barato), no toda la imagen.
-    $radius = (int) round($target_w * 0.045);
-    $corners = [[0, 0], [1, 0], [0, 1], [1, 1]];
-    foreach ($corners as [$right, $bottom]) {
-        $ox = $right ? ($target_w - $radius) : $radius;
-        $oy = $bottom ? ($target_h - $radius) : $radius;
-        for ($x = 0; $x < $radius; $x++) {
-            for ($y = 0; $y < $radius; $y++) {
-                $px = $right ? ($target_w - 1 - $x) : $x;
-                $py = $bottom ? ($target_h - 1 - $y) : $y;
-                $dx = $px - $ox;
-                $dy = $py - $oy;
-                if (($dx * $dx + $dy * $dy) > ($radius * $radius)) {
-                    imagesetpixel($card, $px, $py, $transparent);
-                }
-            }
-        }
-    }
-
-    // Logo superpuesto (esquina inferior derecha) sobre una placa oscura translúcida,
-    // igual que en el mockup del sitio.
-    $logo_path = __DIR__ . '/assets/gift-card-logo.png';
-    if (file_exists($logo_path) && ($logo = @imagecreatefrompng($logo_path))) {
-        $logo_w = (int) round($target_w * 0.26);
-        $lw = imagesx($logo);
-        $lh = imagesy($logo);
-        $logo_h = (int) round($lh * ($logo_w / $lw));
-
-        // Redimensiona el logo en su propio lienzo con alphablending apagado —
-        // hacerlo directo sobre $card con blending encendido produce un "fantasma"
-        // duplicado en los bordes semi-transparentes (bug conocido de GD al
-        // remuestrear PNGs con alpha con blending activo).
-        $logo_resized = imagecreatetruecolor($logo_w, $logo_h);
-        imagealphablending($logo_resized, false);
-        imagesavealpha($logo_resized, true);
-        $logo_transparent = imagecolorallocatealpha($logo_resized, 0, 0, 0, 127);
-        imagefill($logo_resized, 0, 0, $logo_transparent);
-        imagecopyresampled($logo_resized, $logo, 0, 0, 0, 0, $logo_w, $logo_h, $lw, $lh);
-        imagedestroy($logo);
-
-        $margin = (int) round($target_w * 0.035);
-        $logo_x = $target_w - $margin - $logo_w;
-        $logo_y = $target_h - $margin - $logo_h;
-
-        imagealphablending($card, true);
-        // imagecopy (no resampled) preserva el alpha ya resuelto arriba sin volver a interpolar.
-        imagecopy($card, $logo_resized, $logo_x, $logo_y, 0, 0, $logo_w, $logo_h);
-        imagedestroy($logo_resized);
-    }
-
-    $upload = wp_upload_dir();
-    $filename = 'gift-card-mockup-' . uniqid() . '.png';
-    $filepath = trailingslashit($upload['path']) . $filename;
-    if (!imagepng($card, $filepath, 6)) {
-        imagedestroy($card);
-        return $photo_url;
-    }
-    imagedestroy($card);
-
-    $filetype = wp_check_filetype($filename, null);
-    $attachment_id = wp_insert_attachment([
-        'post_mime_type' => $filetype['type'],
-        'post_title'     => 'Gift card personalizada',
-        'post_status'    => 'inherit',
-    ], $filepath);
-    if (is_wp_error($attachment_id) || !$attachment_id) return $photo_url;
-
-    if (!function_exists('wp_generate_attachment_metadata')) require_once ABSPATH . 'wp-admin/includes/image.php';
-    wp_update_attachment_metadata($attachment_id, wp_generate_attachment_metadata($attachment_id, $filepath));
-    return wp_get_attachment_url($attachment_id);
-}
-
-/**
- * Guarda en los ítems el ID de la imagen compuesta, para poder borrarla junto con la gift card
- * (ver mandala-cleanup.php). No lo hace si la composición falló y se devolvió la URL original.
- */
-function mandala_gift_remember_mockup($items, $composed_url, $original_url) {
-    if (!$composed_url || $composed_url === $original_url) return;
-    $mockup_id = (int) attachment_url_to_postid($composed_url);
-    if (!$mockup_id) return;
-    foreach ((array) $items as $it) {
-        $it->add_meta_data('_mandala_gift_mockup_id', $mockup_id); // no único: un envío programado compone dos veces
-        $it->save();
-    }
-}
-
 /** $items: uno o más order items del mismo grupo (producto principal + complementos, si los hay). */
 function mandala_gift_send_email($code, $gift, $items, $order) {
     $items = (array) $items;
@@ -453,13 +310,8 @@ function mandala_gift_send_email($code, $gift, $items, $order) {
 
     $from_name = trim($order->get_billing_first_name());
 
-    // Se compone UNA sola vez y se reusa para el correo del destinatario y la
-    // copia del comprador — así se ve igual en ambos y no se duplica el trabajo.
+    // La foto del comprador ya llega compuesta como tarjeta (composeCard en GiftCardModal.tsx).
     $personal_image = $gift['personalImage'] ?? '';
-    if ($personal_image) {
-        $personal_image = mandala_gift_compose_card_image($personal_image);
-        mandala_gift_remember_mockup($items, $personal_image, $gift['personalImage']);
-    }
 
     $data = [
         'code'            => $code,
@@ -519,11 +371,6 @@ function mandala_gift_send_scheduled_confirmation($gift, $item, $order) {
     // quedaron guardados — así ve que su compra se registró completa, aunque el código
     // todavía no se emite (eso llega en el siguiente correo, el día del envío).
     $personal_image = $gift['personalImage'] ?? '';
-    if ($personal_image) {
-        $composed = mandala_gift_compose_card_image($personal_image);
-        mandala_gift_remember_mockup([$item], $composed, $personal_image);
-        $personal_image = $composed;
-    }
 
     $data = array_merge(mandala_gift_item_display_data($item), [
         'summary'         => $gift['summary'] ?? '',

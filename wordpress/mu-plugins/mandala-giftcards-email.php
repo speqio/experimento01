@@ -18,8 +18,10 @@ if (!defined('MANDALA_FRONTEND_URL')) define('MANDALA_FRONTEND_URL', 'https://la
 // Contacto para reservar "a mano" (teléfono/WhatsApp/correo) — ver mandala_gift_email_html()
 // sección "Cómo canjear". El canje manual lo confirma el administrador desde
 // wp-admin → Gift Cards → Trazabilidad ("Marcar como usado").
-if (!defined('MANDALA_CONTACT_PHONE')) define('MANDALA_CONTACT_PHONE', '+56 9 9224 2180');
-if (!defined('MANDALA_CONTACT_WHATSAPP')) define('MANDALA_CONTACT_WHATSAPP', '56992242180');
+// ponytail: número de prueba (igual que TEST_WHATSAPP en GiftCardRedeemModal.tsx) — al terminar la prueba
+// volver a '+56 9 9224 2180' y '56992242180'.
+if (!defined('MANDALA_CONTACT_PHONE')) define('MANDALA_CONTACT_PHONE', '+56 9 6185 3899');
+if (!defined('MANDALA_CONTACT_WHATSAPP')) define('MANDALA_CONTACT_WHATSAPP', '56961853899');
 if (!defined('MANDALA_CONTACT_EMAIL')) define('MANDALA_CONTACT_EMAIL', 'contacto@spamandala.cl');
 
 /**
@@ -32,7 +34,6 @@ if (!defined('MANDALA_CONTACT_EMAIL')) define('MANDALA_CONTACT_EMAIL', 'contacto
  */
 function mandala_gift_email_html(array $d) {
     $site   = untrailingslashit(apply_filters('mandala_gift_site_url', MANDALA_FRONTEND_URL));
-    $agenda = $site . '/agenda';
     $mode   = $d['mode'] ?? 'recipient';
     $from   = $d['from_name'] ?: 'Alguien especial';
 
@@ -99,12 +100,11 @@ function mandala_gift_email_html(array $d) {
     <tr><td align="center" style="padding:0 24px 24px 24px;font-family:<?php echo $sans; ?>;font-size:14px;line-height:1.6;color:#675647;"><?php echo $intro; ?></td></tr>
 
     <!-- Tarjeta (imagen estática; el efecto 3D solo existe en el modal del sitio). Si el
-         comprador subió su propia foto, mandala_gift_compose_card_image() ya la recortó
-         al aspecto de tarjeta, le redondeó las esquinas y le superpuso el logo como UNA
-         sola imagen (PHP/GD, en mandala-giftcards.php) — así se ve igual en todos los
-         clientes de correo, sin depender de position:absolute/border-radius por CSS
-         (que Outlook y varios clientes de correo ignoran). El arte de fábrica se
-         administra en wp-admin → Gift Cards → Ajustes. -->
+         comprador subió su propia foto, el navegador ya la recortó al aspecto de tarjeta,
+         le redondeó las esquinas y le superpuso el logo como UNA sola PNG (composeCard en
+         GiftCardModal.tsx) — así se ve igual en todos los clientes de correo, sin depender
+         de position:absolute/border-radius por CSS (que Outlook y varios clientes de correo
+         ignoran). El arte de fábrica se administra en wp-admin → Gift Cards → Ajustes. -->
     <?php if (!empty($d['personal_image'])) : ?>
     <tr><td align="center" style="padding:0 0 22px 0;">
       <img src="<?php echo esc_url($d['personal_image']); ?>" alt="Gift Card <?php echo esc_attr(MANDALA_BRAND); ?>" width="480" style="display:block;width:100%;max-width:480px;height:auto;border:0;">
@@ -191,11 +191,11 @@ function mandala_gift_email_html(array $d) {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:<?php echo $sand; ?>;border-radius:14px;">
         <tr><td style="padding:22px 24px 6px 24px;font-family:<?php echo $serif; ?>;font-size:18px;color:<?php echo $brand_color; ?>;">Cómo canjear tu regalo</td></tr>
 
-        <tr><td style="padding:6px 24px 2px 24px;font-family:<?php echo $sans; ?>;font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:<?php echo $taupe; ?>;">Opción 1 — Reserva en línea</td></tr>
+        <tr><td style="padding:6px 24px 2px 24px;font-family:<?php echo $sans; ?>;font-size:11px;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:<?php echo $taupe; ?>;">Opción 1 — Desde nuestro sitio, por WhatsApp</td></tr>
         <tr><td style="padding:4px 24px 4px 24px;font-family:<?php echo $sans; ?>;font-size:13px;line-height:1.7;color:#675647;">
-          <strong style="color:<?php echo $brand_color; ?>;">1.</strong> Entra a <a href="<?php echo esc_url($site); ?>" style="color:<?php echo $brand_color; ?>;"><?php echo esc_html(preg_replace('#^https?://#', '', $site)); ?></a> y elige el mismo servicio<?php echo !empty($d['variant']) ? ' (' . esc_html($d['variant']) . ')' : ''; ?>.<br>
-          <strong style="color:<?php echo $brand_color; ?>;">2.</strong> Agrégalo al carrito e ingresa el código en el checkout, usando <strong><?php echo esc_html($d['recipient_email']); ?></strong> como tu email.<br>
-          <strong style="color:<?php echo $brand_color; ?>;">3.</strong> El total queda en $0. ¡Listo!
+          <strong style="color:<?php echo $brand_color; ?>;">1.</strong> Entra a <a href="<?php echo esc_url($site); ?>" style="color:<?php echo $brand_color; ?>;"><?php echo esc_html(preg_replace('#^https?://#', '', $site)); ?></a> y toca la tarjeta flotante <strong>“Usa tu giftcard disponible”</strong>, abajo a la izquierda.<br>
+          <strong style="color:<?php echo $brand_color; ?>;">2.</strong> Ingresa el correo donde la recibiste (<strong><?php echo esc_html($d['recipient_email']); ?></strong>) y tu código (<strong><?php echo esc_html($d['code']); ?></strong>).<br>
+          <strong style="color:<?php echo $brand_color; ?>;">3.</strong> Te llevamos a WhatsApp con el mensaje listo para agendar tu hora.
         </td></tr>
 
         <tr><td style="padding:14px 24px 0 24px;"><div style="border-top:1px solid #E2DBCE;"></div></td></tr>
@@ -209,12 +209,13 @@ function mandala_gift_email_html(array $d) {
       </table>
     </td></tr>
 
-    <!-- Botón Agenda -->
+    <!-- Botón: abre WhatsApp con el mismo mensaje que arma GiftCardRedeemModal.tsx en el sitio -->
+    <?php $wa_text = 'Hola, quiero hacer uso de mi giftcard. La recibí en ' . $d['recipient_email'] . ' y el código es ' . $d['code'] . '.'; ?>
     <tr><td align="center" style="padding:0 0 8px 0;font-family:<?php echo $sans; ?>;font-size:13px;color:#675647;">¿Lista para reservar tu momento?</td></tr>
     <tr><td align="center" style="padding:0 0 30px 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
         <td align="center" bgcolor="<?php echo $brand_color; ?>" style="border-radius:999px;">
-          <a href="<?php echo esc_url($agenda); ?>" style="display:inline-block;padding:14px 34px;font-family:<?php echo $sans; ?>;font-size:12px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:#FFFFFF;text-decoration:none;border-radius:999px;">Agenda tu hora</a>
+          <a href="<?php echo esc_url('https://wa.me/' . MANDALA_CONTACT_WHATSAPP . '?text=' . rawurlencode($wa_text)); ?>" style="display:inline-block;padding:14px 34px;font-family:<?php echo $sans; ?>;font-size:12px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;color:#FFFFFF;text-decoration:none;border-radius:999px;">Cobrar mi gift card</a>
         </td>
       </tr></table>
     </td></tr>
@@ -231,7 +232,7 @@ function mandala_gift_email_html(array $d) {
       Las Condes, Santiago, Chile · Lun a Sáb, 10:00 - 20:00 hrs<br>
       <a href="https://instagram.com/spamandala" style="color:<?php echo $taupe; ?>;">Instagram</a> ·
       <a href="https://facebook.com/spamandala" style="color:<?php echo $taupe; ?>;">Facebook</a> ·
-      <a href="https://wa.me/56992242180" style="color:<?php echo $taupe; ?>;">WhatsApp</a>
+      <a href="https://wa.me/<?php echo esc_attr(MANDALA_CONTACT_WHATSAPP); ?>" style="color:<?php echo $taupe; ?>;">WhatsApp</a>
       <div style="padding-top:12px;font-size:11px;color:#A89E95;">Este es un correo automático, por favor no respondas a esta dirección.</div>
     </td></tr>
 

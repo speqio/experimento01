@@ -10,7 +10,7 @@ interface Props {
   // Diseño de la tarjeta (wp-admin → Gift Cards → Ajustes); vacío = respaldo local.
   cardImageUrl?: string;
   // Foto que sube el comprador (api/gift-photo-upload.ts): si viene, reemplaza
-  // todo el fondo de la tarjeta y se superpone el logo en una esquina.
+  // todo el fondo de la tarjeta. Ya viene compuesta con el logo (composeCard en GiftCardModal.tsx).
   personalImageUrl?: string;
 }
 
@@ -56,14 +56,6 @@ export default function GiftCardPreview({ image, productName, summary, variant, 
             role="img"
             aria-label="Gift Card Mándala Spa"
           >
-            {personalImageUrl && (
-              // El diseño de fábrica ya trae el logo incorporado en el arte; la foto
-              // del comprador no, así que se superpone acá (logo blanco, sin placa de
-              // fondo detrás).
-              <div className="absolute bottom-[5%] right-[5%] pointer-events-none">
-                <img src="/gift-card-logo.webp" alt="Mándala Spa" className="h-8 sm:h-10 w-auto object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]" />
-              </div>
-            )}
             <div
               ref={glareRef}
               className="absolute inset-0 pointer-events-none"

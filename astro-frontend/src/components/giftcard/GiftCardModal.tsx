@@ -34,6 +34,40 @@ const OCCASION_MESSAGES: Record<string, string[]> = {
   ],
 };
 
+// Convierte la foto del comprador en la tarjeta tal como se ve en GiftCardPreview
+// (aspecto 1748 × 1240, esquinas redondeadas, logo abajo a la derecha) en UNA sola
+// PNG. Así el correo muestra el mockup como imagen, sin depender de CSS (que los
+// clientes de correo ignoran) ni de GD en el servidor.
+async function composeCard(file: File): Promise<Blob> {
+  const W = 1200;
+  const H = Math.round((W * 1240) / 1748);
+  const [photo, logo] = await Promise.all([
+    createImageBitmap(file),
+    fetch('/gift-card-logo.webp').then((r) => r.blob()).then((b) => createImageBitmap(b)),
+  ]).catch(() => {
+    throw new Error('No se pudo leer la foto. Prueba con otra imagen JPEG, PNG o WebP.');
+  });
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, W, H, W * 0.045);
+  ctx.clip();
+  // Recorte centrado tipo "cover", igual que background-size: cover en la vista previa.
+  const s = Math.max(W / photo.width, H / photo.height);
+  ctx.drawImage(photo, (W - photo.width * s) / 2, (H - photo.height * s) / 2, photo.width * s, photo.height * s);
+  const lh = H * 0.14;
+  const lw = (logo.width * lh) / logo.height;
+  ctx.shadowColor = 'rgba(0,0,0,0.45)';
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 6;
+  ctx.drawImage(logo, W * 0.95 - lw, H * 0.95 - lh, lw, lh);
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('No se pudo preparar la foto.'))), 'image/png'),
+  );
+}
+
 // YYYY-MM-DD en la zona horaria local, para el min del selector de fecha.
 function todayLocal(): string {
   const d = new Date();
@@ -139,7 +173,7 @@ export default function GiftCardModal({ cardImageUrl }: ModalProps) {
     setUploadingPhoto(true);
     try {
       const body = new FormData();
-      body.append('file', file);
+      body.append('file', await composeCard(file), 'gift.png');
       const res = await fetch('/api/gift-photo-upload', { method: 'POST', body });
       const data: { url?: string; error?: string } = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error ?? 'No se pudo subir la foto.');

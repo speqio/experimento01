@@ -25,7 +25,7 @@ function mandala_cleanup_attachment_id($url) {
     return $url ? (int) attachment_url_to_postid($url) : 0;
 }
 
-/** IDs de las imágenes compuestas guardadas en un ítem (ver mandala_gift_remember_mockup). */
+/** IDs de las imágenes compuestas en el servidor que guardaban los pedidos antiguos (antes de componerlas en el navegador). */
 function mandala_cleanup_mockup_ids($item) {
     $ids = [];
     foreach ($item->get_meta_data() as $m) {

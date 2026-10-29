@@ -35,7 +35,6 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
     return () => document.removeEventListener('pointerdown', dismiss);
   }, [labelVisible]);
   const dialogRef = useModalDialog(open);
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -57,7 +56,7 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
         setError(data.reason || 'No se pudo verificar el código.');
         return;
       }
-      const text = `Hola, quiero agendar mi gift card.\nNombre: ${name}\nCorreo: ${email}\nCódigo: ${code.trim()}`;
+      const text = `Hola, quiero hacer uso de mi giftcard. La recibí en ${email.trim()} y el código es ${code.trim()}.`;
       window.location.href = `https://wa.me/${TEST_WHATSAPP}?text=${encodeURIComponent(text)}`;
     } catch {
       setError('No se pudo verificar el código. Inténtalo de nuevo.');
@@ -161,10 +160,6 @@ export default function GiftCardRedeemModal({ cardImageUrl }: Props) {
               <button type="button" onClick={() => setOpen(false)} aria-label="Cerrar" className="text-spa-taupe text-3xl leading-none">×</button>
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="gift-redeem-field-1" className="block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2">Tu nombre</label>
-                <input id="gift-redeem-field-1" required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spa-taupe-dark focus:ring-offset-2 focus:border-spa-taupe" />
-              </div>
               <div>
                 <label htmlFor="gift-redeem-field-2" className="block text-xs font-semibold tracking-wide uppercase text-spa-taupe mb-2">Correo donde la recibiste</label>
                 <input id="gift-redeem-field-2" required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-[#DDD5CA] rounded-full px-5 py-3 text-base sm:text-sm bg-white focus:outline-none focus:ring-2 focus:ring-spa-taupe-dark focus:ring-offset-2 focus:border-spa-taupe" />
