@@ -88,14 +88,50 @@ Secretas (panel de Cloudflare → Variables and Secrets; localmente en `.env`): 
 
 ## Estado / pendientes
 
-**Probado (2026-09-25):** compra de regalo en staging (frontend `laboratorio.space`, WordPress `cms.laboratorio.space`): pago Webpay de integración → orden en *Procesando* en WooCommerce.
+Avance detallado por etapa (briefing, prototipo, desarrollo, Q&A, testing): dashboard del proyecto en claude.ai, pestaña **Tareas**.
 
-**Pendientes:**
-- **Emails:** no llegan porque el hosting no tiene SMTP. Crear una casilla en cPanel (ej. no-reply@laboratorio.space), instalar WP Mail SMTP o FluentSMTP en `cms.laboratorio.space`, probar el envío y revisar SPF/DKIM. El mu-plugin ya envía con `wp_mail()`; no requiere cambios de código.
-- Verificar que el cupón de 100% se crea al pasar a *Procesando* (WooCommerce → Marketing → Cupones) y probar el **canje** (mismo producto/variante, total $0).
-- La orden #678 salió con $239.200, 20% menos que los $299.000 de las otras: revisar si hay algún descuento o promoción activa que aplique sin querer.
-- Pasar a producción: repetir en el WordPress definitivo la subida del mu-plugin, claves REST y ajustes de WooCommerce; Webpay con credenciales reales (`PRODUCCION`).
-- **Seguridad** (el código del navegador no se puede ocultar; se protege el backend y se limita lo que expone el frontend):
-  - Frontend: cabeceras de seguridad en Cloudflare (CSP, `X-Frame-Options`, `Referrer-Policy`); confirmar que ningún secreto llegue al cliente (solo variables `PUBLIC_*`); WAF y Bot Fight Mode para proteger `/api/webpay-init` y `/api/webpay-commit`.
-  - WordPress (`cms.laboratorio.space`): mantener desactivada la introspección de GraphQL en producción; limitar CORS al dominio del frontend en vez de `*`; bloquear `xmlrpc.php`; ocultar la lista de usuarios de la REST API.
-- Opcional: fecha de entrega programada del email de regalo (YITH la tenía).
+### Avances del 2026-10-27
+
+- **Checkout en una pantalla:** secciones desplegables, resumen del pedido y RUT y notas opcionales. El botón se bloquea al pagar para no duplicar pedidos. Se quitó «sin costo en el pedido» del texto de envíos.
+- **Redirección corregida:** `/checkout` ya no redirige a `/carrito/`, porque la tabla 301 heredada tapaba la página de pago.
+- **Rediseño de un colaborador externo** (`8581b40`): portada, tienda con filtros, cabecera, pie, notificación del carrito y animaciones GSAP.
+- **Fichas de producto caídas y repuestas** (`ff05bdc`): el parche agregó `productCategories` al fragmento de tarjetas y todas las fichas daban 404. Las 10 consultas de `products.ts` se validaron contra el CMS.
+- **Cabeceras de seguridad en el HTML:** HSTS, `X-Frame-Options`, `nosniff`, `Referrer-Policy` y `Permissions-Policy` las pone ahora `src/middleware.ts`, porque `public/_headers` solo llega a los archivos estáticos.
+- **Sin 404 por fallas del CMS:** si WordPress falla, fichas y entradas responden 503 con `Retry-After`. Así Google no da la página por eliminada.
+- **Títulos iguales a producción:** pasaron de 19 a 344 de 405 coincidencias con el rastreo de spamandala.cl. Vienen de `src/data/titulos-wp.json`, generado con `migracion/_herramientas/titulos_wp.py`; las rutas nuevas usan la plantilla «Nombre | Spa Mandala».
+- **Sitemap:** 182 URLs, todas con 200, con barra final igual que el canonical y que lo indexado en producción.
+- **Redirecciones:** las 400 responden 301 correcto y sus 112 destinos devuelven 200.
+- **PageSpeed móvil:** el hero tiene `srcset` (480/720/960); las tarjetas, una variante de 360 px; los logos pasaron a WebP; y las diapositivas ocultas no descargan su imagen hasta acercarse su turno.
+- **Observabilidad:** el log de `webpay-init` ahora incluye el mensaje del error, no solo el stack.
+
+### Avances del 2026-10-29
+
+- **Pruebas de compra con Webpay de integración** (pedidos 41233 a 41249): envío pagado, envío gratis, regiones, carrito mixto, solo servicios, cancelación, rechazo y gift card. Todas pasan.
+- **Confirmación protegida:** `/checkout/confirmacion` exige la clave del pedido y que esté pagado; `purchase` se envía una vez por pedido (también entre pestañas).
+- **Carrito tras un fallo:** se guarda una copia antes de ir a Webpay y se restaura si el pago falla. La pantalla distingue cancelado de rechazado.
+- **Cancelar en Webpay** marca el pedido como fallido si seguía pendiente.
+- **Checkout:** con el carrito vacío lleva a `/carrito`; si falla la red, el botón de pagar vuelve a activarse; un carrito solo de servicios ya no pide dirección.
+- **Envío gratis automático** desde $35.000 y total de `/carrito` sin envío viejo. Errores de hidratación de React corregidos.
+- **Envío gratis solo por lo que se despacha:** el mu-plugin `mandala-envio-gratis.php` descarta la tarifa gratis si los productos físicos no llegan al mínimo (antes contaba los servicios). Se sube por cPanel y hay que volver a subirlo si se reinstala el CMS.
+
+### Pendientes
+
+- **500 en `/api/webpay-init`:** hubo 4 en `createOrderFromCart`. Parecen envíos concurrentes, pero no está confirmado; revisar el próximo caso en los logs, que ya traen el mensaje.
+- **Imagen LCP del hero:** el banner del CMS se sirve en tamaño completo. Falta un campo `imageSrcset` en `wordpress/mu-plugins/mandala-banners.php`, que hay que subir por cPanel.
+- **Favicon:** no existe (`/favicon.ico` da 404). Falta el archivo, junto con el logo en alta resolución y la imagen social de 1200×630.
+- **CSP:** no está activa en el HTML. Probarla primero en modo reporte, porque GTM carga scripts de otros dominios.
+- **JSON-LD:** faltan datos estructurados en `/agenda/`, `/gift-cards/`, `/promociones/` y `/blog/`. Yoast tenía `enable_schema = 1`, así que probablemente producción los tenía.
+- **Títulos sin coincidir:** quedan unas 60 diferencias; la mayoría son URLs viejas que redirigen. Falta confirmar la corrección del título de las entradas del blog (`76d3fa1`).
+- **Configuración fuera del código:**
+  - Caché de 1 año para `/wp-content/uploads/` en el hosting del CMS (hoy son 7 días).
+  - Desactivar el beacon RUM de Cloudflare si no se usa.
+- **`/api/shipping` lento:** tarda 2–3 s por llamada.
+- **Checkout:** mostrar un mensaje de «sin stock» en vez del error genérico de `webpay-init`; ocultar dirección, región y comuna en carritos solo de servicios.
+- **Corte a producción:**
+  - GTM de producción y variables con el dominio real.
+  - Limpieza de los datos de prueba.
+  - `WP_ORIGIN_HOST`.
+  - Delta de pedidos y gift cards.
+  - Webpay en `PRODUCCION`.
+  - Seguimiento contra la línea base a las 2, 4 y 8 semanas.
+- **WordPress (seguridad):** mantener apagada la introspección de GraphQL, limitar CORS al dominio del frontend, bloquear `xmlrpc.php` y ocultar la lista de usuarios de la REST API.
