@@ -26,7 +26,7 @@ async function commitAndRedirect(request: Request, locals: any) {
         const order = await getOrderState(env, cancelledId).catch(() => null);
         if (order?.status === 'pending') await updateOrderStatus(env, cancelledId, 'failed').catch(() => {});
       }
-      return fail();
+      return fail('cancel');
     }
 
     const result = await webpayCommit(env, token);
@@ -48,7 +48,7 @@ async function commitAndRedirect(request: Request, locals: any) {
     }
 
     await updateOrderStatus(env, orderId, 'failed').catch(() => {});
-    return fail();
+    return fail('rejected');
   } catch (e) {
     console.error('webpay-commit:', e);
     return fail();

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@nanostores/react';
 import { ShoppingBag, Search, Menu, X, Calendar, Phone, Sparkles, ChevronDown, ChevronRight, ArrowLeft, MapPin, Clock } from 'lucide-react';
 import { cartItemCount, cartSummary } from '../../store/cartStore';
+import { useHydrated } from './useHydrated';
 import { SITE_INFO } from '../../lib/siteInfo';
 import { wpQuery } from '../../lib/wp-graphql';
 import { GET_PRODUCTS_BY_CATEGORIES, SEARCH_PRODUCTS } from '../../lib/queries/products';
@@ -218,8 +219,12 @@ export default function Header({ currentPath, currentCategory, categoryGroups }:
     previousMobileGroup.current = mobileOpenGroup;
   }, [mobileOpenGroup, mobileMenuOpen, categoryGroups]);
   const [featuredByGroup, setFeaturedByGroup] = useState<Record<string, SimpleProduct[]>>({});
-  const count = useStore(cartItemCount);
-  const summary = useStore(cartSummary);
+  // Los stores leen localStorage / el carrito ya cargado: hasta hidratar se pinta lo mismo que el servidor.
+  const hydrated = useHydrated();
+  const storedCount = useStore(cartItemCount);
+  const storedSummary = useStore(cartSummary);
+  const count = hydrated ? storedCount : 0;
+  const summary = hydrated ? storedSummary : { total: '' };
 
   const handleHoverGroup = (group: CategoryGroup) => {
     setActiveGroup(group.label);

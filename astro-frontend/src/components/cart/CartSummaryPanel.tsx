@@ -8,11 +8,19 @@ import {
   applyGiftCardBalance,
   isCartLoading,
 } from '../../store/cartStore';
+import { clp } from '../../lib/dataLayer';
+import { useHydrated } from '../common/useHydrated';
 
 export default function CartSummaryPanel() {
-  const summary = useStore(cartSummary);
-  const loading = useStore(isCartLoading);
+  // Hasta hidratar se pinta el estado vacío del servidor, aunque el store ya tenga el carrito cargado.
+  const hydrated = useHydrated();
+  const storedSummary = useStore(cartSummary);
+  const storedLoading = useStore(isCartLoading);
+  const summary = hydrated ? storedSummary : { ...storedSummary, items: [], appliedCoupons: [] };
+  const loading = hydrated && storedLoading;
   const [code, setCode] = useState('');
+  // Sin línea de envío en esta pantalla: el total es subtotal menos descuentos (cart.total puede traer un envío viejo).
+  const total = Math.max(0, clp(summary.subtotal) - summary.appliedCoupons.reduce((n, c) => n + clp(c.discountAmount), 0));
 
   useEffect(() => {
     fetchCart();
@@ -100,9 +108,9 @@ export default function CartSummaryPanel() {
 
         <div className="flex justify-between items-baseline pt-4 border-t border-spa-cream">
           <span className="font-editorial text-lg text-spa-charcoal">
-            Total {summary.needsPayment ? '· a pagar con Webpay' : ''}
+            Total {total > 0 ? '· a pagar con Webpay' : ''}
           </span>
-          <span className="font-editorial text-2xl text-spa-charcoal font-medium">{summary.total}</span>
+          <span className="font-editorial text-2xl text-spa-charcoal font-medium">${total.toLocaleString('es-CL')}</span>
         </div>
 
         <form onSubmit={handleApplyGiftCard} className="flex gap-2 pt-2">

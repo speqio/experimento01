@@ -221,6 +221,22 @@ const bodyClass = 'px-5 sm:px-6 pb-6 space-y-4';
     renderSummary();
   }
 
+  // Carrito solo de servicios: la dirección deja de ser obligatoria (el servidor lo vuelve a comprobar).
+  let virtualOnly = false;
+  fetch('/api/shipping', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(localStorage.getItem('woo-session') ? { 'woocommerce-session': `Session ${localStorage.getItem('woo-session')}` } : {}) },
+    body: '{}',
+  }).then((r) => r.json()).then((d) => {
+    if (d.needsShipping !== false) return;
+    virtualOnly = true;
+    for (const el of [stateSel, citySel, address]) el.required = false;
+    for (const id of ['state', 'city', 'address1']) {
+      const l = form.querySelector(`label[for="${id}"]`)!;
+      l.textContent = l.textContent!.replace(' *', '');
+    }
+  }).catch(() => {});
+
   fillComunas();
   stateSel.addEventListener('change', () => { fillComunas(); box.hidden = true; needsShipping = false; rate = null; shipTotal = null; renderSummary(); });
   citySel.addEventListener('change', () => loadShipping());
@@ -237,7 +253,8 @@ const bodyClass = 'px-5 sm:px-6 pb-6 space-y-4';
       phone: String(formData.get('phone')),
       address1: address2 ? `${formData.get('address1')}, ${address2}` : String(formData.get('address1')),
       city: String(formData.get('city')),
-      state: String(formData.get('state')),
+      // Servicios sin comuna: no se manda la región por defecto, que el servidor tomaría por una dirección incompleta.
+      state: virtualOnly && !citySel.value ? '' : String(formData.get('state')),
       shippingMethod: needsShipping ? String(formData.get('shippingMethod') ?? '') : undefined,
       rut: String(formData.get('rut') ?? '').trim() || undefined,
       note: String(formData.get('note') ?? '').trim() || undefined,

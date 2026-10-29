@@ -30,11 +30,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const cleanRut = String(rut ?? '').trim();
     if (cleanRut && !/^[0-9.]{1,10}-?[0-9kK]$/.test(cleanRut)) return json({ error: 'RUT inválido' }, 400);
     const cleanNote = String(note ?? '').trim().slice(0, 500);
-    if (!validAddress(billing.state, billing.city)) return json({ error: 'Región o comuna inválida' }, 400);
+    // Un carrito solo de servicios puede ir sin dirección; si se envía región/comuna, deben ser válidas.
+    const hasAddress = !!(billing.state || billing.city);
+    if (hasAddress && !validAddress(billing.state, billing.city)) return json({ error: 'Región o comuna inválida' }, 400);
 
     // El envío se recalcula aquí (no se confía en el navegador): si el carrito lleva productos
-    // físicos, el método elegido debe ser uno de los que WooCommerce ofrece para esa región.
+    // físicos, hay dirección y el método elegido debe ser uno de los que WooCommerce ofrece para esa región.
     const shipping = await getShippingOptions(env, sessionHeader, billing, shippingMethod);
+    if (shipping.needsShipping && !hasAddress) return json({ error: 'Región o comuna inválida' }, 400);
     if (shipping.needsShipping && !shipping.rates.some((r) => r.id === shippingMethod)) {
       return json({ error: 'Elige un método de envío' }, 400);
     }

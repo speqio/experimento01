@@ -7,7 +7,8 @@ import { getOrderForAnalytics } from '../../lib/woo-server';
 
 const orderId = Astro.url.searchParams.get('order');
 const key = Astro.url.searchParams.get('key');
-const env = { ...import.meta.env, ...process.env, ...((Astro.locals as any).runtime?.env ?? {}) } as Record<string, string | undefined>;
+const reason = Astro.url.searchParams.get('reason'); // cancel | rejected | (diagnóstico interno)
+const env ={ ...import.meta.env, ...process.env, ...((Astro.locals as any).runtime?.env ?? {}) } as Record<string, string | undefined>;
 // El ID se adivina; el order_key no: sin él la URL no confirma ni muestra ningún pedido.
 const order = orderId && key
   ? await getOrderForAnalytics(env, Number(orderId)).catch((e) => {
@@ -41,8 +42,11 @@ const purchase = success && order ? (({ key: _k, status: _s, ...rest }) => rest)
       </div>
     ) : (
       <div>
-        <h1 class="font-editorial text-3xl font-light text-spa-charcoal mb-3">No pudimos confirmar el pago</h1>
+        <h1 class="font-editorial text-3xl font-light text-spa-charcoal mb-3">
+          {reason === 'cancel' ? 'Cancelaste el pago' : reason === 'rejected' ? 'Tu pago fue rechazado' : 'No pudimos confirmar el pago'}
+        </h1>
         <p class="text-spa-taupe">
+          {reason === 'cancel' ? 'No se hizo ningún cobro y tu carrito sigue guardado. ' : reason === 'rejected' ? 'Tu banco no autorizó el cobro y no se hizo ningún cargo. Prueba con otra tarjeta. ' : ''}
           Intenta nuevamente desde <a href="/checkout" class="text-spa-charcoal underline">el checkout</a> o contáctanos si el problema persiste.
         </p>
       </div>
@@ -63,15 +67,16 @@ const purchase = success && order ? (({ key: _k, status: _s, ...rest }) => rest)
     purchaseType: string;
   } | null = JSON.parse(document.getElementById('purchase-data')?.textContent ?? 'null');
 
-  // Una recarga de la confirmación no debe contar la misma compra dos veces.
+  // Una recarga (o abrir el enlace en otra pestaña) no debe contar la misma compra dos veces.
+  // ponytail: localStorage es por navegador; otro dispositivo aún podría repetirla.
   const key = purchase ? `purchase-sent-${purchase.transactionId}` : null;
-  if (purchase && key && !sessionStorage.getItem(key)) {
+  if (purchase && key && !localStorage.getItem(key)) {
     pushEcommerce(
       'purchase',
       { transaction_id: purchase.transactionId, value: purchase.value, items: purchase.items },
       { purchase_type: purchase.purchaseType },
     );
-    sessionStorage.setItem(key, '1');
+    localStorage.setItem(key, '1');
   }
 
   // Pago confirmado: se descarta la copia del carrito. Si no, se repone para reintentar.

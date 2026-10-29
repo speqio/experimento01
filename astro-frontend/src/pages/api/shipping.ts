@@ -15,7 +15,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const env = { ...import.meta.env, ...process.env, ...((locals as any).runtime?.env ?? {}) } as Record<string, string | undefined>;
     const session = request.headers.get('woocommerce-session') ?? '';
     if (!session) return json({ error: 'Carrito vacío o sesión expirada' }, 400);
-    if (!validAddress(state, city)) return json({ error: 'Región o comuna inválida' }, 400);
+    // Sin región ni comuna solo se consulta si el carrito necesita envío (carritos de servicios no piden dirección).
+    if ((state || city) && !validAddress(state, city)) return json({ error: 'Región o comuna inválida' }, 400);
     const options = await getShippingOptions(env, session, { state, city, address1: String(address1 ?? '') }, method || undefined);
     return json(options);
   } catch (e) {

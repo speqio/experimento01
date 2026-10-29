@@ -55,7 +55,12 @@ const SHIPPING_QUERY = /* GraphQL */ `
     updateShippingMethod(input: { shippingMethods: $methods }) { clientMutationId }
   }
 `;
-const SHIPPING_CART = /* GraphQL */ `
+const SHIPPING_METHOD = /* GraphQL */ `
+  mutation ShippingMethod($methods: [String]) {
+    updateShippingMethod(input: { shippingMethods: $methods }) { clientMutationId }
+  }
+`;
+const SHIPPING_CART =/* GraphQL */ `
   query ShippingCart {
     cart {
       needsShippingAddress
@@ -71,19 +76,35 @@ const SHIPPING_CART = /* GraphQL */ `
  * (WooCommerce → Ajustes → Envío). `method` elige uno; sin él WooCommerce deja el primero disponible.
  */
 export async function getShippingOptions(env: Env, sessionHeader: string, address: ShippingAddress, method?: string): Promise<ShippingOptions> {
-  const set = await sessionGraphql(env, sessionHeader, SHIPPING_QUERY, {
-    address: { ...address, country: 'CL' },
-    methods: method ? [method] : null,
-  });
-  if (set?.errors?.length && !set?.data?.updateCustomer) throw new Error(set.errors[0].message);
-  const json = await sessionGraphql(env, sessionHeader, SHIPPING_CART);
-  const cart = json?.data?.cart;
-  if (!cart) throw new Error(json?.errors?.[0]?.message ?? 'No se pudo leer el carrito');
-  const rates = (cart.availableShippingMethods ?? []).flatMap((p: any) => p?.rates ?? []).map((r: any) => ({
+  // Carrito solo con servicios: el cliente puede no dar dirección, y entonces solo se lee el carrito.
+  if (address.state) {
+    const set = await sessionGraphql(env, sessionHeader, SHIPPING_QUERY, {
+      address: { ...address, country: 'CL' },
+      methods: method ? [method] : null,
+    });
+    if (set?.errors?.length && !set?.data?.updateCustomer) throw new Error(set.errors[0].message);
+  }
+  const readCart = async () => {
+    const json = await sessionGraphql(env, sessionHeader, SHIPPING_CART);
+    if (!json?.data?.cart) throw new Error(json?.errors?.[0]?.message ?? 'No se pudo leer el carrito');
+    return json.data.cart;
+  };
+  let cart = await readCart();
+  const toRates = (c: any): ShippingOptions['rates'] => (c.availableShippingMethods ?? []).flatMap((p: any) => p?.rates ?? []).map((r: any) => ({
     id: r.id,
     label: r.label,
     cost: Number(String(r.cost ?? '0').replace(/\D/g, '')) || 0, // CLP sin decimales; WooGraphQL lo entrega formateado
   }));
+  let rates = toRates(cart);
+  // Sin elección del cliente WooCommerce deja el primero (ej. PAKET): se prefiere el más barato, así el envío gratis queda marcado.
+  if (!method && rates.length) {
+    const cheapest = rates.reduce((a, b) => (b.cost < a.cost ? b : a));
+    if (cheapest.id !== cart.chosenShippingMethods?.[0]) {
+      await sessionGraphql(env, sessionHeader, SHIPPING_METHOD, { methods: [cheapest.id] });
+      cart = await readCart();
+      rates = toRates(cart);
+    }
+  }
   return {
     needsShipping: !!cart.needsShippingAddress,
     rates,
