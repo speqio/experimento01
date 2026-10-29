@@ -44,7 +44,7 @@ function mandala_cleanup_cards() {
         $out[$kind][] = [
             'order_id' => $row['order']->get_id(),
             'code'     => $row['code'],
-            'product'  => $row['item']->get_name(),
+            'product'  => $row['product'],
             'status'   => $row['status'],
             'images'   => array_values(array_filter(array_unique(array_merge(
                 [mandala_cleanup_attachment_id($row['gift']['personalImage'] ?? '')],

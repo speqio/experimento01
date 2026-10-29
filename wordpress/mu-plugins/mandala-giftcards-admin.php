@@ -139,7 +139,7 @@ add_action('admin_post_mandala_gift_export_csv', function () {
             $order->get_id(),
             $gift['buyerEmail'] ?? '',
             $gift['recipientEmail'] ?? '',
-            $item->get_name(),
+            $row['product'],
             $order->get_total(),
             $row['code'] ?: '',
             $row['code'] ? ($row['used'] ? 'Sí' : 'No') : '',
@@ -193,6 +193,7 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
     ));
 
     $items = [];
+    $by_code = []; // "orden|código" → índice en $items: un regalo con complemento es UNA fila
     foreach ($rows as $row) {
         $order = wc_get_order($row->order_id);
         if (!$order) continue;
@@ -206,6 +207,14 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
         $campaign = $attribution['campaign'] ?? '';
 
         $code = $item->get_meta('_mandala_gift_code');
+        $key = $code ? $row->order_id . '|' . $code : '';
+        if ($key && isset($by_code[$key])) {
+            // Ítems en orden descendente: el de id menor (producto principal) va primero.
+            $i = $by_code[$key];
+            array_unshift($items[$i]['names'], $item->get_name());
+            $items[$i]['item'] = $item;
+            continue;
+        }
         $sent = $item->get_meta('_mandala_gift_sent');
         $status = 'Pendiente de pago';
         $used = false;
@@ -239,9 +248,11 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
             }
         }
 
+        if ($key) $by_code[$key] = count($items);
         $items[] = [
             'order'    => $order,
             'item'     => $item,
+            'names'    => [$item->get_name()],
             'gift'     => $gift,
             'code'     => $code,
             'status'   => $status,
@@ -252,6 +263,8 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
             'coupon'   => mandala_gift_coupon_details($coupon),
         ];
     }
+    foreach ($items as &$it) $it['product'] = implode(' + ', $it['names']);
+    unset($it);
 
     if ($estado === 'usados') {
         $items = array_values(array_filter($items, fn($row) => $row['used']));
@@ -262,12 +275,12 @@ function mandala_gift_query_orders($page = 1, $per_page = 20, $estado = 'todos',
         $items = array_values(array_filter($items, fn($row) => stripos($row['gift']['buyerEmail'] ?? '', $buyer) !== false));
     }
     if ($producto !== '') {
-        $items = array_values(array_filter($items, fn($row) => $row['item']->get_name() === $producto));
+        $items = array_values(array_filter($items, fn($row) => in_array($producto, $row['names'], true)));
     }
     // Búsqueda libre: orden, comprador, destinatario, producto o código.
     if ($q !== '') {
         $items = array_values(array_filter($items, function ($row) use ($q) {
-            $hay = implode(' ', [$row['order']->get_id(), $row['gift']['buyerEmail'] ?? '', $row['gift']['recipientEmail'] ?? '', $row['item']->get_name(), $row['code']]);
+            $hay = implode(' ', [$row['order']->get_id(), $row['gift']['buyerEmail'] ?? '', $row['gift']['recipientEmail'] ?? '', $row['product'], $row['code']]);
             return stripos($hay, $q) !== false;
         }));
     }
@@ -329,7 +342,7 @@ function mandala_gift_admin_tab_trazabilidad() {
     $result = mandala_gift_query_orders($page, 20, $estado, $buyer, $producto, $campania, $desde, $hasta, $q);
     // Opciones de los selects: se sacan de todos los resultados sin filtrar (volumen bajo).
     $all = mandala_gift_query_orders(1, 100000, 'todos');
-    $productos_opts = array_unique(array_map(fn($r) => $r['item']->get_name(), $all['items']));
+    $productos_opts = array_unique(array_merge(...array_map(fn($r) => $r['names'], $all['items'])));
     $campanias_opts = array_unique(array_filter(array_map(fn($r) => $r['campaign'], $all['items'])));
     sort($productos_opts); sort($campanias_opts);
     ?>
@@ -388,7 +401,7 @@ function mandala_gift_admin_tab_trazabilidad() {
             <td><a href="<?php echo esc_url($order->get_edit_order_url()); ?>">#<?php echo esc_html($order->get_id()); ?></a></td>
             <td><?php echo esc_html($gift['buyerEmail'] ?? '—'); ?></td>
             <td><?php echo esc_html($gift['recipientEmail'] ?? '—'); ?></td>
-            <td><?php echo esc_html($item->get_name()); ?></td>
+            <td><?php echo esc_html($row['product']); ?></td>
             <td><?php echo wp_kses_post($row['total']); ?></td>
             <td><code><?php echo esc_html($row['code'] ?: '—'); ?></code></td>
             <td><?php echo $row['code'] ? ($row['used'] ? 'Sí' : 'No') : '—'; ?></td>
