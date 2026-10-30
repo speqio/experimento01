@@ -199,7 +199,7 @@ export async function getOrderForAnalytics(env: Env, orderId: number): Promise<O
     transactionId: String(data.id),
     value: Math.round(Number(data.total)),
     items: lines.map((l) => {
-      const line = mandala.lines[String(l.product_id)] ?? {};
+      const line = mandala.lines[String(l.id)] ?? {};
       return {
         item_id: String(l.product_id),
         item_name: l.name,

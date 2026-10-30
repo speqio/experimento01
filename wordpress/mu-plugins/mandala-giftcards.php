@@ -147,7 +147,8 @@ add_filter('woocommerce_rest_prepare_shop_order_object', function ($response, $o
         $is_upsell = function_exists('mandala_ud_is_upsell') && mandala_ud_is_upsell((int) $item->get_product_id());
         $has_gift   = $has_gift || $is_gift;
         $has_upsell = $has_upsell || $is_upsell;
-        $lines[(string) $item->get_product_id()] = [
+        // Por id de línea (no de producto): el mismo producto puede ir como regalo y normal en una orden.
+        $lines[(string) $item->get_id()] = [
             'gift'   => $is_gift,
             'upsell' => $is_upsell,
             'slug'   => (string) get_post_field('post_name', $item->get_product_id()),
